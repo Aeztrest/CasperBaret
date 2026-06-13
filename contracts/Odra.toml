@@ -1,0 +1,5 @@
+[[contracts]]
+fqn = "casper_baret_contracts::payment_guard::PaymentGuard"
+
+[[contracts]]
+fqn = "casper_baret_contracts::token::Cep18x402"

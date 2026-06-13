@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Baret Casper Server API
+  version: 0.1.0
+  description: |
+    Casper transaction safety analysis + an x402 agentic paywall.
+
+    - `GET /health` — liveness + config summary.
+    - `POST /v1/analyze` — analyze a Casper transaction against a guard policy.
+    - `GET /demo/scrybe` — x402 paywall (HTTP 402 → pay with `X-PAYMENT` → answer).
+
+    `POST /v1/*` may require `Authorization: Bearer <api-key>` or `x-api-key`
+    when `DELTAG_API_KEYS` is configured server-side.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Liveness + config summary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  service: { type: string }
+                  version: { type: string }
+                  network:
+                    type: object
+                    properties:
+                      id: { type: string, example: testnet }
+                      chainName: { type: string, example: casper-test }
+                      caip2: { type: string, example: "casper:casper-test" }
+                      rpcUrl: { type: string }
+                  x402:
+                    type: object
+                    properties:
+                      enabled: { type: boolean }
+                      facilitatorUrl: { type: string }
+                      asset: { type: string }
+                      priceAtomic: { type: string }
+                      tokenName: { type: string }
+  /v1/analyze:
+    post:
+      summary: Analyze a Casper transaction
+      security:
+        - apiKey: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [transaction, userWallet]
+              properties:
+                network:
+                  type: string
+                  enum: [testnet, mainnet]
+                  default: testnet
+                transaction:
+                  description: >
+                    A normalized intent envelope (object) or a JSON string of a
+                    Casper Deploy/TransactionV1 `.toJSON()`.
+                  oneOf:
+                    - type: string
+                    - type: object
+                userWallet: { type: string }
+                policy: { type: object }
+                integratorRequestId: { type: string }
+                paymentRequirements:
+                  $ref: "#/components/schemas/CasperPaymentRequirements"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "400": { description: Bad request }
+        "401": { description: Unauthorized }
+  /demo/scrybe:
+    get:
+      summary: x402 agentic paywall
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, maxLength: 500 }
+        - name: X-PAYMENT
+          in: header
+          required: false
+          schema: { type: string }
+          description: base64(JSON(X402PaymentPayload)) — present to pay.
+      responses:
+        "200":
+          description: Paid — answer returned with `X-PAYMENT-RESPONSE` header.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer: { type: string }
+                  paid: { type: boolean, example: true }
+                  settlement: { type: string, description: settlement deploy hash }
+                  payer: { type: string }
+        "402":
+          description: Payment required — body carries `accepts[]` PaymentRequirements.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  x402Version: { type: integer, example: 2 }
+                  error: { type: string }
+                  accepts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CasperPaymentRequirements"
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    CasperPaymentRequirements:
+      type: object
+      properties:
+        scheme: { type: string, example: exact }
+        network: { type: string, example: "casper:casper-test" }
+        asset: { type: string, description: CEP-18 contract package hash (64 hex) }
+        amount: { type: string, description: atomic token amount }
+        payTo: { type: string, description: x402 address "00"+64hex }
+        maxTimeoutSeconds: { type: integer, example: 60 }
+        extra: { type: object }
+    AnalysisResult:
+      type: object
+      properties:
+        safe: { type: boolean }
+        reasons:
+          type: array
+          items: { type: string }
+        estimatedChanges: { type: object }
+        riskFindings:
+          type: array
+          items: { type: object }
+        simulationWarnings:
+          type: array
+          items: { type: string }
+        meta: { type: object }

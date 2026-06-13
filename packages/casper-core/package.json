@@ -1,0 +1,31 @@
+{
+  "name": "@casper-baret/casper-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Casper chain primitives for Baret — keypairs, RPC, units, addresses, and x402 EIP-712 payment authorization.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@casper-ecosystem/casper-eip-712": "^1.2.1",
+    "casper-js-sdk": "^5.0.12"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

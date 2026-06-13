@@ -1,0 +1,29 @@
+{
+  "name": "casper-baret",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm build:packages && pnpm --filter @casper-baret/server build && pnpm --filter @casper-baret/showcase build",
+    "build:packages": "pnpm --filter @casper-baret/casper-core build && pnpm --filter @casper-baret/casper-guard build",
+    "build:server": "pnpm --filter @casper-baret/server build",
+    "build:extension": "pnpm --filter @casper-baret/extension build",
+    "build:showcase": "pnpm --filter @casper-baret/showcase build",
+    "build:core": "pnpm --filter @casper-baret/casper-core build",
+    "build:guard": "pnpm --filter @casper-baret/casper-guard build",
+    "build:contracts": "cd contracts && cargo odra build",
+
+    "dev": "pnpm --filter @casper-baret/server dev",
+    "dev:server": "pnpm --filter @casper-baret/server dev",
+    "dev:extension": "pnpm --filter @casper-baret/extension dev",
+    "dev:showcase": "pnpm --filter @casper-baret/showcase dev",
+    "dev:all": "pnpm -r --parallel --filter @casper-baret/server --filter @casper-baret/showcase dev",
+
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm --filter @casper-baret/casper-core test && pnpm --filter @casper-baret/server test && pnpm --filter @casper-baret/extension test",
+    "test:contracts": "cd contracts && cargo odra test",
+
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  }
+}
