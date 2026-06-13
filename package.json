@@ -2,6 +2,9 @@
   "name": "casper-baret",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "pnpm build:packages && pnpm --filter @casper-baret/server build && pnpm --filter @casper-baret/showcase build",
     "build:packages": "pnpm --filter @casper-baret/casper-core build && pnpm --filter @casper-baret/casper-guard build",
