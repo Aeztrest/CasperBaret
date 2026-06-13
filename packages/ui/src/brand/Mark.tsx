@@ -18,9 +18,9 @@ export interface MarkProps extends SVGProps<SVGSVGElement> {
 }
 
 export function Mark({ size = 24, mono = false, ...rest }: MarkProps) {
-  const dome = mono ? "currentColor" : "#FF6B00";
+  const dome = mono ? "currentColor" : "#e11428";
   const rib  = mono ? "var(--bg-elevated, #fff)" : "#FFFFFF";
-  const brim = mono ? "currentColor" : "#FF6B00";
+  const brim = mono ? "currentColor" : "#e11428";
   return (
     <svg
       width={size}

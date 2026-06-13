@@ -8,12 +8,12 @@ import { buildScenario } from "../../blackthorn/transactions";
 import { useWallet } from "../../wallet/context";
 
 const THEME = {
-  primary: "#FF6B00",
-  accent: "#EA5E00",
+  primary: "#e11428",
+  accent: "#c00f20",
   bg: "#FFFFFF",
   name: "NovaSwap",
   logo: (
-    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: "linear-gradient(135deg,#FF6B00,#C24E02)" }}>
+    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: "linear-gradient(135deg,#e11428,#9e0e1b)" }}>
       N
     </div>
   ),
@@ -116,7 +116,7 @@ export default function NovaSwap() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="w-full max-w-md rounded-2xl p-1 shadow-card"
-          style={{ background: "linear-gradient(145deg, rgba(255,107,0,0.08), #FFFFFF)", border: "1px solid rgba(255,107,0,0.25)" }}
+          style={{ background: "linear-gradient(145deg, rgba(225,20,40,0.08), #FFFFFF)", border: "1px solid rgba(225,20,40,0.25)" }}
         >
           <div className="rounded-xl p-5 space-y-3 bg-paper">
             <div className="flex items-center justify-between mb-1">
@@ -127,7 +127,7 @@ export default function NovaSwap() {
             </div>
 
             {/* From */}
-            <div className="p-4 rounded-xl" style={{ background: "#FAF8F4", border: "1px solid rgba(20,20,20,0.08)" }}>
+            <div className="p-4 rounded-xl" style={{ background: "#f6f6f7", border: "1px solid rgba(20,20,20,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You pay</span>
                 <span className="text-xs text-ink-400">Balance: 12.45</span>
@@ -141,7 +141,7 @@ export default function NovaSwap() {
                   placeholder="0"
                 />
                 <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-900 bg-paper border border-ink-900/10">
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#FF6B00" }}>✦</span>
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#e11428" }}>✦</span>
                   {fromToken.symbol}
                   <ChevronDown size={13} className="text-ink-400" />
                 </button>
@@ -154,14 +154,14 @@ export default function NovaSwap() {
               <button
                 onClick={flip}
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:rotate-180 duration-300 bg-brand-50 text-brand-600"
-                style={{ border: "1px solid rgba(255,107,0,0.3)" }}
+                style={{ border: "1px solid rgba(225,20,40,0.3)" }}
               >
                 <ArrowUpDown size={15} />
               </button>
             </div>
 
             {/* To */}
-            <div className="p-4 rounded-xl" style={{ background: "#FAF8F4", border: "1px solid rgba(20,20,20,0.08)" }}>
+            <div className="p-4 rounded-xl" style={{ background: "#f6f6f7", border: "1px solid rgba(20,20,20,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You receive</span>
                 <span className="text-xs text-ink-400">Balance: 245.30</span>
@@ -196,7 +196,7 @@ export default function NovaSwap() {
                 ✓ Swap Successful
               </motion.div>
             ) : (
-              <button onClick={handleSwap} className="w-full py-4 rounded-xl font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg,#FF6B00,#EA5E00)" }}>
+              <button onClick={handleSwap} className="w-full py-4 rounded-xl font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg,#e11428,#c00f20)" }}>
                 {connected ? "Swap" : "Connect Wallet to Swap"}
               </button>
             )}

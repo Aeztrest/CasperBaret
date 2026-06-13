@@ -11,7 +11,7 @@ export function BlackthornBadge() {
       className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full shadow-card"
       style={{
         background: "rgba(255,255,255,0.92)",
-        border: "1px solid rgba(255,107,0,0.40)",
+        border: "1px solid rgba(225,20,40,0.40)",
         backdropFilter: "blur(8px)",
       }}
     >

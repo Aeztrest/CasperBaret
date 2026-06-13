@@ -356,10 +356,10 @@ function ProgressStep({ entry }: { entry: AnswerEntry }) {
           <div key={p.key} className="flex items-center gap-2.5 text-xs">
             <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    background: done ? "rgba(5,150,105,0.14)" : active ? "rgba(255,107,0,0.14)" : "rgba(20,20,20,0.06)",
+                    background: done ? "rgba(5,150,105,0.14)" : active ? "rgba(225,20,40,0.14)" : "rgba(20,20,20,0.06)",
                   }}>
               {done ? <span className="text-[9px] text-emerald-600">✓</span>
-                : active ? <Loader2 size={9} className="animate-spin" style={{ color: "#FF6B00" }} />
+                : active ? <Loader2 size={9} className="animate-spin" style={{ color: "#e11428" }} />
                 : <span className="text-[8px] text-ink-900/35">{i + 1}</span>}
             </span>
             <span style={{

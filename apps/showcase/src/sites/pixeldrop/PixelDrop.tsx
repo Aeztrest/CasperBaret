@@ -8,12 +8,12 @@ import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
   primary: "#141414",
-  accent: "#FF6B00",
-  bg: "#FAF8F4",
+  accent: "#e11428",
+  bg: "#f6f6f7",
   name: "PixelDrop",
   logo: (
     <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: "#141414" }}>
-      <span style={{ color: "#FF6B00" }}>P</span>
+      <span style={{ color: "#e11428" }}>P</span>
     </div>
   ),
 };
@@ -83,7 +83,7 @@ export default function PixelDrop() {
       />
 
       {/* Background warm glow */}
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 20%, rgba(255,107,0,0.07) 0%, transparent 70%)" }} />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 20%, rgba(225,20,40,0.07) 0%, transparent 70%)" }} />
 
       <div className="min-h-screen flex flex-col items-center pt-8 pb-24 px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-5xl">
@@ -143,7 +143,7 @@ export default function PixelDrop() {
                     animate={{ width: `${pct}%` }}
                     transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
                     className="h-full rounded-full"
-                    style={{ background: "#FF6B00" }}
+                    style={{ background: "#e11428" }}
                   />
                 </div>
                 <p className="text-xs text-ink-400">{pct.toFixed(1)}% minted</p>
@@ -179,7 +179,7 @@ export default function PixelDrop() {
               ) : (
                 <button onClick={handleMint} className="group w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-colors" style={{ background: "#141414" }} onMouseEnter={(e) => (e.currentTarget.style.background = "#322F2C")} onMouseLeave={(e) => (e.currentTarget.style.background = "#141414")}>
                   {connected ? `Mint ${qty} Phantom${qty > 1 ? "s" : ""}` : "Connect Wallet"}
-                  <span style={{ color: "#FF6B00" }}>→</span>
+                  <span style={{ color: "#e11428" }}>→</span>
                 </button>
               )}
 

@@ -1,7 +1,7 @@
 /**
  * Baret brand chrome — logo mark, header, footer, light backdrop.
  *
- * Identity: "Baret" = hard hat. White-first surfaces, safety-orange (#FF6B00)
+ * Identity: "Baret" = hard hat. White-first surfaces, Casper red (#E11428)
  * accents, ink-black (#141414) type. Signature motif: the hazard stripe.
  */
 
@@ -24,9 +24,9 @@ export function BaretMark({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
       <rect width="32" height="32" rx="8" fill="#141414" />
-      <path d="M8 19.5a8 8 0 0 1 16 0Z" fill="#FF6B00" />
+      <path d="M8 19.5a8 8 0 0 1 16 0Z" fill="#e11428" />
       <rect x="14.6" y="9" width="2.8" height="5.2" rx="1.4" fill="#FFFFFF" />
-      <rect x="6" y="20.4" width="20" height="2.6" rx="1.3" fill="#FF6B00" />
+      <rect x="6" y="20.4" width="20" height="2.6" rx="1.3" fill="#e11428" />
     </svg>
   );
 }
@@ -63,7 +63,7 @@ export function BackdropGrid() {
       />
       <div
         className="absolute -top-48 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, rgba(255,107,0,0.10), transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, rgba(225,20,40,0.10), transparent 70%)" }}
       />
     </div>
   );

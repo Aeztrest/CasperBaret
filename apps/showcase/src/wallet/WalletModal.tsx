@@ -101,8 +101,8 @@ export function WalletModal({
                   disabled={connecting}
                   className="w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:bg-brand-50 disabled:opacity-60"
                   style={{
-                    background: "rgba(255,107,0,0.06)",
-                    border: "1px solid rgba(255,107,0,0.45)",
+                    background: "rgba(225,20,40,0.06)",
+                    border: "1px solid rgba(225,20,40,0.45)",
                   }}
                 >
                   <WalletIcon
@@ -185,8 +185,8 @@ function BaretMissing({ othersCount }: { othersCount: number }) {
       <div
         className="rounded-xl p-4"
         style={{
-          background: "rgba(255,107,0,0.06)",
-          border: "1px solid rgba(255,107,0,0.45)",
+          background: "rgba(225,20,40,0.06)",
+          border: "1px solid rgba(225,20,40,0.45)",
         }}
       >
         <div className="flex items-center gap-2 mb-2">
@@ -281,7 +281,7 @@ function WalletIcon({
         borderRadius: radius,
         background:
           variant === "primary"
-            ? "linear-gradient(135deg,#FF6B00,#C24E02)"
+            ? "linear-gradient(135deg,#e11428,#9e0e1b)"
             : "rgba(20,20,20,0.06)",
       }}
     >

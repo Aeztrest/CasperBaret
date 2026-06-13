@@ -10,7 +10,7 @@ import { buildScenario } from "../../blackthorn/transactions";
 const THEME = {
   primary: "#D97706",
   accent: "#F59E0B",
-  bg: "#FFFDF8",
+  bg: "#fffafb",
   name: "OrbitYield",
   logo: (
     <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: "linear-gradient(135deg,#F59E0B,#D97706)" }}>
@@ -92,7 +92,7 @@ export default function OrbitYield() {
               { label: "Average APY", value: "7.4%", icon: TrendingUp },
               { label: "Active Stakers", value: "48,291", icon: Zap },
             ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="rounded-2xl p-5 border" style={{ background: "#FFFBEB", borderColor: "rgba(245,158,11,0.25)" }}>
+              <div key={label} className="rounded-2xl p-5 border" style={{ background: "#fff1f2", borderColor: "rgba(245,158,11,0.25)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Icon size={14} style={{ color: "#D97706" }} />
                   <span className="text-xs text-ink-500">{label}</span>
@@ -112,7 +112,7 @@ export default function OrbitYield() {
                   onClick={() => setSelectedPool(i)}
                   className="w-full text-left p-4 rounded-2xl transition-all shadow-card"
                   style={{
-                    background: selectedPool === i ? "#FFFBEB" : "#FFFFFF",
+                    background: selectedPool === i ? "#fff1f2" : "#FFFFFF",
                     border: `1px solid ${selectedPool === i ? "rgba(245,158,11,0.4)" : "rgba(20,20,20,0.1)"}`,
                   }}
                 >
@@ -148,7 +148,7 @@ export default function OrbitYield() {
               <div className="rounded-2xl p-6 space-y-5 bg-paper border border-ink-900/10 shadow-card">
                 <h2 className="font-bold font-display text-ink-900">Stake CSPR</h2>
 
-                <div className="p-4 rounded-xl border border-ink-900/10" style={{ background: "#FAF8F4" }}>
+                <div className="p-4 rounded-xl border border-ink-900/10" style={{ background: "#f6f6f7" }}>
                   <div className="flex justify-between text-xs text-ink-500 mb-2">
                     <span>Amount</span>
                     <span>Balance: 12.45 CSPR</span>
@@ -171,7 +171,7 @@ export default function OrbitYield() {
                   </div>
                 </div>
 
-                <div className="space-y-3 p-4 rounded-xl" style={{ background: "#FFFBEB", border: "1px solid rgba(245,158,11,0.25)" }}>
+                <div className="space-y-3 p-4 rounded-xl" style={{ background: "#fff1f2", border: "1px solid rgba(245,158,11,0.25)" }}>
                   {[
                     { label: "Staking pool", value: dangerous ? "SuperYield Protocol" : pool.name },
                     { label: "Annual APY", value: dangerous ? "48.0%" : pool.apy },

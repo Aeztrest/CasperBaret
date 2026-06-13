@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * Baret design system — white-first, safety-orange + ink-black.
+ * Baret design system — white-first, Casper red + ink-black.
  * Heading face: Space Grotesk (font-display). Body: Inter. Code: JetBrains Mono.
  */
 
@@ -12,10 +12,10 @@
     box-sizing: border-box;
   }
   :root {
-    --brand: #ff6b00;
+    --brand: #e11428;
     --ink: #141414;
     --paper: #ffffff;
-    --bone: #faf8f4;
+    --bone: #f6f6f7;
   }
   body {
     @apply font-sans antialiased;
@@ -24,24 +24,24 @@
     min-height: 100vh;
   }
   ::selection {
-    background: rgba(255, 107, 0, 0.25);
+    background: rgba(225, 20, 40, 0.25);
   }
 }
 
 @layer utilities {
-  /* ── signature motif: hazard stripe (orange/ink diagonals) ── */
+  /* ── signature motif: hazard stripe (red/ink diagonals) ── */
   .hazard {
     background: repeating-linear-gradient(
       135deg,
       #141414 0 12px,
-      #ff6b00 12px 24px
+      #e11428 12px 24px
     );
   }
   .hazard-soft {
     background: repeating-linear-gradient(
       135deg,
       rgba(20, 20, 20, 0.08) 0 12px,
-      rgba(255, 107, 0, 0.16) 12px 24px
+      rgba(225, 20, 40, 0.16) 12px 24px
     );
   }
 
@@ -54,7 +54,7 @@
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, var(--site-primary, #ff6b00), var(--site-accent, #141414));
+    background: linear-gradient(135deg, var(--site-primary, #e11428), var(--site-accent, #141414));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -78,14 +78,14 @@
     background: var(--site-bg, #ffffff);
   }
   .site-primary {
-    color: var(--site-primary, #ff6b00);
+    color: var(--site-primary, #e11428);
   }
   .site-border {
-    border-color: var(--site-primary, #ff6b00);
+    border-color: var(--site-primary, #e11428);
   }
 
   .btn-primary {
-    background: var(--site-primary, #ff6b00);
+    background: var(--site-primary, #e11428);
     color: #fff;
     @apply px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200;
   }
@@ -104,16 +104,16 @@
     color: #fff;
   }
   .btn-ink:hover {
-    background: #2b2926;
+    background: #2a2c31;
   }
   .btn-brand {
     @apply inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-all;
-    background: #ff6b00;
+    background: #e11428;
     color: #fff;
-    box-shadow: 0 4px 14px -2px rgba(255, 107, 0, 0.35);
+    box-shadow: 0 4px 14px -2px rgba(225, 20, 40, 0.35);
   }
   .btn-brand:hover {
-    background: #ea5e00;
+    background: #c00f20;
     transform: translateY(-1px);
   }
   .btn-brand:active {
@@ -127,7 +127,7 @@
   }
   .btn-outline:hover {
     border-color: rgba(20, 20, 20, 0.34);
-    background: #faf8f4;
+    background: #f6f6f7;
   }
 
   /* standard light card */
@@ -140,7 +140,7 @@
     @apply card transition-all duration-200;
   }
   .card-hover:hover {
-    border-color: rgba(255, 107, 0, 0.45);
+    border-color: rgba(225, 20, 40, 0.45);
     box-shadow: 0 2px 4px rgba(20, 20, 20, 0.06), 0 16px 40px -12px rgba(20, 20, 20, 0.14);
     transform: translateY(-2px);
   }

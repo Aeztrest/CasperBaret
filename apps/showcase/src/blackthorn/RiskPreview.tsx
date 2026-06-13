@@ -101,7 +101,7 @@ export function RiskPreview({
 
               {error && (
                 <div className="rounded-xl p-3 text-xs flex items-start gap-2"
-                     style={{ background: "rgba(255,107,0,0.07)", color: "#C24E02", border: "1px solid rgba(255,107,0,0.35)" }}>
+                     style={{ background: "rgba(225,20,40,0.07)", color: "#9e0e1b", border: "1px solid rgba(225,20,40,0.35)" }}>
                   <AlertTriangle size={13} className="mt-0.5 shrink-0" />
                   <div>
                     <p className="font-semibold mb-0.5">Analyze server unreachable</p>
@@ -132,9 +132,9 @@ export function RiskPreview({
                   disabled={loading}
                   className="flex-1 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                   style={{
-                    background: blocked ? "rgba(255,107,0,0.12)" : advisory ? "rgba(255,136,56,0.14)" : "#141414",
-                    color: blocked ? "#C24E02" : advisory ? "#993E06" : "#fff",
-                    border: blocked ? "1px solid rgba(255,107,0,0.45)" : advisory ? "1px solid rgba(255,136,56,0.45)" : "1px solid #141414",
+                    background: blocked ? "rgba(225,20,40,0.12)" : advisory ? "rgba(244,80,95,0.14)" : "#141414",
+                    color: blocked ? "#9e0e1b" : advisory ? "#82111c" : "#fff",
+                    border: blocked ? "1px solid rgba(225,20,40,0.45)" : advisory ? "1px solid rgba(244,80,95,0.45)" : "1px solid #141414",
                   }}
                 >
                   <Zap size={11} className={blocked || advisory ? "" : "text-brand-400"} />
@@ -160,8 +160,8 @@ export function RiskPreview({
 function Verdict({ result }: { result: AnalysisResult }) {
   const decision = result.decision;
   const tone =
-    decision === "block"    ? { bg: "rgba(255,107,0,0.08)",  border: "rgba(255,107,0,0.45)",  color: "#C24E02", label: "BLOCKED by your policy", Icon: ShieldX }
-  : decision === "advisory" ? { bg: "rgba(255,136,56,0.08)", border: "rgba(255,136,56,0.40)", color: "#993E06", label: "Sign with caution",       Icon: AlertTriangle }
+    decision === "block"    ? { bg: "rgba(225,20,40,0.08)",  border: "rgba(225,20,40,0.45)",  color: "#9e0e1b", label: "BLOCKED by your policy", Icon: ShieldX }
+  : decision === "advisory" ? { bg: "rgba(244,80,95,0.08)", border: "rgba(244,80,95,0.40)", color: "#82111c", label: "Sign with caution",       Icon: AlertTriangle }
                             : { bg: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.35)", color: "#059669", label: "Safe to sign",             Icon: ShieldCheck };
   const Icon = tone.Icon;
   return (
@@ -246,7 +246,7 @@ function formatCsprDelta(motesStr: string): string {
 function DeltaRow({ label, value, negative, warn }: {
   label: string; value: string; negative?: boolean; warn?: boolean;
 }) {
-  const color = warn ? "#993E06" : negative ? "#C24E02" : "#059669";
+  const color = warn ? "#82111c" : negative ? "#9e0e1b" : "#059669";
   const Arrow = negative ? ArrowUpRight : ArrowDownRight;
   return (
     <div className="flex items-center justify-between gap-2">
@@ -273,8 +273,8 @@ function Findings({ findings }: { findings: RiskFinding[] }) {
 
 function FindingRow({ finding }: { finding: RiskFinding }) {
   const tone =
-    finding.severity === "critical" || finding.severity === "high" ? "#C24E02"
-  : finding.severity === "medium"                                  ? "#993E06"
+    finding.severity === "critical" || finding.severity === "high" ? "#9e0e1b"
+  : finding.severity === "medium"                                  ? "#82111c"
                                                                    : "#6B6862";
   return (
     <div className="rounded-lg px-2.5 py-2 flex items-start gap-2 bg-white"
@@ -306,7 +306,7 @@ function CompareBar({ verdict, loading }: { verdict: AnalysisResult["decision"];
         <span className="text-ink-600 mt-0.5">{withoutMsg}</span>
       </div>
       <div className="rounded-lg p-2 flex flex-col"
-           style={{ background: "rgba(255,107,0,0.07)", border: "1px solid rgba(255,107,0,0.35)" }}>
+           style={{ background: "rgba(225,20,40,0.07)", border: "1px solid rgba(225,20,40,0.35)" }}>
         <span className="text-brand-700 uppercase tracking-wider font-bold">With Baret</span>
         <span className="text-ink-900 font-semibold mt-0.5">{withMsg}</span>
       </div>

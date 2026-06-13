@@ -9,11 +9,11 @@ import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
   primary: "#E8470A",
-  accent: "#FF6B00",
+  accent: "#e11428",
   bg: "#FFFFFF",
   name: "ClaimHub",
   logo: (
-    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg,#FF6B00,#E8470A)" }}>
+    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg,#e11428,#E8470A)" }}>
       <Gift size={15} />
     </div>
   ),
@@ -90,7 +90,7 @@ export default function ClaimHub() {
       <div className="min-h-screen pb-24 px-4 py-12">
         <div className="max-w-2xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lift" style={{ background: "linear-gradient(135deg,#FF6B00,#E8470A)" }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lift" style={{ background: "linear-gradient(135deg,#e11428,#E8470A)" }}>
               <Gift size={28} />
             </div>
             <h1 className="text-4xl font-display font-black text-ink-900 mb-3">Casper Airdrop</h1>
