@@ -10,40 +10,39 @@
  */
 
 :root {
-  /* ─── Surfaces ───────────────────────────────────── */
-  --bg:           #f6f6f7;   /* bone — window canvas */
-  --bg-elevated:  #FFFFFF;   /* paper — raised panels */
-  --bg-card:      #FFFFFF;
-  --bg-modal:     #FFFFFF;
+  /* ─── Surfaces (black-first / Casper dark) ───────── */
+  --bg:           #0a0a0c;   /* window canvas (near-black) */
+  --bg-elevated:  #16171a;   /* raised panels */
+  --bg-card:      #16171a;
+  --bg-modal:     #16171a;
 
-  --line:         rgba(20, 20, 20, 0.09);
-  --line-strong:  rgba(20, 20, 20, 0.16);
+  --line:         rgba(255, 255, 255, 0.10);
+  --line-strong:  rgba(255, 255, 255, 0.20);
 
   /* ─── Text ───────────────────────────────────────── */
-  --text:        #141414;
-  --text-muted:  rgba(20, 20, 20, 0.58);
-  --text-faint:  rgba(20, 20, 20, 0.40);
-  --text-ghost:  rgba(20, 20, 20, 0.24);
+  --text:        #f4f4f5;
+  --text-muted:  rgba(255, 255, 255, 0.62);
+  --text-faint:  rgba(255, 255, 255, 0.42);
+  --text-ghost:  rgba(255, 255, 255, 0.26);
 
-  /* ─── Brand accent — Safety orange ──────────────────
-   * Baret ships a white/orange/black palette: ink type on
-   * white surfaces with the Casper red accent doing the
-   * pointing. Semantic colors (ok/warn/bad/live) are kept —
-   * risk states need visual differentiation. */
+  /* ─── Brand accent — Casper red ─────────────────────
+   * Black-first surfaces with the Casper red accent doing
+   * the pointing. Semantic colors (ok/warn/bad/live) are
+   * brightened for legibility on dark surfaces. */
   --accent:       #e11428;
-  --accent-soft:  #c00f20;
-  --accent-dim:   rgba(225, 20, 40, 0.10);
-  --accent-glow:  rgba(225, 20, 40, 0.22);
+  --accent-soft:  #f01b30;
+  --accent-dim:   rgba(225, 20, 40, 0.14);
+  --accent-glow:  rgba(225, 20, 40, 0.30);
 
-  /* ─── Semantic accents (tuned for light surfaces) ── */
-  --ok:        #059669;
-  --ok-dim:    rgba(5, 150, 105, 0.10);
-  --warn:      #B45309;
-  --warn-dim:  rgba(180, 83, 9, 0.10);
-  --bad:       #DC2626;
-  --bad-dim:   rgba(220, 38, 38, 0.08);
-  --live:      #0E7490;
-  --live-dim:  rgba(14, 116, 144, 0.10);
+  /* ─── Semantic accents (tuned for dark surfaces) ── */
+  --ok:        #34d399;
+  --ok-dim:    rgba(52, 211, 153, 0.14);
+  --warn:      #fbbf24;
+  --warn-dim:  rgba(251, 191, 36, 0.14);
+  --bad:       #f87171;
+  --bad-dim:   rgba(248, 113, 113, 0.14);
+  --live:      #38bdf8;
+  --live-dim:  rgba(56, 189, 248, 0.14);
 
   /* ─── Type scale ─────────────────────────────────── */
   --display-2xl-size: 56px; --display-2xl-line: 1.04;

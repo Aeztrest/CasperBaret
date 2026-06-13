@@ -24,8 +24,8 @@ const SEVERITY_TONE: Record<
 > = {
   low: {
     dot: "bg-text-faint",
-    bg: "rgba(20,20,20,0.035)",
-    border: "rgba(20,20,20,0.10)",
+    bg: "rgba(255,255,255,0.035)",
+    border: "rgba(255,255,255,0.10)",
     text: "var(--text-faint)",
   },
   medium: {

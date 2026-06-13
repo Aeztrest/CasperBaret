@@ -186,7 +186,7 @@ function LedgerRow({ row }: { row: AllowanceSnapshot }) {
         <span>Today: {row.spentDay.toFixed(4)} / {row.capPerDay.toFixed(2)} USDC</span>
         {row.lastHitAt && <><span>·</span><span>{relativeTime(row.lastHitAt)}</span></>}
       </div>
-      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(20,20,20,0.07)" }}>
+      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
         <div
           className="h-full rounded-full"
           style={{ width: `${dayPct}%`, background: dayPct > 90 ? "var(--warn)" : "var(--accent-soft, #8b5cf6)" }}

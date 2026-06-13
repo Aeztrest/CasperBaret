@@ -101,7 +101,7 @@ function ActivityRow({ entry, network }: { entry: HistoryEntry; network: string 
       <div
         className="w-10 h-10 rounded-input flex items-center justify-center shrink-0"
         style={{
-          background: allowed ? "rgba(20,20,20,0.045)" : "var(--bad-dim)",
+          background: allowed ? "rgba(255,255,255,0.045)" : "var(--bad-dim)",
           border: "1px solid var(--line)",
         }}
       >

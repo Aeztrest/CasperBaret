@@ -155,7 +155,7 @@ export function SendScreen({
                   disabled={balanceCspr === null || balanceCspr <= 0}
                   className="text-[10px] text-text-faint hover:text-text disabled:opacity-40 px-2 py-0.5 rounded-input"
                   style={{
-                    background: "rgba(20,20,20,0.045)",
+                    background: "rgba(255,255,255,0.045)",
                     border: "1px solid var(--line)",
                   }}
                 >

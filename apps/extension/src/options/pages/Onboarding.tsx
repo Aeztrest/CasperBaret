@@ -396,7 +396,7 @@ function StepBackup({
           </button>
         </div>
         <div className="font-mono text-xs break-all min-h-[3.5rem] px-3 py-3 rounded-input"
-             style={{ background: "rgba(20,20,20,0.035)", border: "1px solid var(--line)" }}>
+             style={{ background: "rgba(255,255,255,0.035)", border: "1px solid var(--line)" }}>
           {revealed ? secret : "•".repeat(80)}
         </div>
         <button onClick={onCopy} disabled={!revealed} className="btn-ghost w-full disabled:opacity-50">
@@ -514,7 +514,7 @@ function StepPolicy({
               onClick={() => onChoose(t.id)}
               className="w-full text-left p-4 rounded-card transition-colors"
               style={{
-                background: active ? "rgba(255,107,0,0.07)" : "rgba(20,20,20,0.03)",
+                background: active ? "rgba(225,20,40,0.07)" : "rgba(255,255,255,0.03)",
                 border: active ? "1px solid rgba(61,109,255,0.5)" : "1px solid var(--line)",
               }}
             >

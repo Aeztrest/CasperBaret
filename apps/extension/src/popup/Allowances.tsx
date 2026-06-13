@@ -63,7 +63,7 @@ export function Allowances() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-2">
         <div className="w-10 h-10 rounded-card flex items-center justify-center text-text-faint"
-             style={{ background: "rgba(20,20,20,0.035)", border: "1px solid var(--line)" }}>
+             style={{ background: "rgba(255,255,255,0.035)", border: "1px solid var(--line)" }}>
           <Shield size={16} />
         </div>
         <p className="text-sm text-text-muted mt-1">No active grants</p>
@@ -157,7 +157,7 @@ function CapRow({ label, pct, spent, cap }: { label: string; pct: number; spent:
           {spent.toFixed(2)} / {cap.toFixed(2)}
         </span>
       </div>
-      <div className="h-1 rounded-pill overflow-hidden" style={{ background: "rgba(20,20,20,0.055)" }}>
+      <div className="h-1 rounded-pill overflow-hidden" style={{ background: "rgba(255,255,255,0.055)" }}>
         <div className="h-full rounded-pill transition-all" style={{ width: `${pct}%`, background: fillColor }} />
       </div>
     </div>

@@ -113,7 +113,7 @@ export function HomeOpt() {
         className="rounded-card p-6 relative overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, rgba(255,107,0,0.08), rgba(255,107,0,0.015))",
+            "linear-gradient(135deg, rgba(225,20,40,0.08), rgba(225,20,40,0.015))",
           border: "1px solid var(--line)",
         }}
       >

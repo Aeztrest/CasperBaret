@@ -143,7 +143,7 @@ function SiteCard({ site }: { site: SiteSummary }) {
       <div
         className="w-10 h-10 rounded-input flex items-center justify-center shrink-0"
         style={{
-          background: site.blocked ? "var(--bad-dim)" : "rgba(20,20,20,0.045)",
+          background: site.blocked ? "var(--bad-dim)" : "rgba(255,255,255,0.045)",
           border: "1px solid var(--line)",
         }}
       >
