@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm build:packages && pnpm build:server && pnpm build:showcase",
+  "buildCommand": "pnpm build:packages && pnpm build:extension && pnpm build:server && pnpm build:showcase",
   "outputDirectory": "apps/showcase/dist",
   "env": {
     "DELTAG_API_KEYS": "dev-key-change-me",
