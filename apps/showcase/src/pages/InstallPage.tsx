@@ -1,12 +1,12 @@
 /** Install page — Baret light theme. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Download, Chrome, Globe2, ShieldCheck, Sparkles, Lock, Cpu, Eye,
   Check, ChevronRight, ArrowRight, MonitorSmartphone, FileArchive,
-  FolderOpen, BookOpen, HardHat,
+  FolderOpen, BookOpen, HardHat, Copy,
 } from "lucide-react";
 import { BackdropGrid, LandingHeader, LandingFooter, HazardRule } from "../components/LandingChrome";
 
@@ -35,6 +35,24 @@ export default function InstallPage() {
   const [downloadedKey, setDownloadedKey] = useState<string | null>(null);
 
   useEffect(() => { setBrowser(detectBrowser()); }, []);
+
+  // Kick the download off automatically so visitors land ready to install.
+  // Browsers allow one programmatic download per gesture-less load; the
+  // download button below stays as a fallback if a browser blocks it.
+  const autoFired = useRef(false);
+  useEffect(() => {
+    if (autoFired.current) return;
+    autoFired.current = true;
+    const key: Exclude<Browser, "other"> =
+      detectBrowser() === "firefox" ? "firefox" : "chrome";
+    const a = document.createElement("a");
+    a.href = ARTEFACTS[key].href;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setDownloadedKey(key);
+  }, []);
 
   const primaryKey = browser === "firefox" ? "firefox" : "chrome";
   const altKey     = primaryKey === "chrome" ? "firefox" : "chrome";
@@ -180,7 +198,37 @@ function DownloadCard({
           </a>
         </div>
       </div>
+
+      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-ink-400">
+        <Download size={11} className="text-brand-500" />
+        Your download starts automatically — if it didn't, tap the card above.
+      </p>
     </motion.section>
+  );
+}
+
+/* ─────────────────────────── copy-to-clipboard pill ─────────────────────────── */
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch { /* clipboard blocked — the text is still visible to copy by hand */ }
+      }}
+      title="Copy — browsers block sites from opening this page for you"
+      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-800 bg-ink-900/[0.05] border border-ink-900/10 px-1.5 py-0.5 rounded hover:bg-ink-900/[0.09] transition-colors"
+    >
+      {text}
+      {copied
+        ? <Check size={11} className="text-emerald-600" />
+        : <Copy size={11} className="text-ink-400" />}
+    </button>
   );
 }
 
@@ -221,7 +269,7 @@ function ChromeSteps({ downloaded }: { downloaded: boolean }) {
         Right-click <Code>blackthorn-chrome.zip</Code> → Extract All. Remember the folder.
       </Step>
       <Step n="02" icon={FolderOpen} title="Open chrome://extensions/">
-        Paste <Code>chrome://extensions/</Code> into your address bar (or Menu → Extensions). Toggle <b>Developer mode</b> on (top right).
+        Copy <CopyButton text="chrome://extensions/" /> and paste it into your address bar (or Menu → Extensions). Toggle <b>Developer mode</b> on (top right).
       </Step>
       <Step n="03" icon={ShieldCheck} title="Load unpacked">
         Click <b>"Load unpacked"</b> and pick the extracted <Code>blackthorn-chrome</Code> folder. Baret appears in your toolbar — click it to create your wallet.
@@ -237,7 +285,7 @@ function FirefoxSteps({ downloaded }: { downloaded: boolean }) {
         Right-click <Code>blackthorn-firefox.zip</Code> → Extract Here. Remember the folder.
       </Step>
       <Step n="02" icon={FolderOpen} title="Open about:debugging">
-        Paste <Code>about:debugging#/runtime/this-firefox</Code> into your address bar.
+        Copy <CopyButton text="about:debugging#/runtime/this-firefox" /> and paste it into your address bar.
       </Step>
       <Step n="03" icon={ShieldCheck} title="Load Temporary Add-on…">
         Click <b>"Load Temporary Add-on…"</b> and pick <Code>manifest.json</Code> inside the extracted folder.
