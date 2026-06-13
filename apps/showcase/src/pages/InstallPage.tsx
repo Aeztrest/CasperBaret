@@ -7,7 +7,7 @@ import {
   Download, Chrome, Globe2, ShieldCheck, Sparkles, Lock, Cpu, Eye,
   Check, ChevronRight, ArrowRight, MonitorSmartphone, FileArchive,
   FolderOpen, BookOpen, HardHat, Copy, ToggleRight, MousePointerClick,
-  Pin, ExternalLink, RotateCcw,
+  Pin, RotateCcw,
 } from "lucide-react";
 
 const IS_MAC =
@@ -320,12 +320,8 @@ function chromeSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
       icon: ToggleRight,
       body: () => (
         <div className="space-y-2.5">
-          <p>Jump to your extensions page:</p>
+          <p>Open your extensions page — copy the address, then press <Code>{META_KEY}+L</Code> and paste it:</p>
           <AddressBarAction url="chrome://extensions/" />
-          <p className="text-[11px] text-ink-400 leading-relaxed">
-            Chrome blocks sites from opening this page, so <b>Open</b> also copies it —
-            if no tab appears, press <Code>{META_KEY}+L</Code> and paste.
-          </p>
           <p className="flex flex-wrap items-center gap-2 pt-0.5">
             Then flip <b>Developer mode</b> on — top-right corner:
             <MockToggle />
@@ -379,12 +375,8 @@ function firefoxSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
       icon: ToggleRight,
       body: () => (
         <div className="space-y-2.5">
-          <p>Jump to the add-on debugging page:</p>
+          <p>Open the add-on debugging page — copy the address, then press <Code>{META_KEY}+L</Code> and paste it:</p>
           <AddressBarAction url="about:debugging#/runtime/this-firefox" />
-          <p className="text-[11px] text-ink-400 leading-relaxed">
-            Firefox blocks sites from opening this page, so <b>Open</b> also copies it —
-            if no tab appears, press <Code>{META_KEY}+L</Code> and paste.
-          </p>
         </div>
       ),
     },
@@ -459,19 +451,13 @@ function MockButton({ icon: Icon, label }: { icon: typeof MousePointerClick; lab
   );
 }
 
-/** URL chip with both Copy and a best-effort Open (browsers block chrome://
- *  and about: navigations, so Open always copies first as a safety net). */
+/** URL chip + Copy. Browsers forbid sites from navigating to chrome:// and
+ *  about: pages, so copy-and-paste is the only reliable path. */
 function AddressBarAction({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
-  const flash = () => { setCopied(true); setTimeout(() => setCopied(false), 1600); };
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-    flash();
-  };
-  const open = async () => {
-    try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-    try { window.open(url, "_blank", "noopener"); } catch { /* blocked — copy is the fallback */ }
-    flash();
+    setCopied(true); setTimeout(() => setCopied(false), 1600);
   };
   return (
     <span className="inline-flex flex-wrap items-center gap-2 align-middle">
@@ -481,17 +467,10 @@ function AddressBarAction({ url }: { url: string }) {
       <button
         type="button"
         onClick={copy}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold border border-white/14 text-ink-200 hover:text-ink-50 hover:border-white/30 transition-colors"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold border border-brand-500/40 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 transition-colors"
       >
         {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
         {copied ? "Copied" : "Copy"}
-      </button>
-      <button
-        type="button"
-        onClick={open}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold border border-brand-500/40 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 transition-colors"
-      >
-        <ExternalLink size={12} /> Open
       </button>
     </span>
   );
