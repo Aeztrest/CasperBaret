@@ -4,12 +4,15 @@
   "buildCommand": "pnpm build:packages && pnpm build:server && pnpm build:showcase",
   "outputDirectory": "apps/showcase/dist",
   "env": {
+    "DELTAG_API_KEYS": "dev-key-change-me",
     "X402_ENABLED": "true",
     "CEP18_X402_PACKAGE": "89ae0441d3ae2b1e619fbbb6cb14a58c7ad2004131e3f14b5d384007435a6231",
     "X402_PAY_TO": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "X402_PRICE_ATOMIC": "10000",
     "X402_TOKEN_NAME": "Cep18x402",
-    "X402_TOKEN_VERSION": "1"
+    "X402_TOKEN_VERSION": "1",
+    "RISKY_CONTRACT_PACKAGES": "deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeadd",
+    "KNOWN_SAFE_CONTRACT_PACKAGES": "1111111111111111111111111111111111111111111111111111111111111111,2222222222222222222222222222222222222222222222222222222222222222"
   },
   "functions": {
     "api/[...path].ts": {
