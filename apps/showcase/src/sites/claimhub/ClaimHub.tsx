@@ -10,7 +10,7 @@ import { buildScenario } from "../../blackthorn/transactions";
 const THEME = {
   primary: "#E8470A",
   accent: "#e11428",
-  bg: "#FFFFFF",
+  bg: "#0d0e11",
   name: "ClaimHub",
   logo: (
     <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg,#e11428,#E8470A)" }}>
@@ -93,8 +93,8 @@ export default function ClaimHub() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white shadow-lift" style={{ background: "linear-gradient(135deg,#e11428,#E8470A)" }}>
               <Gift size={28} />
             </div>
-            <h1 className="text-4xl font-display font-black text-ink-900 mb-3">Casper Airdrop</h1>
-            <p className="text-ink-500">Community distribution — check if your wallet is eligible for the Casper ecosystem reward program.</p>
+            <h1 className="text-4xl font-display font-black text-ink-50 mb-3">Casper Airdrop</h1>
+            <p className="text-ink-300">Community distribution — check if your wallet is eligible for the Casper ecosystem reward program.</p>
           </motion.div>
 
           {/* Stats */}
@@ -106,17 +106,17 @@ export default function ClaimHub() {
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="card rounded-2xl p-4 text-center">
                 <Icon size={16} className="mx-auto mb-2" style={{ color: "#E8470A" }} />
-                <p className="text-lg font-display font-black text-ink-900">{value}</p>
-                <p className="text-xs text-ink-500 mt-0.5">{label}</p>
+                <p className="text-lg font-display font-black text-ink-50">{value}</p>
+                <p className="text-xs text-ink-300 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
 
           {/* Claim card */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card rounded-2xl overflow-hidden">
-            <div className="p-6 border-b border-ink-900/10">
-              <h2 className="font-display font-bold text-ink-900 mb-1">Check Eligibility</h2>
-              <p className="text-xs text-ink-500">Connect your wallet to verify your allocation</p>
+            <div className="p-6 border-b border-white/10">
+              <h2 className="font-display font-bold text-ink-50 mb-1">Check Eligibility</h2>
+              <p className="text-xs text-ink-300">Connect your wallet to verify your allocation</p>
             </div>
 
             <div className="p-6 space-y-4">
@@ -126,31 +126,31 @@ export default function ClaimHub() {
                 </button>
               ) : (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-600/20">
-                    <CheckCircle size={20} className="text-emerald-600" />
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-600/20">
+                    <CheckCircle size={20} className="text-emerald-400" />
                     <div>
-                      <p className="text-sm font-semibold text-ink-900">Wallet eligible!</p>
-                      <p className="text-xs text-ink-500 font-mono">{shortAddress}</p>
+                      <p className="text-sm font-semibold text-ink-50">Wallet eligible!</p>
+                      <p className="text-xs text-ink-300 font-mono">{shortAddress}</p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl space-y-3 bg-brand-50 border border-brand-700/15">
+                  <div className="p-4 rounded-xl space-y-3 bg-brand-500/10 border border-brand-700/15">
                     <div className="flex justify-between text-sm">
-                      <span className="text-ink-500">Your allocation</span>
-                      <span className="font-bold text-brand-700">2,500 TOKEN</span>
+                      <span className="text-ink-300">Your allocation</span>
+                      <span className="font-bold text-brand-300">2,500 TOKEN</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-ink-500">USD Value</span>
-                      <span className="font-semibold text-brand-700">≈ $250.00</span>
+                      <span className="text-ink-300">USD Value</span>
+                      <span className="font-semibold text-brand-300">≈ $250.00</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-ink-500">Merkle proof</span>
-                      <span className="text-xs font-mono text-ink-500">0x4f3a...8c2d</span>
+                      <span className="text-ink-300">Merkle proof</span>
+                      <span className="text-xs font-mono text-ink-300">0x4f3a...8c2d</span>
                     </div>
                   </div>
 
                   {success ? (
-                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-4 rounded-xl text-center font-bold text-emerald-600 bg-emerald-50 border border-emerald-600/25">
+                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-4 rounded-xl text-center font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-600/25">
                       ✓ 2,500 TOKEN Claimed!
                     </motion.div>
                   ) : (
@@ -165,10 +165,10 @@ export default function ClaimHub() {
 
           {/* Demo toggle */}
           <div className="mt-8 flex justify-center">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-ink-900/10">
-              <span className="text-xs text-ink-600">Simulate phishing claim</span>
-              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#ef4444" : "rgba(20,20,20,0.12)" }}>
-                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-card transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-white/10">
+              <span className="text-xs text-ink-300">Simulate phishing claim</span>
+              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#ef4444" : "rgba(255,255,255,0.12)" }}>
+                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-ink-800 shadow-card transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
               </button>
               {dangerous && <span className="text-xs text-red-500 font-medium">⚠ Danger mode</span>}
             </div>

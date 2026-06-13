@@ -23,9 +23,9 @@ const NAV_LINKS = [
 export function BaretMark({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="8" fill="#141414" />
+      <rect width="32" height="32" rx="8" fill="#f4f4f5" />
       <path d="M8 19.5a8 8 0 0 1 16 0Z" fill="#e11428" />
-      <rect x="14.6" y="9" width="2.8" height="5.2" rx="1.4" fill="#FFFFFF" />
+      <rect x="14.6" y="9" width="2.8" height="5.2" rx="1.4" fill="#121315" />
       <rect x="6" y="20.4" width="20" height="2.6" rx="1.3" fill="#e11428" />
     </svg>
   );
@@ -39,7 +39,7 @@ export function Logo({ size = 8 }: { size?: number }) {
 /** Wordmark: BARET in display face with an orange full stop. */
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-display font-bold tracking-[0.14em] text-ink-900 ${className}`}>
+    <span className={`font-display font-bold tracking-[0.14em] text-ink-50 ${className}`}>
       BARET<span className="text-brand-500">.</span>
     </span>
   );
@@ -90,9 +90,9 @@ export function LandingHeader({ cta }: { cta?: { label: string; to: string } | n
     <header
       className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
       style={{
-        background:     scrolled ? "rgba(255,255,255,0.85)" : "transparent",
+        background:     scrolled ? "rgba(12,13,16,0.82)" : "transparent",
         backdropFilter: scrolled ? "blur(14px)" : "none",
-        borderBottom:   scrolled ? "1px solid rgba(20,20,20,0.08)" : "1px solid transparent",
+        borderBottom:   scrolled ? "1px solid rgba(255,255,255,0.08)" : "1px solid transparent",
       }}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -112,8 +112,8 @@ export function LandingHeader({ cta }: { cta?: { label: string; to: string } | n
                 to={l.to}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? "text-ink-900 bg-ink-900/[0.06]"
-                    : "text-ink-500 hover:text-ink-900 hover:bg-ink-900/[0.04]"
+                    ? "text-ink-50 bg-ink-900/[0.06]"
+                    : "text-ink-300 hover:text-ink-50 hover:bg-ink-900/[0.04]"
                 }`}
               >
                 {l.label}
@@ -133,7 +133,7 @@ export function LandingHeader({ cta }: { cta?: { label: string; to: string } | n
           )}
           <button
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden w-10 h-10 grid place-items-center rounded-lg border border-ink-900/15 text-ink-900 hover:bg-ink-900/5"
+            className="md:hidden w-10 h-10 grid place-items-center rounded-lg border border-white/15 text-ink-50 hover:bg-ink-900/5"
             aria-label="Menu"
           >
             {open ? <XIcon size={16} /> : <Menu size={16} />}
@@ -142,14 +142,14 @@ export function LandingHeader({ cta }: { cta?: { label: string; to: string } | n
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-ink-900/10 bg-white/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-white/10 bg-ink-800/95 backdrop-blur-xl">
           <div className="px-6 py-4 space-y-1">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.label}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
+                className="block px-3 py-2 rounded-lg text-sm text-ink-300 hover:bg-ink-900/5 hover:text-ink-50"
               >
                 {l.label}
               </Link>
@@ -190,12 +190,12 @@ export function LandingFooter() {
               <Link
                 key={l.label}
                 to={l.to}
-                className="text-xs text-white/55 hover:text-white px-3 py-1.5 rounded-md hover:bg-white/[0.06]"
+                className="text-xs text-white/55 hover:text-white px-3 py-1.5 rounded-md hover:bg-ink-800/[0.06]"
               >
                 {l.label}
               </Link>
             ))}
-            <span className="hidden md:inline-block w-px h-4 bg-white/15 mx-2" />
+            <span className="hidden md:inline-block w-px h-4 bg-ink-800/15 mx-2" />
             <a
               href={SOCIAL_GITHUB}
               target="_blank" rel="noreferrer"

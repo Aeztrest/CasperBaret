@@ -42,11 +42,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div
-        className="min-h-screen flex items-center justify-center p-6 text-ink-900"
-        style={{ background: "#f6f6f7" }}
+        className="min-h-screen flex items-center justify-center p-6 text-ink-50"
+        style={{ background: "#16171a" }}
       >
         <div
-          className="max-w-2xl w-full rounded-2xl p-6 bg-white shadow-lift"
+          className="max-w-2xl w-full rounded-2xl p-6 bg-ink-800 shadow-lift"
           style={{ border: "1px solid rgba(225,20,40,0.4)" }}
         >
           <div className="flex items-center gap-3 mb-4">
@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: "rgba(225,20,40,0.12)", border: "1px solid rgba(225,20,40,0.4)" }}
             >
-              <AlertTriangle size={18} className="text-brand-600" />
+              <AlertTriangle size={18} className="text-brand-400" />
             </div>
             <div>
               <h1 className="font-bold text-lg">Something broke</h1>
@@ -66,13 +66,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
           <pre
             className="text-xs font-mono p-3 rounded-lg overflow-auto max-h-64 mb-4"
-            style={{ background: "rgba(20,20,20,0.04)", border: "1px solid rgba(20,20,20,0.08)" }}
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            <span className="text-brand-700">{error.name}: {error.message}</span>
+            <span className="text-brand-300">{error.name}: {error.message}</span>
             {info?.componentStack && (
               <>
                 {"\n\n"}
-                <span className="text-ink-500">{info.componentStack.trim()}</span>
+                <span className="text-ink-300">{info.componentStack.trim()}</span>
               </>
             )}
             {error.stack && (
@@ -92,7 +92,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-ink-900/15 text-ink-700 hover:bg-bone"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-white/15 text-ink-200 hover:bg-bone"
             >
               Reload page
             </button>

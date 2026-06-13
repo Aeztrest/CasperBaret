@@ -62,7 +62,7 @@ export function WalletModal({
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(20,20,20,0.45)", backdropFilter: "blur(8px)" }}
+          style={{ background: "rgba(255,255,255,0.45)", backdropFilter: "blur(8px)" }}
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0, y: 12 }}
@@ -70,24 +70,24 @@ export function WalletModal({
             exit={{ scale: 0.92, opacity: 0, y: 12 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl overflow-hidden bg-white shadow-lift"
-            style={{ border: "1px solid rgba(20,20,20,0.10)" }}
+            className="w-full max-w-sm rounded-2xl overflow-hidden bg-ink-800 shadow-lift"
+            style={{ border: "1px solid rgba(255,255,255,0.10)" }}
           >
             <div className="hazard h-1" aria-hidden />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-ink-900/8">
-              <h2 className="font-bold text-sm text-ink-900">Connect Wallet</h2>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+              <h2 className="font-bold text-sm text-ink-50">Connect Wallet</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={rescan}
                   disabled={rescanning}
                   title="Re-scan for registered wallets"
-                  className="text-ink-300 hover:text-ink-700 transition-colors p-0.5"
+                  className="text-ink-300 hover:text-ink-200 transition-colors p-0.5"
                 >
                   <RotateCw size={14} className={rescanning ? "animate-spin" : ""} />
                 </button>
                 <button
                   onClick={onClose}
-                  className="text-ink-300 hover:text-ink-700"
+                  className="text-ink-300 hover:text-ink-200"
                 >
                   <X size={16} />
                 </button>
@@ -99,7 +99,7 @@ export function WalletModal({
                 <button
                   onClick={() => onConnect(baret)}
                   disabled={connecting}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:bg-brand-50 disabled:opacity-60"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all hover:bg-brand-500/10 disabled:opacity-60"
                   style={{
                     background: "rgba(225,20,40,0.06)",
                     border: "1px solid rgba(225,20,40,0.45)",
@@ -112,7 +112,7 @@ export function WalletModal({
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-ink-900">
+                      <p className="text-sm font-bold text-ink-50">
                         Baret Wallet
                       </p>
                       <span
@@ -121,7 +121,7 @@ export function WalletModal({
                         Recommended
                       </span>
                     </div>
-                    <p className="text-xs text-ink-500 mt-0.5">
+                    <p className="text-xs text-ink-300 mt-0.5">
                       Pre-flight simulation + live monitoring on Casper
                     </p>
                   </div>
@@ -146,15 +146,15 @@ export function WalletModal({
                       onClick={() => onConnect(w)}
                       disabled={connecting}
                       className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:bg-bone"
-                      style={{ border: "1px solid rgba(20,20,20,0.08)" }}
+                      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
                     >
                       <WalletIcon
                         icon={w.icon}
                         fallback={
-                          <span className="text-sm font-bold text-ink-700">{w.name[0]}</span>
+                          <span className="text-sm font-bold text-ink-200">{w.name[0]}</span>
                         }
                       />
-                      <p className="text-sm text-ink-900 flex-1">{w.name}</p>
+                      <p className="text-sm text-ink-50 flex-1">{w.name}</p>
                       <span className="text-[10px] text-ink-400">
                         No Baret protection
                       </span>
@@ -190,13 +190,13 @@ function BaretMissing({ othersCount }: { othersCount: number }) {
         }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <HardHat size={14} className="text-brand-600" />
-          <p className="text-sm font-bold text-ink-900">
+          <HardHat size={14} className="text-brand-400" />
+          <p className="text-sm font-bold text-ink-50">
             Baret not detected
           </p>
         </div>
         {likelyInstalled ? (
-          <div className="space-y-2.5 text-xs text-ink-600 leading-relaxed">
+          <div className="space-y-2.5 text-xs text-ink-300 leading-relaxed">
             <p>
               We see other Casper wallets but not Baret. The extension is
               probably installed but didn't register itself on this page.
@@ -204,14 +204,14 @@ function BaretMissing({ othersCount }: { othersCount: number }) {
             <div
               className="rounded-lg p-2.5 space-y-1"
               style={{
-                background: "rgba(20,20,20,0.04)",
-                border: "1px solid rgba(20,20,20,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              <p className="text-ink-900 font-semibold text-[11px]">
+              <p className="text-ink-50 font-semibold text-[11px]">
                 Quick fix:
               </p>
-              <ol className="text-[11px] text-ink-600 space-y-0.5 list-decimal list-inside">
+              <ol className="text-[11px] text-ink-300 space-y-0.5 list-decimal list-inside">
                 <li>
                   Open the extensions page (
                   <span className="font-mono">about:debugging</span> or{" "}
@@ -235,10 +235,10 @@ function BaretMissing({ othersCount }: { othersCount: number }) {
               </a>
               <button
                 onClick={() => window.location.reload()}
-                className="px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 text-ink-600"
+                className="px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 text-ink-300"
                 style={{
-                  background: "rgba(20,20,20,0.04)",
-                  border: "1px solid rgba(20,20,20,0.10)",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.10)",
                 }}
               >
                 <AlertCircle size={11} /> Reload page
@@ -247,7 +247,7 @@ function BaretMissing({ othersCount }: { othersCount: number }) {
           </div>
         ) : (
           <a href="/install" className="block mt-2">
-            <div className="flex items-center gap-2 text-xs text-ink-600">
+            <div className="flex items-center gap-2 text-xs text-ink-300">
               <Download size={12} />
               <span>
                 Get one-click install · works in Chrome, Brave, Edge, Firefox
@@ -282,7 +282,7 @@ function WalletIcon({
         background:
           variant === "primary"
             ? "linear-gradient(135deg,#e11428,#9e0e1b)"
-            : "rgba(20,20,20,0.06)",
+            : "rgba(255,255,255,0.06)",
       }}
     >
       {icon ? (

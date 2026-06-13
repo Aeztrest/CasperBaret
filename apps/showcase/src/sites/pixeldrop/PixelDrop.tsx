@@ -7,12 +7,12 @@ import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
-  primary: "#141414",
+  primary: "#1a1b1f",
   accent: "#e11428",
-  bg: "#f6f6f7",
+  bg: "#0d0e11",
   name: "PixelDrop",
   logo: (
-    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: "#141414" }}>
+    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: "#1a1b1f" }}>
       <span style={{ color: "#e11428" }}>P</span>
     </div>
   ),
@@ -89,19 +89,19 @@ export default function PixelDrop() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-5xl">
           {/* Header */}
           <div className="text-center mb-16">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 bg-brand-50 text-brand-700">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 bg-brand-500/10 text-brand-300">
               LIVE MINT
             </span>
-            <h1 className="text-5xl font-black font-display text-ink-900 mb-4">
+            <h1 className="text-5xl font-black font-display text-ink-50 mb-4">
               Cyber Phantoms
             </h1>
-            <p className="text-ink-500 max-w-lg mx-auto">{NFT_COLLECTION.description}</p>
+            <p className="text-ink-300 max-w-lg mx-auto">{NFT_COLLECTION.description}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-10 items-start">
             {/* NFT preview — deliberate dark art block on the light page */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-              <div className="aspect-square rounded-2xl overflow-hidden relative bg-ink-900 shadow-card" style={{ border: "1px solid rgba(20,20,20,0.1)" }}>
+              <div className="aspect-square rounded-2xl overflow-hidden relative bg-ink-900 shadow-card" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                 {/* Generative art placeholder */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative w-40 h-40">
@@ -134,8 +134,8 @@ export default function PixelDrop() {
               {/* Progress */}
               <div className="card p-5 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-ink-500">Minted</span>
-                  <span className="font-semibold text-ink-900">{NFT_COLLECTION.minted.toLocaleString()} / {NFT_COLLECTION.supply.toLocaleString()}</span>
+                  <span className="text-ink-300">Minted</span>
+                  <span className="font-semibold text-ink-50">{NFT_COLLECTION.minted.toLocaleString()} / {NFT_COLLECTION.supply.toLocaleString()}</span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden bg-ink-900/10">
                   <motion.div
@@ -152,32 +152,32 @@ export default function PixelDrop() {
               {/* Price + qty */}
               <div className="card p-5 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-ink-500">Price per NFT</span>
+                  <span className="text-sm text-ink-300">Price per NFT</span>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 font-bold text-sm">{NFT_COLLECTION.price}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-300 font-bold text-sm">{NFT_COLLECTION.price}</span>
                     <span className="text-xs text-ink-400">{NFT_COLLECTION.priceUsd}</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-ink-500">Quantity</span>
+                  <span className="text-sm text-ink-300">Quantity</span>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-8 rounded-lg border border-ink-900/10 hover:border-ink-900/25 hover:bg-bone flex items-center justify-center text-ink-900 font-bold transition-colors">−</button>
-                    <span className="w-8 text-center font-bold text-ink-900">{qty}</span>
-                    <button onClick={() => setQty(Math.min(5, qty + 1))} className="w-8 h-8 rounded-lg border border-ink-900/10 hover:border-ink-900/25 hover:bg-bone flex items-center justify-center text-ink-900 font-bold transition-colors">+</button>
+                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-8 rounded-lg border border-white/10 hover:border-white/25 hover:bg-bone flex items-center justify-center text-ink-50 font-bold transition-colors">−</button>
+                    <span className="w-8 text-center font-bold text-ink-50">{qty}</span>
+                    <button onClick={() => setQty(Math.min(5, qty + 1))} className="w-8 h-8 rounded-lg border border-white/10 hover:border-white/25 hover:bg-bone flex items-center justify-center text-ink-50 font-bold transition-colors">+</button>
                   </div>
                 </div>
-                <div className="border-t border-ink-900/10 pt-4 flex justify-between">
-                  <span className="text-sm text-ink-500">Total</span>
-                  <span className="font-bold text-ink-900">{(0.1 * qty).toFixed(2)} CSPR <span className="text-ink-400 text-xs font-normal">${(17.5 * qty).toFixed(2)}</span></span>
+                <div className="border-t border-white/10 pt-4 flex justify-between">
+                  <span className="text-sm text-ink-300">Total</span>
+                  <span className="font-bold text-ink-50">{(0.1 * qty).toFixed(2)} CSPR <span className="text-ink-400 text-xs font-normal">${(17.5 * qty).toFixed(2)}</span></span>
                 </div>
               </div>
 
               {success ? (
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-4 rounded-xl text-center font-bold text-emerald-600 bg-emerald-50" style={{ border: "1px solid rgba(16,185,129,0.25)" }}>
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-4 rounded-xl text-center font-bold text-emerald-400 bg-emerald-500/10" style={{ border: "1px solid rgba(16,185,129,0.25)" }}>
                   ✓ {qty} Phantom{qty > 1 ? "s" : ""} Minted!
                 </motion.div>
               ) : (
-                <button onClick={handleMint} className="group w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-colors" style={{ background: "#141414" }} onMouseEnter={(e) => (e.currentTarget.style.background = "#322F2C")} onMouseLeave={(e) => (e.currentTarget.style.background = "#141414")}>
+                <button onClick={handleMint} className="group w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-colors" style={{ background: "#1a1b1f" }} onMouseEnter={(e) => (e.currentTarget.style.background = "#322F2C")} onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1b1f")}>
                   {connected ? `Mint ${qty} Phantom${qty > 1 ? "s" : ""}` : "Connect Wallet"}
                   <span style={{ color: "#e11428" }}>→</span>
                 </button>
@@ -186,9 +186,9 @@ export default function PixelDrop() {
               {/* Traits */}
               <div className="grid grid-cols-3 gap-2">
                 {["Background", "Body", "Eyes", "Mouth", "Accessory", "Aura"].map((t) => (
-                  <div key={t} className="rounded-xl p-2.5 text-center bg-bone border border-ink-900/10">
+                  <div key={t} className="rounded-xl p-2.5 text-center bg-bone border border-white/10">
                     <p className="text-xs text-ink-400">{t}</p>
-                    <p className="text-xs font-medium text-ink-600 mt-0.5">?</p>
+                    <p className="text-xs font-medium text-ink-300 mt-0.5">?</p>
                   </div>
                 ))}
               </div>
@@ -197,10 +197,10 @@ export default function PixelDrop() {
 
           {/* Demo toggle */}
           <div className="mt-12 flex justify-center">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-paper border border-ink-900/10 shadow-card">
-              <span className="text-xs text-ink-500">Simulate wallet drainer</span>
-              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#E8470A" : "rgba(20,20,20,0.1)" }}>
-                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-paper border border-white/10 shadow-card">
+              <span className="text-xs text-ink-300">Simulate wallet drainer</span>
+              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#E8470A" : "rgba(255,255,255,0.1)" }}>
+                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-ink-800 transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
               </button>
               {dangerous && <span className="text-xs font-medium text-[#E8470A]">⚠ Danger mode</span>}
             </div>

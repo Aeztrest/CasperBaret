@@ -20,9 +20,9 @@ const DOCS = [
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-paper text-ink-900">
+    <div className="min-h-screen bg-paper text-ink-50">
       {/* Header */}
-      <header className="fixed top-0 inset-x-0 z-50 border-b border-ink-900/8 bg-white/85 backdrop-blur-xl">
+      <header className="fixed top-0 inset-x-0 z-50 border-b border-white/8 bg-ink-800/85 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/home" className="flex items-center gap-2.5 group">
             <BaretMark />
@@ -31,7 +31,7 @@ export default function DocsPage() {
           </Link>
           <Link
             to="/home"
-            className="inline-flex items-center gap-1.5 text-xs text-ink-500 hover:text-ink-900 px-3 py-1.5 rounded-md hover:bg-ink-900/[0.04]"
+            className="inline-flex items-center gap-1.5 text-xs text-ink-300 hover:text-ink-50 px-3 py-1.5 rounded-md hover:bg-ink-900/[0.04]"
           >
             <ArrowLeft size={12} /> Home
           </Link>
@@ -40,16 +40,16 @@ export default function DocsPage() {
 
       <main className="max-w-5xl mx-auto px-6 pt-32 pb-24">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
             <span className="w-6 h-[3px] hazard rounded-full" />
             Documentation
           </p>
           <h1 className="mt-4 font-display text-5xl md:text-6xl font-bold tracking-tight leading-[1.04]">
             How Baret<br />works, in detail.
           </h1>
-          <p className="mt-6 text-ink-500 leading-relaxed max-w-2xl">
+          <p className="mt-6 text-ink-300 leading-relaxed max-w-2xl">
             Specs, protocols, and design notes that back every claim on the home page.
-            Each entry below maps to a file in the project's <code className="font-mono text-ink-700 bg-ink-900/5 px-1.5 py-0.5 rounded">docs/</code> tree.
+            Each entry below maps to a file in the project's <code className="font-mono text-ink-200 bg-ink-900/5 px-1.5 py-0.5 rounded">docs/</code> tree.
           </p>
         </motion.div>
 
@@ -77,14 +77,14 @@ export default function DocsPage() {
                 </div>
                 <ArrowUpRight size={16} className="text-ink-300 group-hover:text-brand-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <p className="mt-4 text-sm text-ink-500 leading-relaxed">{d.desc}</p>
+              <p className="mt-4 text-sm text-ink-300 leading-relaxed">{d.desc}</p>
             </motion.a>
           ))}
         </div>
 
         <div className="mt-16 card p-8 text-center bg-bone">
           <p className="font-display text-xl font-bold">Prefer to see it running?</p>
-          <p className="mt-2 text-ink-500 max-w-md mx-auto">
+          <p className="mt-2 text-ink-300 max-w-md mx-auto">
             The showcase puts every layer of the wallet through its paces in your browser.
           </p>
           <Link to="/" className="btn-brand mt-6 !px-5 !py-2.5">

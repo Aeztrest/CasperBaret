@@ -10,7 +10,7 @@ import { buildScenario } from "../../blackthorn/transactions";
 const THEME = {
   primary: "#9e0e1b",
   accent: "#e11428",
-  bg: "#fff5f6",
+  bg: "#0d0e11",
   name: "LaunchPad",
   logo: (
     <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg,#e11428,#9e0e1b)" }}>
@@ -78,7 +78,7 @@ export default function LaunchPad() {
 
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(225,20,40,0.07) 0%, transparent 60%)" }} />
 
-      <div className="min-h-screen pb-24 px-4 py-12 text-ink-900">
+      <div className="min-h-screen pb-24 px-4 py-12 text-ink-50">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8">
             {/* Project info */}
@@ -90,10 +90,10 @@ export default function LaunchPad() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h1 className="text-2xl font-display font-bold text-ink-900">{dangerous ? "ScamToken (SCAM)" : "CasperBridge (CSB)"}</h1>
-                      {!dangerous && <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: "rgba(225,20,40,0.12)", color: "#9e0e1b" }}>KYC Verified</span>}
+                      <h1 className="text-2xl font-display font-bold text-ink-50">{dangerous ? "ScamToken (SCAM)" : "CasperBridge (CSB)"}</h1>
+                      {!dangerous && <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: "rgba(225,20,40,0.12)", color: "#f4505f" }}>KYC Verified</span>}
                     </div>
-                    <p className="text-sm text-ink-500">
+                    <p className="text-sm text-ink-300">
                       {dangerous
                         ? "Revolutionary memecoin with 1000x potential. First mover in the nothing market."
                         : "Cross-chain Casper bridge enabling seamless asset transfers across 12 networks. Audited by OtterSec."}
@@ -109,9 +109,9 @@ export default function LaunchPad() {
                     { label: "Vesting", value: dangerous ? "None" : "12 months" },
                     { label: "Audit", value: dangerous ? "None" : "OtterSec" },
                   ].map(({ label, value }) => (
-                    <div key={label} className="bg-bone rounded-xl border border-ink-900/10 p-3">
-                      <p className="text-xs text-ink-500">{label}</p>
-                      <p className="text-sm font-bold text-ink-900 mt-0.5">{value}</p>
+                    <div key={label} className="bg-bone rounded-xl border border-white/10 p-3">
+                      <p className="text-xs text-ink-300">{label}</p>
+                      <p className="text-sm font-bold text-ink-50 mt-0.5">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -119,13 +119,13 @@ export default function LaunchPad() {
                 {/* Raise progress */}
                 <div className="card p-5 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-ink-500">Raised</span>
+                    <span className="text-ink-300">Raised</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-ink-900">${raised.toLocaleString()}</span>
+                      <span className="font-bold text-ink-50">${raised.toLocaleString()}</span>
                       <span className="text-ink-400">/ ${goal.toLocaleString()}</span>
                     </div>
                   </div>
-                  <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(20,20,20,0.08)" }}>
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
@@ -142,7 +142,7 @@ export default function LaunchPad() {
 
                 {/* Team / tokenomics */}
                 <div className="card p-5">
-                  <h3 className="text-sm font-semibold text-ink-500 uppercase tracking-wider mb-4">Tokenomics</h3>
+                  <h3 className="text-sm font-semibold text-ink-300 uppercase tracking-wider mb-4">Tokenomics</h3>
                   <div className="space-y-2">
                     {(dangerous
                       ? [
@@ -152,16 +152,16 @@ export default function LaunchPad() {
                         ]
                       : [
                           { label: "Public Sale", pct: 20, color: "#e11428" },
-                          { label: "Team (24mo vesting)", pct: 15, color: "#9e0e1b" },
+                          { label: "Team (24mo vesting)", pct: 15, color: "#f4505f" },
                           { label: "Ecosystem", pct: 35, color: "#f4505f" },
                           { label: "Liquidity", pct: 30, color: "#fb97a0" },
                         ]
                     ).map(({ label, pct: p, color }) => (
                       <div key={label} className="flex items-center gap-3">
-                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(20,20,20,0.08)" }}>
+                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
                           <div className="h-full rounded-full" style={{ width: `${p}%`, background: color }} />
                         </div>
-                        <span className="text-xs text-ink-500 w-36 text-right">{label} {p}%</span>
+                        <span className="text-xs text-ink-300 w-36 text-right">{label} {p}%</span>
                       </div>
                     ))}
                   </div>
@@ -173,21 +173,21 @@ export default function LaunchPad() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
               <div className="card p-5 sticky top-24 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Rocket size={16} style={{ color: "#9e0e1b" }} />
-                  <h2 className="font-bold text-ink-900 text-sm">Participate</h2>
+                  <Rocket size={16} style={{ color: "#f4505f" }} />
+                  <h2 className="font-bold text-ink-50 text-sm">Participate</h2>
                 </div>
 
-                <div className="p-4 rounded-xl bg-bone border border-ink-900/10">
-                  <p className="text-xs text-ink-500 mb-2">Contribution (USDC)</p>
+                <div className="p-4 rounded-xl bg-bone border border-white/10">
+                  <p className="text-xs text-ink-300 mb-2">Contribution (USDC)</p>
                   <input
                     type="number"
                     value={contribution}
                     onChange={(e) => setContribution(e.target.value)}
-                    className="w-full bg-transparent text-2xl font-bold text-ink-900 outline-none"
+                    className="w-full bg-transparent text-2xl font-bold text-ink-50 outline-none"
                   />
                   <div className="flex gap-1.5 mt-2">
                     {["100", "500", "1000"].map((v) => (
-                      <button key={v} onClick={() => setContribution(v)} className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors" style={{ background: "rgba(225,20,40,0.12)", color: "#9e0e1b" }}>
+                      <button key={v} onClick={() => setContribution(v)} className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors" style={{ background: "rgba(225,20,40,0.12)", color: "#f4505f" }}>
                         ${v}
                       </button>
                     ))}
@@ -201,14 +201,14 @@ export default function LaunchPad() {
                     { label: "Lock period", value: dangerous ? "None" : "3 months" },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between">
-                      <span className="text-ink-500">{label}</span>
-                      <span className="font-semibold text-ink-900">{value}</span>
+                      <span className="text-ink-300">{label}</span>
+                      <span className="font-semibold text-ink-50">{value}</span>
                     </div>
                   ))}
                 </div>
 
                 {success ? (
-                  <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-3.5 rounded-xl text-center font-bold text-sm" style={{ background: "rgba(225,20,40,0.1)", border: "1px solid rgba(225,20,40,0.25)", color: "#9e0e1b" }}>
+                  <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full py-3.5 rounded-xl text-center font-bold text-sm" style={{ background: "rgba(225,20,40,0.1)", border: "1px solid rgba(225,20,40,0.25)", color: "#f4505f" }}>
                     ✓ ${contribution} Invested
                   </motion.div>
                 ) : (
@@ -218,7 +218,7 @@ export default function LaunchPad() {
                 )}
 
                 {!dangerous && (
-                  <a href="#" className="flex items-center justify-center gap-1.5 text-xs text-ink-400 hover:text-ink-700 transition-colors">
+                  <a href="#" className="flex items-center justify-center gap-1.5 text-xs text-ink-400 hover:text-ink-200 transition-colors">
                     View audit report <ExternalLink size={11} />
                   </a>
                 )}
@@ -226,20 +226,20 @@ export default function LaunchPad() {
 
               {/* Social proof */}
               <div className="mt-4 card p-4 flex items-center gap-3">
-                <Users size={14} style={{ color: "#9e0e1b" }} />
-                <span className="text-xs text-ink-500"><strong className="text-ink-900">{dangerous ? "12" : "3,847"}</strong> participants</span>
+                <Users size={14} style={{ color: "#f4505f" }} />
+                <span className="text-xs text-ink-300"><strong className="text-ink-50">{dangerous ? "12" : "3,847"}</strong> participants</span>
               </div>
             </motion.div>
           </div>
 
           {/* Demo toggle */}
           <div className="mt-12 flex justify-center">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-ink-900/10">
-              <span className="text-xs text-ink-500">Simulate rug pull project</span>
-              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#ef4444" : "rgba(20,20,20,0.15)" }}>
-                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-card transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-white/10">
+              <span className="text-xs text-ink-300">Simulate rug pull project</span>
+              <button onClick={() => setDangerous(!dangerous)} className="relative w-10 h-5 rounded-full transition-colors" style={{ background: dangerous ? "#ef4444" : "rgba(255,255,255,0.15)" }}>
+                <div className="absolute top-0.5 w-4 h-4 rounded-full bg-ink-800 shadow-card transition-transform" style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }} />
               </button>
-              {dangerous && <span className="text-xs text-red-600 font-medium">⚠ Danger mode</span>}
+              {dangerous && <span className="text-xs text-red-400 font-medium">⚠ Danger mode</span>}
             </div>
           </div>
         </div>

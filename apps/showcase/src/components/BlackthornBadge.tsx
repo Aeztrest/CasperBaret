@@ -10,13 +10,13 @@ export function BlackthornBadge() {
       transition={{ delay: 1.2 }}
       className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full shadow-card"
       style={{
-        background: "rgba(255,255,255,0.92)",
+        background: "rgba(18,19,22,0.92)",
         border: "1px solid rgba(225,20,40,0.40)",
         backdropFilter: "blur(8px)",
       }}
     >
       <HardHat size={12} className="text-brand-500" />
-      <span className="text-xs font-semibold text-ink-700">Protected by Baret</span>
+      <span className="text-xs font-semibold text-ink-200">Protected by Baret</span>
     </motion.div>
   );
 }

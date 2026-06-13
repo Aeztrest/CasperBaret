@@ -21,7 +21,7 @@ export function ResultOverlay({ state, signature, message, onClose }: Props) {
           exit={{ opacity: 0 }}
           onClick={state !== "awaiting" ? onClose : undefined}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(20,20,20,0.45)", backdropFilter: "blur(8px)" }}
+          style={{ background: "rgba(255,255,255,0.45)", backdropFilter: "blur(8px)" }}
         >
           <motion.div
             initial={{ scale: 0.94, opacity: 0, y: 12 }}
@@ -29,8 +29,8 @@ export function ResultOverlay({ state, signature, message, onClose }: Props) {
             exit={{ scale: 0.94, opacity: 0, y: 12 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl p-7 text-center bg-white shadow-lift"
-            style={{ border: "1px solid rgba(20,20,20,0.10)" }}
+            className="w-full max-w-md rounded-2xl p-7 text-center bg-ink-800 shadow-lift"
+            style={{ border: "1px solid rgba(255,255,255,0.10)" }}
           >
             {state === "awaiting" && <Awaiting />}
             {state === "confirmed" && <Confirmed signature={signature ?? null} onClose={onClose} />}
@@ -51,8 +51,8 @@ function Awaiting() {
         <Loader2 size={22} className="animate-spin text-brand-500" />
       </div>
       <div>
-        <p className="text-lg font-bold text-ink-900">Approve in your Baret wallet</p>
-        <p className="text-xs text-ink-500 mt-1.5 leading-relaxed">
+        <p className="text-lg font-bold text-ink-50">Approve in your Baret wallet</p>
+        <p className="text-xs text-ink-300 mt-1.5 leading-relaxed">
           We've opened the wallet popup. It's simulating this transaction with Baret
           and checking your policy. Approve there to continue.
         </p>
@@ -67,19 +67,19 @@ function Confirmed({ signature, onClose }: { signature: string | null; onClose: 
     <div className="space-y-4">
       <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center"
         style={{ background: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.35)" }}>
-        <ShieldCheck size={24} className="text-emerald-600" />
+        <ShieldCheck size={24} className="text-emerald-400" />
       </div>
       <div>
-        <p className="text-lg font-bold text-emerald-600">Transaction confirmed</p>
-        <p className="text-xs text-ink-500 mt-1.5">Baret approved + your wallet signed.</p>
+        <p className="text-lg font-bold text-emerald-400">Transaction confirmed</p>
+        <p className="text-xs text-ink-300 mt-1.5">Baret approved + your wallet signed.</p>
       </div>
       {signature && (
         <a href={`https://testnet.cspr.live/deploy/${signature}`} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:text-ink-900 transition-colors font-semibold">
+          className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-ink-50 transition-colors font-semibold">
           View on cspr.live <ExternalLink size={11} />
         </a>
       )}
-      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-900 pt-2">Close</button>
+      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-50 pt-2">Close</button>
     </div>
   );
 }
@@ -89,20 +89,20 @@ function Blocked({ message, onClose }: { message: string | null; onClose: () => 
     <div className="space-y-4">
       <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center"
         style={{ background: "rgba(225,20,40,0.10)", border: "1px solid rgba(225,20,40,0.40)" }}>
-        <ShieldX size={24} className="text-brand-600" />
+        <ShieldX size={24} className="text-brand-400" />
       </div>
       <div>
-        <p className="text-lg font-bold text-brand-600">Blocked at the wallet</p>
-        <p className="text-xs text-ink-500 mt-1.5 leading-relaxed">
+        <p className="text-lg font-bold text-brand-400">Blocked at the wallet</p>
+        <p className="text-xs text-ink-300 mt-1.5 leading-relaxed">
           Baret's policy refused to sign this transaction. Your funds never moved.
         </p>
       </div>
       {message && (
-        <p className="text-[11px] text-ink-500 px-3 py-2 rounded-lg" style={{ background: "rgba(20,20,20,0.04)" }}>
+        <p className="text-[11px] text-ink-300 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }}>
           {message}
         </p>
       )}
-      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-900 pt-2">Close</button>
+      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-50 pt-2">Close</button>
     </div>
   );
 }
@@ -111,17 +111,17 @@ function ErrorState({ message, onClose }: { message: string | null; onClose: () 
   return (
     <div className="space-y-4">
       <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center"
-        style={{ background: "rgba(20,20,20,0.05)", border: "1px solid rgba(20,20,20,0.18)" }}>
-        <ShieldX size={24} className="text-ink-600" />
+        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.18)" }}>
+        <ShieldX size={24} className="text-ink-300" />
       </div>
-      <p className="text-lg font-bold text-ink-900">Couldn't reach the wallet</p>
+      <p className="text-lg font-bold text-ink-50">Couldn't reach the wallet</p>
       {message && (
-        <p className="text-[11px] text-ink-500 px-3 py-2 rounded-lg" style={{ background: "rgba(20,20,20,0.04)" }}>
+        <p className="text-[11px] text-ink-300 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }}>
           {message}
         </p>
       )}
       <p className="text-xs text-ink-400">Make sure the wallet is running at <code>localhost:5180</code> and popups are allowed.</p>
-      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-900 pt-2">Close</button>
+      <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-50 pt-2">Close</button>
     </div>
   );
 }

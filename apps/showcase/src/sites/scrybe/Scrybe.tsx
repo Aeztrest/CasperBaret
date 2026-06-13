@@ -167,12 +167,12 @@ export default function Scrybe() {
   }
 
   return (
-    <div className="min-h-screen text-ink-900 bg-paper">
-      <Link to="/" className="fixed top-4 left-4 z-50 flex items-center gap-1.5 text-xs text-ink-900/40 hover:text-ink-900/80 transition-colors">
+    <div className="min-h-screen text-ink-50 bg-paper">
+      <Link to="/" className="fixed top-4 left-4 z-50 flex items-center gap-1.5 text-xs text-ink-50/40 hover:text-ink-50/80 transition-colors">
         <ArrowLeft size={12} /> Showcase
       </Link>
 
-      <header className="border-b border-ink-900/10 sticky top-0 backdrop-blur-md z-30 bg-paper/85">
+      <header className="border-b border-white/10 sticky top-0 backdrop-blur-md z-30 bg-paper/85">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-ink-900">
@@ -180,7 +180,7 @@ export default function Scrybe() {
             </div>
             <div>
               <h1 className="font-display font-bold tracking-tight">Scrybe</h1>
-              <p className="text-[10px] text-ink-900/45 leading-none mt-0.5">Pay-per-question oracle</p>
+              <p className="text-[10px] text-ink-50/45 leading-none mt-0.5">Pay-per-question oracle</p>
             </div>
           </div>
 
@@ -188,7 +188,7 @@ export default function Scrybe() {
             {connected ? (
               <button
                 onClick={() => void disconnect()}
-                className="flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-600/25"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-600/25"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 {shortAddress}
@@ -196,12 +196,12 @@ export default function Scrybe() {
             ) : (
               <button
                 onClick={openWalletModal}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-bone text-ink-900/70 border border-ink-900/12 hover:bg-ink-900/[0.04]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-bone text-ink-50/70 border border-white/12 hover:bg-ink-900/[0.04]"
               >
                 <Lock size={10} /> Connect wallet
               </button>
             )}
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-brand-50 text-brand-700 border border-brand-500/20">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">
               $0.001/q
             </span>
           </div>
@@ -216,7 +216,7 @@ export default function Scrybe() {
                 Pay $0.001.<br />
                 <span className="text-brand-500">Get an answer.</span>
               </h2>
-              <p className="text-ink-900/55 mt-3 leading-relaxed max-w-xl">
+              <p className="text-ink-50/55 mt-3 leading-relaxed max-w-xl">
                 Pay-per-question oracle running the HTTP&nbsp;402 protocol on Casper testnet.
                 Your wallet pays in CEP-18 — under your caps — and answers settle on-chain.
               </p>
@@ -228,9 +228,9 @@ export default function Scrybe() {
                   key={s}
                   onClick={() => void submit(s)}
                   disabled={pending}
-                  className="text-left px-4 py-3.5 rounded-xl text-sm transition-all disabled:opacity-50 bg-paper border border-ink-900/10 shadow-card hover:border-brand-500/40 hover:shadow-lift"
+                  className="text-left px-4 py-3.5 rounded-xl text-sm transition-all disabled:opacity-50 bg-paper border border-white/10 shadow-card hover:border-brand-500/40 hover:shadow-lift"
                 >
-                  <span className="text-ink-900/80">{s}</span>
+                  <span className="text-ink-50/80">{s}</span>
                 </button>
               ))}
             </div>
@@ -260,7 +260,7 @@ export default function Scrybe() {
 
       <form
         onSubmit={onSubmit}
-        className="fixed bottom-0 inset-x-0 border-t border-ink-900/10 backdrop-blur-md bg-paper/92"
+        className="fixed bottom-0 inset-x-0 border-t border-white/10 backdrop-blur-md bg-paper/92"
       >
         <div className="max-w-3xl mx-auto px-6 py-3.5 flex items-center gap-3">
           <input
@@ -268,7 +268,7 @@ export default function Scrybe() {
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={connected ? "Ask Scrybe a question…" : "Connect a wallet first, then ask…"}
             disabled={pending}
-            className="flex-1 px-4 py-3 rounded-xl bg-bone border border-ink-900/12 text-ink-900 outline-none focus:border-brand-500/50 focus:bg-paper transition-all placeholder:text-ink-900/35 disabled:opacity-60"
+            className="flex-1 px-4 py-3 rounded-xl bg-bone border border-white/12 text-ink-50 outline-none focus:border-brand-500/50 focus:bg-paper transition-all placeholder:text-ink-50/35 disabled:opacity-60"
           />
           <button
             type="submit"
@@ -295,7 +295,7 @@ function ConversationEntry({ entry, onRetry }: {
     <div className="space-y-3">
       <div className="flex items-start gap-3 justify-end">
         <p className="pt-1 rounded-2xl rounded-tr-sm bg-ink-900 text-white px-4 py-2.5 leading-relaxed max-w-[80%]">{entry.question}</p>
-        <div className="w-7 h-7 rounded-full bg-ink-900/8 flex items-center justify-center text-[10px] text-ink-900/55 shrink-0">you</div>
+        <div className="w-7 h-7 rounded-full bg-ink-900/8 flex items-center justify-center text-[10px] text-ink-50/55 shrink-0">you</div>
       </div>
 
       {entry.phase !== "answered" && entry.phase !== "error" && (
@@ -308,7 +308,7 @@ function ConversationEntry({ entry, onRetry }: {
             <Sparkles size={11} className="text-brand-500" />
           </div>
           <div className="flex-1">
-            <p className="rounded-2xl rounded-tl-sm bg-bone text-ink-900 px-4 py-2.5 leading-relaxed">{entry.answer}</p>
+            <p className="rounded-2xl rounded-tl-sm bg-bone text-ink-50 px-4 py-2.5 leading-relaxed">{entry.answer}</p>
             {entry.settlement && (
               <SettlementReceipt
                 signature={entry.settlement}
@@ -348,7 +348,7 @@ function ProgressStep({ entry }: { entry: AnswerEntry }) {
   const idx = PHASES.findIndex((p) => p.key === entry.phase);
 
   return (
-    <div className="ml-10 rounded-lg p-3 space-y-1.5 bg-bone border border-ink-900/10">
+    <div className="ml-10 rounded-lg p-3 space-y-1.5 bg-bone border border-white/10">
       {PHASES.map((p, i) => {
         const done = i < idx;
         const active = i === idx;
@@ -356,14 +356,14 @@ function ProgressStep({ entry }: { entry: AnswerEntry }) {
           <div key={p.key} className="flex items-center gap-2.5 text-xs">
             <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
                   style={{
-                    background: done ? "rgba(5,150,105,0.14)" : active ? "rgba(225,20,40,0.14)" : "rgba(20,20,20,0.06)",
+                    background: done ? "rgba(5,150,105,0.14)" : active ? "rgba(225,20,40,0.14)" : "rgba(255,255,255,0.06)",
                   }}>
-              {done ? <span className="text-[9px] text-emerald-600">✓</span>
+              {done ? <span className="text-[9px] text-emerald-400">✓</span>
                 : active ? <Loader2 size={9} className="animate-spin" style={{ color: "#e11428" }} />
-                : <span className="text-[8px] text-ink-900/35">{i + 1}</span>}
+                : <span className="text-[8px] text-ink-50/35">{i + 1}</span>}
             </span>
             <span style={{
-              color: active ? "rgba(20,20,20,0.92)" : done ? "rgba(20,20,20,0.55)" : "rgba(20,20,20,0.35)",
+              color: active ? "rgba(255,255,255,0.92)" : done ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.35)",
               fontWeight: active ? 600 : 400,
             }}>
               {p.label}
@@ -383,18 +383,18 @@ function SettlementReceipt({ signature, payer, network, elapsedMs }: {
   const explorer = `${base}/deploy/${signature}`;
 
   return (
-    <div className="mt-3 rounded-xl p-3 text-xs flex items-start gap-2 bg-emerald-50 border border-emerald-600/20">
-      <ShieldCheck size={14} className="text-emerald-600 mt-0.5 shrink-0" />
+    <div className="mt-3 rounded-xl p-3 text-xs flex items-start gap-2 bg-emerald-500/10 border border-emerald-600/20">
+      <ShieldCheck size={14} className="text-emerald-400 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-emerald-700 font-medium mb-1">
+        <p className="text-emerald-300 font-medium mb-1">
           Paid · settled on {cluster} in {(elapsedMs / 1000).toFixed(1)}s
         </p>
         <a href={explorer} target="_blank" rel="noopener noreferrer"
-           className="font-mono text-[11px] text-emerald-700/80 hover:text-emerald-800 inline-flex items-center gap-1 break-all">
+           className="font-mono text-[11px] text-emerald-300/80 hover:text-emerald-800 inline-flex items-center gap-1 break-all">
           {signature.slice(0, 12)}…{signature.slice(-8)} <ExternalLink size={10} className="shrink-0" />
         </a>
         {payer && (
-          <p className="text-[10px] text-ink-900/40 mt-1 font-mono break-all">
+          <p className="text-[10px] text-ink-50/40 mt-1 font-mono break-all">
             from {payer.slice(0, 12)}…{payer.slice(-6)}
           </p>
         )}
@@ -406,13 +406,13 @@ function SettlementReceipt({ signature, payer, network, elapsedMs }: {
 function HowItWorksDisclosure() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl bg-paper border border-ink-900/10 shadow-card">
+    <div className="rounded-xl bg-paper border border-white/10 shadow-card">
       <button
         onClick={() => setOpen((s) => !s)}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-ink-900/[0.02] rounded-xl"
       >
-        <span className="text-xs uppercase tracking-wider text-ink-900/50 font-semibold">How it works</span>
-        <ChevronDown size={12} className={`text-ink-900/35 transition-transform ${open ? "" : "-rotate-90"}`} />
+        <span className="text-xs uppercase tracking-wider text-ink-50/50 font-semibold">How it works</span>
+        <ChevronDown size={12} className={`text-ink-50/35 transition-transform ${open ? "" : "-rotate-90"}`} />
       </button>
       {open && (
         <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -422,10 +422,10 @@ function HowItWorksDisclosure() {
             { n: "03", t: "Sign",    b: "Baret validates + signs" },
             { n: "04", t: "Settle",  b: "Facilitator settles on testnet" },
           ].map((s) => (
-            <div key={s.n} className="rounded-lg p-2.5 bg-bone border border-ink-900/8">
-              <p className="text-[9px] text-brand-700 font-mono">{s.n}</p>
-              <p className="text-[12px] font-bold mt-0.5 text-ink-900">{s.t}</p>
-              <p className="text-[10px] text-ink-900/50 mt-0.5 leading-snug">{s.b}</p>
+            <div key={s.n} className="rounded-lg p-2.5 bg-bone border border-white/8">
+              <p className="text-[9px] text-brand-300 font-mono">{s.n}</p>
+              <p className="text-[12px] font-bold mt-0.5 text-ink-50">{s.t}</p>
+              <p className="text-[10px] text-ink-50/50 mt-0.5 leading-snug">{s.b}</p>
             </div>
           ))}
         </div>

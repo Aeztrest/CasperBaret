@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /*
- * Baret design system — white-first, Casper red + ink-black.
+ * Baret design system — black-first, Casper red + bone-white.
+ * Dark surfaces, light type, red doing the pointing.
  * Heading face: Space Grotesk (font-display). Body: Inter. Code: JetBrains Mono.
  */
 
@@ -13,9 +14,12 @@
   }
   :root {
     --brand: #e11428;
-    --ink: #141414;
-    --paper: #ffffff;
-    --bone: #f6f6f7;
+    --ink: #f4f4f5;     /* light type on dark surfaces */
+    --paper: #0a0a0c;   /* page canvas (near-black) */
+    --bone: #121316;    /* secondary dark surface */
+    --surface: #16171a; /* elevated card */
+    --line: rgba(255, 255, 255, 0.10);
+    --line-strong: rgba(255, 255, 255, 0.20);
   }
   body {
     @apply font-sans antialiased;
@@ -24,7 +28,7 @@
     min-height: 100vh;
   }
   ::selection {
-    background: rgba(225, 20, 40, 0.25);
+    background: rgba(225, 20, 40, 0.35);
   }
 }
 
@@ -33,49 +37,49 @@
   .hazard {
     background: repeating-linear-gradient(
       135deg,
-      #141414 0 12px,
+      #2c2e33 0 12px,
       #e11428 12px 24px
     );
   }
   .hazard-soft {
     background: repeating-linear-gradient(
       135deg,
-      rgba(20, 20, 20, 0.08) 0 12px,
-      rgba(225, 20, 40, 0.16) 12px 24px
+      rgba(255, 255, 255, 0.10) 0 12px,
+      rgba(225, 20, 40, 0.22) 12px 24px
     );
   }
 
-  /* blueprint grid backdrop for light sections */
+  /* blueprint grid backdrop for dark sections */
   .blueprint {
     background-image:
-      linear-gradient(rgba(20, 20, 20, 0.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(20, 20, 20, 0.045) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 56px 56px;
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, var(--site-primary, #e11428), var(--site-accent, #141414));
+    background: linear-gradient(135deg, var(--site-primary, #e11428), var(--site-accent, #ffffff));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* light glass card (kept for legacy class names used across sites) */
+  /* dark glass card (kept for legacy class names used across sites) */
   .glass {
-    background: rgba(255, 255, 255, 0.78);
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(20, 20, 20, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.10);
   }
   .glass-hover {
     @apply glass transition-all duration-200;
   }
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: rgba(20, 20, 20, 0.18);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.20);
   }
 
   .site-bg {
-    background: var(--site-bg, #ffffff);
+    background: var(--site-bg, #0a0a0c);
   }
   .site-primary {
     color: var(--site-primary, #e11428);
@@ -100,20 +104,20 @@
   /* Baret brand buttons */
   .btn-ink {
     @apply inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-all;
-    background: #141414;
-    color: #fff;
+    background: #f4f4f5;
+    color: #121315;
   }
   .btn-ink:hover {
-    background: #2a2c31;
+    background: #e4e4e7;
   }
   .btn-brand {
     @apply inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-all;
     background: #e11428;
     color: #fff;
-    box-shadow: 0 4px 14px -2px rgba(225, 20, 40, 0.35);
+    box-shadow: 0 4px 18px -2px rgba(225, 20, 40, 0.45);
   }
   .btn-brand:hover {
-    background: #c00f20;
+    background: #f01b30;
     transform: translateY(-1px);
   }
   .btn-brand:active {
@@ -121,27 +125,28 @@
   }
   .btn-outline {
     @apply inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all;
-    border: 1px solid rgba(20, 20, 20, 0.16);
-    color: #141414;
-    background: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #f4f4f5;
+    background: transparent;
   }
   .btn-outline:hover {
-    border-color: rgba(20, 20, 20, 0.34);
-    background: #f6f6f7;
+    border-color: rgba(255, 255, 255, 0.36);
+    background: rgba(255, 255, 255, 0.05);
   }
 
-  /* standard light card */
+  /* standard dark card */
   .card {
-    @apply rounded-2xl bg-white;
-    border: 1px solid rgba(20, 20, 20, 0.09);
-    box-shadow: 0 1px 2px rgba(20, 20, 20, 0.05), 0 4px 16px -4px rgba(20, 20, 20, 0.06);
+    @apply rounded-2xl;
+    background: #16171a;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px -4px rgba(0, 0, 0, 0.5);
   }
   .card-hover {
     @apply card transition-all duration-200;
   }
   .card-hover:hover {
-    border-color: rgba(225, 20, 40, 0.45);
-    box-shadow: 0 2px 4px rgba(20, 20, 20, 0.06), 0 16px 40px -12px rgba(20, 20, 20, 0.14);
+    border-color: rgba(225, 20, 40, 0.55);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
     transform: translateY(-2px);
   }
 

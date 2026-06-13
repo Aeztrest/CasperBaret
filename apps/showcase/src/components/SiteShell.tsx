@@ -32,20 +32,20 @@ function NavBar({ theme, navLinks }: { theme: SiteTheme; navLinks?: Props["navLi
     <nav
       className="fixed top-0 inset-x-0 z-40 flex items-center justify-between px-6 py-4"
       style={{
-        background: "rgba(255,255,255,0.85)",
+        background: "rgba(12,13,16,0.82)",
         backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(20,20,20,0.08)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}
     >
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-2.5">
           {theme.logo}
-          <span className="font-bold text-ink-900">{theme.name}</span>
+          <span className="font-bold text-ink-50">{theme.name}</span>
         </div>
         {navLinks && (
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((l) => (
-              <a key={l.label} href={l.href ?? "#"} className="text-sm text-ink-400 hover:text-ink-900 transition-colors">
+              <a key={l.label} href={l.href ?? "#"} className="text-sm text-ink-400 hover:text-ink-50 transition-colors">
                 {l.label}
               </a>
             ))}
@@ -56,11 +56,11 @@ function NavBar({ theme, navLinks }: { theme: SiteTheme; navLinks?: Props["navLi
         {connected ? (
           <button
             onClick={disconnect}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white border border-ink-900/12 hover:border-ink-900/30 shadow-card transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-ink-800 border border-white/12 hover:border-white/30 shadow-card transition-all"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <ShieldCheck size={11} className="text-emerald-600" />
-            <span className="font-mono text-xs text-ink-600">{shortAddress}</span>
+            <ShieldCheck size={11} className="text-emerald-400" />
+            <span className="font-mono text-xs text-ink-300">{shortAddress}</span>
             <ChevronDown size={12} className="text-ink-300" />
           </button>
         ) : (
@@ -83,7 +83,7 @@ function NavBar({ theme, navLinks }: { theme: SiteTheme; navLinks?: Props["navLi
 export function SiteShell({ theme, children, navLinks }: Props) {
   return (
     <div
-      className="min-h-screen text-ink-900"
+      className="min-h-screen text-ink-50"
       style={{ "--site-primary": theme.primary, "--site-accent": theme.accent ?? theme.primary, "--site-bg": theme.bg, background: theme.bg } as React.CSSProperties}
     >
       <Link

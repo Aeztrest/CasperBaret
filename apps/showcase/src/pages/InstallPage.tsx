@@ -64,7 +64,7 @@ export default function InstallPage() {
   }, [browser]);
 
   return (
-    <div className="min-h-screen bg-paper text-ink-900 antialiased">
+    <div className="min-h-screen bg-paper text-ink-50 antialiased">
       <BackdropGrid />
       <LandingHeader cta={{ label: "Try the demo", to: "/showcase" }} />
 
@@ -99,7 +99,7 @@ function Hero({ browserCopy }: { browserCopy: string }) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-50 text-brand-700"
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-500/10 text-brand-300"
       >
         <Download size={11} /> Install Baret
       </motion.div>
@@ -119,7 +119,7 @@ function Hero({ browserCopy }: { browserCopy: string }) {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, delay: 0.15 }}
-        className="mt-6 text-lg text-ink-500 max-w-2xl leading-relaxed"
+        className="mt-6 text-lg text-ink-300 max-w-2xl leading-relaxed"
       >
         A Casper smart wallet with a transaction firewall.
         Pre-sign simulation, per-site policy, x402 payment caps — all enforced
@@ -170,7 +170,7 @@ function DownloadCard({
             <Icon size={22} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-brand-600 font-bold mb-1">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-brand-400 font-bold mb-1">
               {done ? "Downloaded — follow the steps below" : "Primary download"}
             </p>
             <p className="font-display text-lg font-bold tracking-tight">{primary.spec.label}</p>
@@ -179,21 +179,21 @@ function DownloadCard({
             </p>
           </div>
           <span className={`shrink-0 w-11 h-11 rounded-xl grid place-items-center border transition-all ${
-            done ? "border-emerald-500/40 bg-emerald-50 text-emerald-600" : "border-brand-500/40 bg-brand-50 text-brand-600"
+            done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-brand-500/40 bg-brand-500/10 text-brand-400"
           }`}>
             {done ? <Check size={16} /> : <Download size={16} />}
           </span>
         </a>
 
-        <div className="relative border-t border-ink-900/8">
+        <div className="relative border-t border-white/8">
           <a
             href={alt.spec.href}
             download
             onClick={() => onDownload(alt.key)}
-            className="flex items-center gap-3 px-6 py-3.5 text-[12px] text-ink-500 hover:text-ink-900 hover:bg-bone transition-colors"
+            className="flex items-center gap-3 px-6 py-3.5 text-[12px] text-ink-300 hover:text-ink-50 hover:bg-bone transition-colors"
           >
             {alt.key === "chrome" ? <Chrome size={12} /> : <Globe2 size={12} />}
-            <span>Also available: <span className="text-ink-900 font-semibold">{alt.spec.label}</span></span>
+            <span>Also available: <span className="text-ink-50 font-semibold">{alt.spec.label}</span></span>
             <Download size={11} className="ml-auto text-ink-400" />
           </a>
         </div>
@@ -222,11 +222,11 @@ function CopyButton({ text }: { text: string }) {
         } catch { /* clipboard blocked — the text is still visible to copy by hand */ }
       }}
       title="Copy — browsers block sites from opening this page for you"
-      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-800 bg-ink-900/[0.05] border border-ink-900/10 px-1.5 py-0.5 rounded hover:bg-ink-900/[0.09] transition-colors"
+      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-100 bg-ink-900/[0.05] border border-white/10 px-1.5 py-0.5 rounded hover:bg-ink-900/[0.09] transition-colors"
     >
       {text}
       {copied
-        ? <Check size={11} className="text-emerald-600" />
+        ? <Check size={11} className="text-emerald-400" />
         : <Copy size={11} className="text-ink-400" />}
     </button>
   );
@@ -244,7 +244,7 @@ function InstallSteps({ primary, downloaded }: { primary: Exclude<Browser, "othe
     >
       <header className="flex items-end justify-between mb-6">
         <div>
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
             <span className="w-6 h-[3px] hazard rounded-full" />
             Three steps to live
           </p>
@@ -310,7 +310,7 @@ function Step({
     <li className="flex items-start gap-4 p-5 card">
       <div
         className={`relative w-11 h-11 rounded-xl grid place-items-center font-mono text-xs font-bold shrink-0 ${
-          done ? "bg-emerald-50 text-emerald-600 border border-emerald-500/35" : "bg-ink-900 text-brand-400"
+          done ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/35" : "bg-ink-900 text-brand-400"
         }`}
       >
         {done ? <Check size={16} /> : <Icon size={16} />}
@@ -320,7 +320,7 @@ function Step({
       </div>
       <div className="flex-1 min-w-0 pt-1">
         <p className="font-display font-bold text-base tracking-tight">{title}</p>
-        <p className="text-sm text-ink-500 mt-1.5 leading-relaxed">{children}</p>
+        <p className="text-sm text-ink-300 mt-1.5 leading-relaxed">{children}</p>
       </div>
     </li>
   );
@@ -328,7 +328,7 @@ function Step({
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="font-mono text-[12px] text-ink-800 bg-ink-900/[0.05] border border-ink-900/10 px-1.5 py-0.5 rounded">
+    <code className="font-mono text-[12px] text-ink-100 bg-ink-900/[0.05] border border-white/10 px-1.5 py-0.5 rounded">
       {children}
     </code>
   );
@@ -350,7 +350,7 @@ function FeatureGrid() {
       viewport={{ once: true, margin: "-60px" }}
       className="mb-16"
     >
-      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600 mb-6">
+      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400 mb-6">
         <span className="w-6 h-[3px] hazard rounded-full" />
         Why this wallet
       </p>
@@ -361,7 +361,7 @@ function FeatureGrid() {
               <f.icon size={16} />
             </span>
             <p className="mt-4 font-display text-base font-bold tracking-tight">{f.title}</p>
-            <p className="mt-1.5 text-sm text-ink-500 leading-relaxed">{f.body}</p>
+            <p className="mt-1.5 text-sm text-ink-300 leading-relaxed">{f.body}</p>
           </div>
         ))}
       </div>
@@ -408,7 +408,7 @@ function AfterInstallCta() {
           </Link>
           <Link
             to="/docs"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-white/[0.06] hover:border-white/40 transition"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-ink-800/[0.06] hover:border-white/40 transition"
           >
             <BookOpen size={14} /> Read the docs <ArrowRight size={14} />
           </Link>

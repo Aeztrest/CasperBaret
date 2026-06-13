@@ -10,7 +10,7 @@ import { useWallet } from "../../wallet/context";
 const THEME = {
   primary: "#e11428",
   accent: "#c00f20",
-  bg: "#FFFFFF",
+  bg: "#0d0e11",
   name: "NovaSwap",
   logo: (
     <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: "linear-gradient(135deg,#e11428,#9e0e1b)" }}>
@@ -103,11 +103,11 @@ export default function NovaSwap() {
       <div className="min-h-screen flex flex-col items-center pt-8 pb-24 px-4">
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <h1 className="text-4xl font-black font-display text-ink-900 mb-3">
+          <h1 className="text-4xl font-black font-display text-ink-50 mb-3">
             Swap any token,{" "}
             <span className="text-gradient">instantly.</span>
           </h1>
-          <p className="text-ink-500 max-w-md">Best rates across all Casper liquidity sources. Powered by on-chain routing.</p>
+          <p className="text-ink-300 max-w-md">Best rates across all Casper liquidity sources. Powered by on-chain routing.</p>
         </motion.div>
 
         {/* Swap card */}
@@ -120,14 +120,14 @@ export default function NovaSwap() {
         >
           <div className="rounded-xl p-5 space-y-3 bg-paper">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-ink-500">Swap</span>
-              <button className="text-ink-400 hover:text-ink-700 transition-colors">
+              <span className="text-sm font-semibold text-ink-300">Swap</span>
+              <button className="text-ink-400 hover:text-ink-200 transition-colors">
                 <Settings size={15} />
               </button>
             </div>
 
             {/* From */}
-            <div className="p-4 rounded-xl" style={{ background: "#f6f6f7", border: "1px solid rgba(20,20,20,0.08)" }}>
+            <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You pay</span>
                 <span className="text-xs text-ink-400">Balance: 12.45</span>
@@ -137,10 +137,10 @@ export default function NovaSwap() {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="flex-1 bg-transparent text-2xl font-bold text-ink-900 outline-none min-w-0"
+                  className="flex-1 bg-transparent text-2xl font-bold text-ink-50 outline-none min-w-0"
                   placeholder="0"
                 />
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-900 bg-paper border border-ink-900/10">
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-50 bg-paper border border-white/10">
                   <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#e11428" }}>✦</span>
                   {fromToken.symbol}
                   <ChevronDown size={13} className="text-ink-400" />
@@ -153,7 +153,7 @@ export default function NovaSwap() {
             <div className="flex justify-center">
               <button
                 onClick={flip}
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:rotate-180 duration-300 bg-brand-50 text-brand-600"
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:rotate-180 duration-300 bg-brand-500/10 text-brand-400"
                 style={{ border: "1px solid rgba(225,20,40,0.3)" }}
               >
                 <ArrowUpDown size={15} />
@@ -161,16 +161,16 @@ export default function NovaSwap() {
             </div>
 
             {/* To */}
-            <div className="p-4 rounded-xl" style={{ background: "#f6f6f7", border: "1px solid rgba(20,20,20,0.08)" }}>
+            <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You receive</span>
                 <span className="text-xs text-ink-400">Balance: 245.30</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="flex-1 text-2xl font-bold text-ink-700">
+                <span className="flex-1 text-2xl font-bold text-ink-200">
                   {isNaN(outputAmount) ? "0" : outputAmount.toFixed(2)}
                 </span>
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-900 bg-paper border border-ink-900/10">
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-50 bg-paper border border-white/10">
                   <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#2775ca" }}>$</span>
                   {toToken.symbol}
                   <ChevronDown size={13} className="text-ink-400" />
@@ -190,7 +190,7 @@ export default function NovaSwap() {
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
-                className="w-full py-4 rounded-xl text-center font-bold text-emerald-600"
+                className="w-full py-4 rounded-xl text-center font-bold text-emerald-400"
                 style={{ background: "#ecfdf5", border: "1px solid rgba(16,185,129,0.3)" }}
               >
                 ✓ Swap Successful
@@ -208,16 +208,16 @@ export default function NovaSwap() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="mt-8 flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-ink-900/10"
+          className="mt-8 flex items-center gap-3 px-5 py-3 rounded-2xl bg-bone border border-white/10"
         >
-          <span className="text-xs text-ink-500">Simulate malicious swap</span>
+          <span className="text-xs text-ink-300">Simulate malicious swap</span>
           <button
             onClick={() => setDangerous(!dangerous)}
             className="relative w-10 h-5 rounded-full transition-colors"
-            style={{ background: dangerous ? "#E8470A" : "rgba(20,20,20,0.1)" }}
+            style={{ background: dangerous ? "#E8470A" : "rgba(255,255,255,0.1)" }}
           >
             <div
-              className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-card transition-transform"
+              className="absolute top-0.5 w-4 h-4 rounded-full bg-ink-800 shadow-card transition-transform"
               style={{ transform: dangerous ? "translateX(21px)" : "translateX(2px)" }}
             />
           </button>

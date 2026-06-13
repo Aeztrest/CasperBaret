@@ -33,7 +33,7 @@ const DETECTOR_TICKER = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-paper text-ink-900 antialiased">
+    <div className="min-h-screen bg-paper text-ink-50 antialiased">
       <BackdropGrid />
       <LandingHeader cta={{ label: "Try the demo", to: "/showcase" }} />
       <Hero />
@@ -65,7 +65,7 @@ function Hero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-50 text-brand-700"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-500/10 text-brand-300"
           >
             <span className="relative flex w-2 h-2">
               <span className="absolute inset-0 rounded-full bg-brand-500 animate-ping opacity-60" />
@@ -89,7 +89,7 @@ function Hero() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="mt-7 text-lg sm:text-xl text-ink-500 max-w-xl leading-relaxed"
+            className="mt-7 text-lg sm:text-xl text-ink-300 max-w-xl leading-relaxed"
           >
             Baret is the hard hat for your Casper wallet — every transaction is
             simulated, explained in plain language, and blocked when dangerous,
@@ -135,7 +135,7 @@ function Hero() {
 function Trust({ icon: Icon, label }: { icon: typeof Shield; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Icon size={12} className="text-brand-600" />
+      <Icon size={12} className="text-brand-400" />
       {label}
     </span>
   );
@@ -164,8 +164,8 @@ function LiveAnalysisCard() {
         <HazardRule className="h-1" />
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-            <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
+            <span className="w-2.5 h-2.5 rounded-full bg-ink-800/15" />
+            <span className="w-2.5 h-2.5 rounded-full bg-ink-800/15" />
             <span className="w-2.5 h-2.5 rounded-full bg-brand-500/70" />
           </div>
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-brand-400 font-semibold">
@@ -239,7 +239,7 @@ function LiveAnalysisCard() {
             transition={{ delay: 1.2 }}
             className="mt-5 grid grid-cols-2 gap-2"
           >
-            <button className="py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white/65 hover:bg-white/[0.05]">
+            <button className="py-2.5 rounded-xl text-sm font-semibold border border-white/15 text-white/65 hover:bg-ink-800/[0.05]">
               Cancel
             </button>
             <button className="py-2.5 rounded-xl text-sm font-bold bg-brand-500 hover:bg-brand-600 text-white flex items-center justify-center gap-1.5 transition-colors">
@@ -257,7 +257,7 @@ function LiveAnalysisCard() {
 function DetectorMarquee() {
   const items = [...DETECTOR_TICKER, ...DETECTOR_TICKER];
   return (
-    <section className="relative border-y border-ink-900/10 bg-bone py-5 overflow-hidden">
+    <section className="relative border-y border-white/10 bg-bone py-5 overflow-hidden">
       <div className="absolute inset-y-0 left-0 w-24 z-10 pointer-events-none"
            style={{ background: "linear-gradient(90deg,#f6f6f7 10%,transparent)" }} />
       <div className="absolute inset-y-0 right-0 w-24 z-10 pointer-events-none"
@@ -268,7 +268,7 @@ function DetectorMarquee() {
         transition={{ duration: 38, repeat: Infinity, ease: "linear" }}
       >
         {items.map((label, i) => (
-          <span key={i} className="inline-flex items-center gap-2 text-sm text-ink-500 font-mono">
+          <span key={i} className="inline-flex items-center gap-2 text-sm text-ink-300 font-mono">
             <Radar size={12} className="text-brand-500" />
             {label}
             <span className="text-ink-300">·</span>
@@ -307,10 +307,10 @@ function ProblemSolution() {
       sub="Today's wallets show you what to sign — not what will happen. Baret replaces the guessing with proof, on every signature."
     >
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-12 px-6 py-3 text-[10px] uppercase tracking-[0.2em] font-bold text-ink-400 border-b border-ink-900/8 bg-bone">
+        <div className="grid grid-cols-12 px-6 py-3 text-[10px] uppercase tracking-[0.2em] font-bold text-ink-400 border-b border-white/8 bg-bone">
           <div className="col-span-3">Moment</div>
           <div className="col-span-5 flex items-center gap-2"><XCircle size={11} className="text-ink-400" /> Today</div>
-          <div className="col-span-4 flex items-center gap-2 text-brand-700"><ShieldCheck size={11} /> With Baret</div>
+          <div className="col-span-4 flex items-center gap-2 text-brand-300"><ShieldCheck size={11} /> With Baret</div>
         </div>
         {rows.map((r, i) => (
           <Row key={r.moment} row={r} delay={i * 0.08} last={i === rows.length - 1} />
@@ -329,11 +329,11 @@ function Row({ row, delay, last }: { row: { moment: string; old: string; newWay:
       initial={{ opacity: 0, y: 8 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ delay, duration: 0.5 }}
-      className={`grid grid-cols-12 gap-4 px-6 py-6 ${last ? "" : "border-b border-ink-900/8"}`}
+      className={`grid grid-cols-12 gap-4 px-6 py-6 ${last ? "" : "border-b border-white/8"}`}
     >
-      <div className="col-span-3 font-display font-bold text-ink-900">{row.moment}</div>
-      <div className="col-span-5 text-ink-500 text-sm leading-relaxed">{row.old}</div>
-      <div className="col-span-4 text-ink-900 text-sm leading-relaxed font-medium">{row.newWay}</div>
+      <div className="col-span-3 font-display font-bold text-ink-50">{row.moment}</div>
+      <div className="col-span-5 text-ink-300 text-sm leading-relaxed">{row.old}</div>
+      <div className="col-span-4 text-ink-50 text-sm leading-relaxed font-medium">{row.newWay}</div>
     </motion.div>
   );
 }
@@ -400,17 +400,17 @@ function PillarCard({ tag, icon: Icon, title, body, points, index }:
 
       <div className="relative">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-[0.22em] font-bold text-brand-600">{tag}</span>
+          <span className="text-[10px] uppercase tracking-[0.22em] font-bold text-brand-400">{tag}</span>
           <span className="w-10 h-10 grid place-items-center rounded-xl bg-ink-900 text-brand-400">
             <Icon size={17} />
           </span>
         </div>
         <h3 className="mt-6 font-display text-2xl font-bold tracking-tight">{title}</h3>
-        <p className="mt-3 text-sm text-ink-500 leading-relaxed">{body}</p>
+        <p className="mt-3 text-sm text-ink-300 leading-relaxed">{body}</p>
 
         <ul className="mt-6 space-y-1.5">
           {points.map((pt) => (
-            <li key={pt} className="flex items-center gap-2 text-xs text-ink-600 font-medium">
+            <li key={pt} className="flex items-center gap-2 text-xs text-ink-300 font-medium">
               <span className="w-1.5 h-1.5 rounded-sm bg-brand-500" />
               {pt}
             </li>
@@ -466,9 +466,9 @@ function SiteCard({ path, name, tag, threat, index }:
           <ArrowUpRight size={16} className="text-ink-300 group-hover:text-brand-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
         </div>
 
-        <div className="mt-5 pt-4 border-t border-ink-900/8 flex items-center gap-2 text-[11px] text-ink-500">
+        <div className="mt-5 pt-4 border-t border-white/8 flex items-center gap-2 text-[11px] text-ink-300">
           <ShieldAlert size={11} className="text-brand-500" />
-          Catches: <span className="text-ink-900 font-semibold">{threat}</span>
+          Catches: <span className="text-ink-50 font-semibold">{threat}</span>
         </div>
       </Link>
     </motion.div>
@@ -487,11 +487,11 @@ function X402Section() {
     >
       <div className="card overflow-hidden">
         <div className="grid md:grid-cols-2">
-          <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-ink-900/8 bg-bone">
+          <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-white/8 bg-bone">
             <div className="inline-flex items-center gap-2 text-xs font-bold text-ink-400 uppercase tracking-wider">
               <Cpu size={12} /> Without a hard hat
             </div>
-            <p className="mt-4 font-display text-2xl font-bold leading-tight text-ink-700">
+            <p className="mt-4 font-display text-2xl font-bold leading-tight text-ink-200">
               An agent re-signs micro-payments<br /> while you sleep.
             </p>
             <ul className="mt-6 space-y-3">
@@ -501,15 +501,15 @@ function X402Section() {
                 "No way to kill the loop",
                 "No allowlist for facilitators or mints",
               ].map((t) => (
-                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-500">
+                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-300">
                   <XCircle size={14} className="text-ink-300 mt-0.5 shrink-0" /> {t}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="p-8 md:p-10 bg-white">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-brand-600 uppercase tracking-wider">
+          <div className="p-8 md:p-10 bg-ink-800">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-brand-400 uppercase tracking-wider">
               <HardHat size={13} /> With Baret
             </div>
             <p className="mt-4 font-display text-2xl font-bold leading-tight">
@@ -522,7 +522,7 @@ function X402Section() {
                 { i: Radar,    t: "Real-time drift monitor" },
                 { i: KeyRound, t: "One-tap on-chain revoke" },
               ].map(({ i: I, t }) => (
-                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-800 font-medium">
+                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-100 font-medium">
                   <I size={14} className="text-brand-500 mt-0.5 shrink-0" /> {t}
                 </li>
               ))}
@@ -545,7 +545,7 @@ function StatsBar() {
   ];
   return (
     <section className="px-6 py-20">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-ink-900/10 bg-ink-900/10 shadow-card">
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/10 bg-ink-900/10 shadow-card">
         {stats.map((s, i) => (
           <motion.div
             key={s.label}
@@ -553,7 +553,7 @@ function StatsBar() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ delay: i * 0.08 }}
-            className="bg-white px-6 py-10 text-center"
+            className="bg-ink-800 px-6 py-10 text-center"
           >
             <div className="font-display text-5xl font-bold tracking-tight">
               {s.value === "0" ? <span className="text-brand-500">0</span> : s.value}
@@ -598,7 +598,7 @@ function FinalCta() {
             </Link>
             <Link
               to="/install"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-white/[0.06] hover:border-white/40 transition"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-ink-800/[0.06] hover:border-white/40 transition"
             >
               Install the wallet <ArrowRight size={14} />
             </Link>
@@ -622,7 +622,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`px-6 py-24 ${tone === "bone" ? "bg-bone border-y border-ink-900/5" : ""}`}>
+    <section className={`px-6 py-24 ${tone === "bone" ? "bg-bone border-y border-white/5" : ""}`}>
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -632,12 +632,12 @@ function Section({
           className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12"
         >
           <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
               <span className="w-6 h-[3px] hazard rounded-full" />
               {eyebrow}
             </p>
             <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tight leading-[1.08]">{title}</h2>
-            {sub && <p className="mt-5 text-ink-500 leading-relaxed">{sub}</p>}
+            {sub && <p className="mt-5 text-ink-300 leading-relaxed">{sub}</p>}
           </div>
           {action && (
             <Link to={action.to} className="btn-outline self-start md:self-auto !px-4 !py-2.5">

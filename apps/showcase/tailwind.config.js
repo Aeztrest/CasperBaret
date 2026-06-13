@@ -35,13 +35,13 @@ export default {
           800: "#1A1B1F",
           900: "#121315",
         },
-        paper: "#FFFFFF",
-        bone:  "#F6F6F7",
+        paper: "#0A0A0C",
+        bone:  "#121316",
       },
       boxShadow: {
-        card:  "0 1px 2px rgba(18,19,21,0.05), 0 4px 16px -4px rgba(18,19,21,0.06)",
-        lift:  "0 2px 4px rgba(18,19,21,0.06), 0 16px 40px -12px rgba(18,19,21,0.14)",
-        brand: "0 4px 14px -2px rgba(225,20,40,0.35)",
+        card:  "0 1px 2px rgba(0,0,0,0.4), 0 4px 16px -4px rgba(0,0,0,0.5)",
+        lift:  "0 2px 4px rgba(0,0,0,0.4), 0 16px 40px -12px rgba(0,0,0,0.6)",
+        brand: "0 4px 18px -2px rgba(225,20,40,0.45)",
       },
       animation: {
         "spin-slow": "spin 3s linear infinite",

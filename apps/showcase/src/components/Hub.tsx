@@ -144,7 +144,7 @@ const DETECTOR_TAGS = [
 
 export function Hub() {
   return (
-    <div className="min-h-screen bg-paper text-ink-900 antialiased">
+    <div className="min-h-screen bg-paper text-ink-50 antialiased">
       <BackdropGrid />
       <LandingHeader />
       <Hero />
@@ -168,7 +168,7 @@ function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-50 text-brand-700"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] uppercase tracking-[0.18em] font-bold border border-brand-500/30 bg-brand-500/10 text-brand-300"
         >
           <LivePulse /> Live showcase · Casper testnet
         </motion.div>
@@ -190,7 +190,7 @@ function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.18 }}
-          className="mt-7 text-lg text-ink-500 max-w-2xl leading-relaxed"
+          className="mt-7 text-lg text-ink-300 max-w-2xl leading-relaxed"
         >
           Each site below looks production-ready and behaves like the real thing.
           Connect a wallet, push a button, and watch Baret intercept the
@@ -212,7 +212,7 @@ function Hero() {
           </Link>
           <Link
             to="/docs"
-            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold text-ink-500 hover:text-ink-900 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold text-ink-300 hover:text-ink-50 transition-all"
           >
             <BookOpen size={14} /> Read the docs
           </Link>
@@ -249,7 +249,7 @@ function ThreatTicker() {
   }, [phrases.length]);
 
   return (
-    <div className="mt-10 inline-flex items-center gap-3 px-4 py-2.5 rounded-xl card text-sm text-ink-500">
+    <div className="mt-10 inline-flex items-center gap-3 px-4 py-2.5 rounded-xl card text-sm text-ink-300">
       <Radar size={14} className="text-brand-500" />
       <span>Right now Baret is watching for</span>
       <span className="relative inline-block min-w-[170px] h-5 overflow-hidden">
@@ -260,7 +260,7 @@ function ThreatTicker() {
             animate={{ y: 0,  opacity: 1 }}
             exit={{    y: -20, opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="absolute inset-0 text-ink-900 font-bold"
+            className="absolute inset-0 text-ink-50 font-bold"
           >
             {phrases[i]}.
           </motion.span>
@@ -281,7 +281,7 @@ function StatsRow() {
   ];
   return (
     <section className="px-6 pt-8 pb-16">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-ink-900/10 bg-ink-900/10 shadow-card">
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-white/10 bg-ink-900/10 shadow-card">
         {stats.map((s, i) => (
           <motion.div
             key={s.label}
@@ -289,7 +289,7 @@ function StatsRow() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ delay: i * 0.06 }}
-            className="bg-white px-6 py-8 text-center"
+            className="bg-ink-800 px-6 py-8 text-center"
           >
             <div className="font-display text-4xl md:text-5xl font-bold tracking-tight">
               <Counter to={s.value} /><span className="text-brand-500">{s.suffix}</span>
@@ -331,7 +331,7 @@ function ShowcaseSection() {
   const filtered = SHOWCASE.filter((s) => active === "all" || s.bucket === active);
 
   return (
-    <section id="showcase" className="px-6 py-20 scroll-mt-20 bg-bone border-y border-ink-900/5">
+    <section id="showcase" className="px-6 py-20 scroll-mt-20 bg-bone border-y border-white/5">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -340,14 +340,14 @@ function ShowcaseSection() {
           className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10"
         >
           <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
               <span className="w-6 h-[3px] hazard rounded-full" />
               The scenarios
             </p>
             <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tight leading-[1.08]">
               Every threat you're afraid of, dressed as a normal dApp.
             </h2>
-            <p className="mt-5 text-ink-500 leading-relaxed">
+            <p className="mt-5 text-ink-300 leading-relaxed">
               Filter by the kind of attack you want to see. Each card opens a fully
               functional demo with the threat armed; Baret catches it the moment
               you press Sign.
@@ -366,12 +366,12 @@ function ShowcaseSection() {
                 onClick={() => setActive(f.bucket)}
                 className={`group relative inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-all ${
                   on
-                    ? "bg-ink-900 text-white border-ink-900"
-                    : "border-ink-900/15 bg-white text-ink-500 hover:text-ink-900 hover:border-ink-900/35"
+                    ? "bg-ink-900 text-white border-white/12"
+                    : "border-white/15 bg-ink-800 text-ink-300 hover:text-ink-50 hover:border-white/35"
                 }`}
               >
                 <span className="font-semibold">{f.label}</span>
-                <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${on ? "bg-brand-500 text-white" : "bg-ink-900/5 text-ink-500"}`}>{count}</span>
+                <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${on ? "bg-brand-500 text-white" : "bg-ink-900/5 text-ink-300"}`}>{count}</span>
               </button>
             );
           })}
@@ -440,7 +440,7 @@ function SiteCard({ site }: { site: SiteSpec }) {
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-display font-bold text-base tracking-tight">{site.name}</p>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 border border-ink-900/12 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 border border-white/12 px-1.5 py-0.5 rounded">
                   {site.category}
                 </span>
               </div>
@@ -450,18 +450,18 @@ function SiteCard({ site }: { site: SiteSpec }) {
           <span className="text-[10px] font-mono text-ink-300">{site.index}</span>
         </div>
 
-        <p className="relative mt-5 text-sm text-ink-500 leading-relaxed">{site.description}</p>
+        <p className="relative mt-5 text-sm text-ink-300 leading-relaxed">{site.description}</p>
 
-        <div className="relative mt-5 rounded-xl border border-brand-500/30 bg-brand-50 px-3 py-2.5 flex items-center gap-2">
-          <AlertTriangle size={12} className="text-brand-600 shrink-0" />
-          <p className="text-[12px] text-brand-800 font-semibold">{site.threat}</p>
+        <div className="relative mt-5 rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-2.5 flex items-center gap-2">
+          <AlertTriangle size={12} className="text-brand-400 shrink-0" />
+          <p className="text-[12px] text-brand-300 font-semibold">{site.threat}</p>
         </div>
 
-        <div className="relative mt-5 pt-4 border-t border-ink-900/8">
+        <div className="relative mt-5 pt-4 border-t border-white/8">
           <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-ink-400 mb-2">Watch for</p>
           <ul className="space-y-1.5">
             {site.catches.map((c) => (
-              <li key={c} className="flex items-start gap-2 text-[12px] text-ink-600 leading-snug">
+              <li key={c} className="flex items-start gap-2 text-[12px] text-ink-300 leading-snug">
                 <CircleCheck size={12} className="text-brand-500 mt-0.5 shrink-0" />
                 <span>{c}</span>
               </li>
@@ -473,7 +473,7 @@ function SiteCard({ site }: { site: SiteSpec }) {
           <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-400">
             <LivePulse /> Live · Testnet
           </span>
-          <span className="inline-flex items-center gap-1 text-sm font-bold text-ink-900">
+          <span className="inline-flex items-center gap-1 text-sm font-bold text-ink-50">
             Open dApp
             <ArrowUpRight size={14} className="text-brand-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
           </span>
@@ -502,7 +502,7 @@ function HowItWorks() {
           viewport={{ once: true, margin: "-80px" }}
           className="max-w-2xl"
         >
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
             <span className="w-6 h-[3px] hazard rounded-full" />
             How a scenario plays out
           </p>
@@ -530,7 +530,7 @@ function HowItWorks() {
                 <span className="font-mono text-[11px] font-bold text-brand-500">{s.n}</span>
               </div>
               <p className="mt-5 font-display font-bold tracking-tight">{s.title}</p>
-              <p className="mt-1.5 text-sm text-ink-500 leading-relaxed">{s.desc}</p>
+              <p className="mt-1.5 text-sm text-ink-300 leading-relaxed">{s.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -543,7 +543,7 @@ function HowItWorks() {
 
 function DetectorGrid() {
   return (
-    <section className="px-6 py-24 bg-bone border-y border-ink-900/5">
+    <section className="px-6 py-24 bg-bone border-y border-white/5">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -552,14 +552,14 @@ function DetectorGrid() {
           className="grid md:grid-cols-2 gap-10 items-start"
         >
           <div>
-            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-600">
+            <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
               <span className="w-6 h-[3px] hazard rounded-full" />
               Under the hood
             </p>
             <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tight leading-[1.08]">
               25+ detectors fire on every signature.
             </h2>
-            <p className="mt-5 text-ink-500 leading-relaxed">
+            <p className="mt-5 text-ink-300 leading-relaxed">
               Each scenario triggers a different subset. The popup shows you only
               the findings that matter — the ones that explain why the transaction
               is suspicious, in one sentence.
@@ -580,13 +580,13 @@ function DetectorGrid() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-40px" }}
                   transition={{ delay: i * 0.03 }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-ink-600 border border-ink-900/10 bg-white font-mono shadow-card"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-ink-300 border border-white/10 bg-ink-800 font-mono shadow-card"
                 >
                   <Radar size={11} className="text-brand-500" />
                   {t}
                 </motion.span>
               ))}
-              <span className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-ink-400 border border-dashed border-ink-900/20 bg-white font-mono">
+              <span className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-ink-400 border border-dashed border-white/20 bg-ink-800 font-mono">
                 + 9 more
               </span>
             </div>
@@ -605,7 +605,7 @@ function DetectorPill({ icon: Icon, title, body }: { icon: typeof Shield; title:
       </span>
       <div className="min-w-0">
         <p className="text-sm font-bold">{title}</p>
-        <p className="text-[12px] text-ink-500 mt-0.5 leading-snug">{body}</p>
+        <p className="text-[12px] text-ink-300 mt-0.5 leading-snug">{body}</p>
       </div>
     </div>
   );
@@ -646,7 +646,7 @@ function FinalCta() {
             </a>
             <Link
               to="/install"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-white/[0.06] hover:border-white/40 transition"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-semibold border border-white/20 text-white hover:bg-ink-800/[0.06] hover:border-white/40 transition"
             >
               Get the wallet <ArrowRight size={14} />
             </Link>
