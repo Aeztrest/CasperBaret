@@ -1,12 +1,13 @@
-/** Install page — Baret light theme. */
+/** Install page — Baret dark theme. Guided, interactive sideload walkthrough. */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Download, Chrome, Globe2, ShieldCheck, Sparkles, Lock, Cpu, Eye,
   Check, ChevronRight, ArrowRight, MonitorSmartphone, FileArchive,
-  FolderOpen, BookOpen, HardHat, Copy,
+  FolderOpen, BookOpen, HardHat, Copy, ToggleRight, MousePointerClick,
+  Pin,
 } from "lucide-react";
 import { BackdropGrid, LandingHeader, LandingFooter, HazardRule } from "../components/LandingChrome";
 
@@ -15,11 +16,12 @@ type Browser = "chrome" | "firefox" | "other";
 interface ArtefactSpec {
   label: string;
   href: string;
+  file: string;
 }
 
 const ARTEFACTS: Record<Exclude<Browser, "other">, ArtefactSpec> = {
-  chrome:  { label: "Baret for Chrome / Brave / Edge", href: "/blackthorn-chrome.zip" },
-  firefox: { label: "Baret for Firefox",               href: "/blackthorn-firefox.zip" },
+  chrome:  { label: "Baret for Chrome / Brave / Edge", href: "/blackthorn-chrome.zip",  file: "blackthorn-chrome.zip"  },
+  firefox: { label: "Baret for Firefox",               href: "/blackthorn-firefox.zip", file: "blackthorn-firefox.zip" },
 };
 
 function detectBrowser(): Browser {
@@ -31,36 +33,16 @@ function detectBrowser(): Browser {
 }
 
 export default function InstallPage() {
-  const [browser, setBrowser]             = useState<Browser>("other");
-  const [downloadedKey, setDownloadedKey] = useState<string | null>(null);
-
+  const [browser, setBrowser] = useState<Browser>("other");
   useEffect(() => { setBrowser(detectBrowser()); }, []);
-
-  // Kick the download off automatically so visitors land ready to install.
-  // Browsers allow one programmatic download per gesture-less load; the
-  // download button below stays as a fallback if a browser blocks it.
-  const autoFired = useRef(false);
-  useEffect(() => {
-    if (autoFired.current) return;
-    autoFired.current = true;
-    const key: Exclude<Browser, "other"> =
-      detectBrowser() === "firefox" ? "firefox" : "chrome";
-    const a = document.createElement("a");
-    a.href = ARTEFACTS[key].href;
-    a.download = "";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setDownloadedKey(key);
-  }, []);
 
   const primaryKey = browser === "firefox" ? "firefox" : "chrome";
   const altKey     = primaryKey === "chrome" ? "firefox" : "chrome";
 
   const browserCopy = useMemo(() => {
-    if (browser === "firefox") return "We detected Firefox.";
-    if (browser === "chrome")  return "We detected a Chromium browser (Chrome / Brave / Edge).";
-    return "Pick the build that matches your browser.";
+    if (browser === "firefox") return "Detected Firefox — these steps are tuned for it.";
+    if (browser === "chrome")  return "Detected a Chromium browser (Chrome / Brave / Edge).";
+    return "Pick the build that matches your browser below.";
   }, [browser]);
 
   return (
@@ -68,20 +50,10 @@ export default function InstallPage() {
       <BackdropGrid />
       <LandingHeader cta={{ label: "Try the demo", to: "/showcase" }} />
 
-      <main className="relative max-w-5xl mx-auto px-6 pt-36 pb-24">
+      <main className="relative max-w-3xl mx-auto px-6 pt-36 pb-24">
         <Hero browserCopy={browserCopy} />
-
-        <DownloadCard
-          primary={{ key: primaryKey, spec: ARTEFACTS[primaryKey] }}
-          alt={{     key: altKey,     spec: ARTEFACTS[altKey] }}
-          downloadedKey={downloadedKey}
-          onDownload={setDownloadedKey}
-        />
-
-        <InstallSteps primary={primaryKey} downloaded={downloadedKey === primaryKey} />
-
+        <InstallGuide primaryKey={primaryKey} altKey={altKey} />
         <FeatureGrid />
-
         <AfterInstallCta />
       </main>
 
@@ -94,7 +66,7 @@ export default function InstallPage() {
 
 function Hero({ browserCopy }: { browserCopy: string }) {
   return (
-    <section className="mb-14">
+    <section className="mb-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -121,16 +93,15 @@ function Hero({ browserCopy }: { browserCopy: string }) {
         transition={{ duration: 0.65, delay: 0.15 }}
         className="mt-6 text-lg text-ink-300 max-w-2xl leading-relaxed"
       >
-        A Casper smart wallet with a transaction firewall.
-        Pre-sign simulation, per-site policy, x402 payment caps — all enforced
-        before your keys ever sign.
+        A Casper smart wallet with a transaction firewall. Follow the steps —
+        each one ticks off as you go.
       </motion.p>
 
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.65, delay: 0.3 }}
-        className="mt-6 flex items-center gap-2 text-[12px] text-ink-400"
+        className="mt-5 flex items-center gap-2 text-[12px] text-ink-400"
       >
         <MonitorSmartphone size={12} className="text-brand-500" /> {browserCopy}
       </motion.p>
@@ -138,76 +109,319 @@ function Hero({ browserCopy }: { browserCopy: string }) {
   );
 }
 
-/* ─────────────────────────── download card ─────────────────────────── */
+/* ─────────────────────────── guide ─────────────────────────── */
 
-function DownloadCard({
-  primary, alt, downloadedKey, onDownload,
+interface StepDef {
+  title: string;
+  icon: typeof FileArchive;
+  body: (ctx: { markDone: () => void }) => React.ReactNode;
+}
+
+function InstallGuide({
+  primaryKey, altKey,
 }: {
-  primary: { key: Exclude<Browser, "other">; spec: ArtefactSpec };
-  alt:     { key: Exclude<Browser, "other">; spec: ArtefactSpec };
-  downloadedKey: string | null;
-  onDownload: (key: Exclude<Browser, "other">) => void;
+  primaryKey: Exclude<Browser, "other">;
+  altKey: Exclude<Browser, "other">;
 }) {
-  const done = downloadedKey === primary.key;
-  const Icon = primary.key === "chrome" ? Chrome : Globe2;
+  const steps = primaryKey === "chrome"
+    ? chromeSteps(ARTEFACTS.chrome, ARTEFACTS[altKey])
+    : firefoxSteps(ARTEFACTS.firefox, ARTEFACTS[altKey]);
+
+  const [done, setDone] = useState<boolean[]>(() => steps.map(() => false));
+  const completed = done.filter(Boolean).length;
+  const allDone = completed === steps.length;
+  // The "current" step is the first not-yet-done one.
+  const activeIndex = done.findIndex((d) => !d);
+
+  const setStep = (i: number, value: boolean) =>
+    setDone((prev) => prev.map((v, idx) => (idx === i ? value : v)));
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="mb-14"
+      className="mb-16"
     >
-      <div className="relative rounded-3xl overflow-hidden card shadow-lift">
-        <HazardRule className="h-1" />
-        <a
-          href={primary.spec.href}
-          download
-          onClick={() => onDownload(primary.key)}
-          className="relative flex items-center gap-5 p-6 sm:p-7 transition-colors hover:bg-bone"
-        >
-          <div className="w-14 h-14 rounded-xl grid place-items-center shrink-0 bg-ink-900 text-brand-400">
-            <Icon size={22} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-brand-400 font-bold mb-1">
-              {done ? "Downloaded — follow the steps below" : "Primary download"}
-            </p>
-            <p className="font-display text-lg font-bold tracking-tight">{primary.spec.label}</p>
-            <p className="text-[12px] text-ink-400 mt-1">
-              ZIP archive · Latest build · MV3 manifest
-            </p>
-          </div>
-          <span className={`shrink-0 w-11 h-11 rounded-xl grid place-items-center border transition-all ${
-            done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-brand-500/40 bg-brand-500/10 text-brand-400"
-          }`}>
-            {done ? <Check size={16} /> : <Download size={16} />}
-          </span>
-        </a>
-
-        <div className="relative border-t border-white/8">
-          <a
-            href={alt.spec.href}
-            download
-            onClick={() => onDownload(alt.key)}
-            className="flex items-center gap-3 px-6 py-3.5 text-[12px] text-ink-300 hover:text-ink-50 hover:bg-bone transition-colors"
-          >
-            {alt.key === "chrome" ? <Chrome size={12} /> : <Globe2 size={12} />}
-            <span>Also available: <span className="text-ink-50 font-semibold">{alt.spec.label}</span></span>
-            <Download size={11} className="ml-auto text-ink-400" />
-          </a>
-        </div>
+      {/* progress header */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
+          <span className="w-6 h-[3px] hazard rounded-full" />
+          {steps.length} steps to live
+        </p>
+        <span className="text-[11px] font-mono text-ink-400">
+          {completed}/{steps.length} done
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden mb-7">
+        <motion.div
+          className="h-full hazard"
+          initial={false}
+          animate={{ width: `${(completed / steps.length) * 100}%` }}
+          transition={{ type: "spring", stiffness: 200, damping: 26 }}
+        />
       </div>
 
-      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-ink-400">
-        <Download size={11} className="text-brand-500" />
-        Your download starts automatically — if it didn't, tap the card above.
+      {allDone && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-5 flex items-center gap-2.5 p-4 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
+        >
+          <ShieldCheck size={18} className="shrink-0" />
+          <p className="text-sm font-semibold">
+            All set — open Baret from your toolbar and create your wallet.
+          </p>
+        </motion.div>
+      )}
+
+      <ol className="space-y-3">
+        {steps.map((step, i) => (
+          <GuideStep
+            key={step.title}
+            n={i + 1}
+            step={step}
+            done={done[i]}
+            active={i === activeIndex}
+            onToggle={() => setStep(i, !done[i])}
+            markDone={() => setStep(i, true)}
+          />
+        ))}
+      </ol>
+
+      <p className="mt-5 flex items-start gap-2 text-[12px] text-ink-400 leading-relaxed">
+        <Sparkles size={13} className="text-brand-400 mt-0.5 shrink-0" />
+        One-click install from the Chrome Web Store &amp; Firefox Add-ons is on
+        the way. Until then this developer load takes ~30 seconds and is fully
+        local — nothing leaves your machine.
       </p>
     </motion.section>
   );
 }
 
-/* ─────────────────────────── copy-to-clipboard pill ─────────────────────────── */
+function GuideStep({
+  n, step, done, active, onToggle, markDone,
+}: {
+  n: number;
+  step: StepDef;
+  done: boolean;
+  active: boolean;
+  onToggle: () => void;
+  markDone: () => void;
+}) {
+  const Icon = step.icon;
+  return (
+    <li
+      className={`relative flex items-start gap-4 p-5 rounded-2xl border transition-all duration-200 ${
+        done
+          ? "border-white/8 bg-white/[0.02]"
+          : active
+            ? "border-brand-500/40 bg-brand-500/[0.04] shadow-lift"
+            : "border-white/8 bg-white/[0.015]"
+      }`}
+    >
+      {/* check / number badge — click to toggle done */}
+      <button
+        type="button"
+        onClick={onToggle}
+        title={done ? "Mark as not done" : "Mark as done"}
+        className={`relative w-11 h-11 rounded-xl grid place-items-center shrink-0 transition-all ${
+          done
+            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40"
+            : active
+              ? "bg-brand-500 text-white"
+              : "bg-ink-900 text-brand-400 border border-white/10"
+        }`}
+      >
+        {done ? <Check size={18} /> : <Icon size={18} />}
+        <span className={`absolute -top-2 -right-2 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-md ${
+          done ? "bg-emerald-500 text-white" : "bg-brand-500 text-white"
+        }`}>
+          {n}
+        </span>
+      </button>
+
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-center gap-2">
+          <p className={`font-display font-bold text-base tracking-tight ${done ? "text-ink-300" : "text-ink-50"}`}>
+            {step.title}
+          </p>
+          {active && !done && (
+            <span className="text-[9px] uppercase tracking-[0.18em] font-bold text-brand-300 bg-brand-500/15 px-1.5 py-0.5 rounded">
+              You're here
+            </span>
+          )}
+        </div>
+        <div className={`text-sm mt-2 leading-relaxed ${done ? "text-ink-400" : "text-ink-300"}`}>
+          {step.body({ markDone })}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/* ─────────────────────────── step content ─────────────────────────── */
+
+function chromeSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
+  return [
+    {
+      title: "Download the build",
+      icon: Download,
+      body: ({ markDone }) => (
+        <div>
+          <p>Grab the latest packaged extension — it’s a single ZIP.</p>
+          <DownloadButtons primary={primary} alt={alt} onDownload={markDone} />
+        </div>
+      ),
+    },
+    {
+      title: "Unzip it",
+      icon: FileArchive,
+      body: () => (
+        <p>
+          Right-click <Code>{primary.file}</Code> → <b>Extract All</b>. Keep the
+          extracted <Code>{primary.file.replace(".zip", "")}</Code> folder handy —
+          you’ll point Chrome at it in the last step.
+        </p>
+      ),
+    },
+    {
+      title: "Open Extensions & enable Developer mode",
+      icon: ToggleRight,
+      body: () => (
+        <div className="space-y-2.5">
+          <p>
+            Paste <CopyButton text="chrome://extensions/" /> into your address bar
+            (browsers block sites from opening it for you).
+          </p>
+          <p className="flex flex-wrap items-center gap-2">
+            Then flip <b>Developer mode</b> on — top-right corner:
+            <MockToggle />
+          </p>
+        </div>
+      ),
+    },
+    {
+      title: "Load unpacked & pin Baret",
+      icon: FolderOpen,
+      body: () => (
+        <div className="space-y-2.5">
+          <p className="flex flex-wrap items-center gap-1.5">
+            Click <MockButton icon={MousePointerClick} label="Load unpacked" /> and
+            select the extracted <Code>blackthorn-chrome</Code> folder.
+          </p>
+          <p className="flex flex-wrap items-center gap-1.5">
+            <Pin size={13} className="text-brand-400" />
+            Pin Baret from the puzzle-piece menu, then click it to create your wallet.
+          </p>
+        </div>
+      ),
+    },
+  ];
+}
+
+function firefoxSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
+  return [
+    {
+      title: "Download the build",
+      icon: Download,
+      body: ({ markDone }) => (
+        <div>
+          <p>Grab the latest packaged extension — a single ZIP.</p>
+          <DownloadButtons primary={primary} alt={alt} onDownload={markDone} />
+        </div>
+      ),
+    },
+    {
+      title: "Unzip it",
+      icon: FileArchive,
+      body: () => (
+        <p>
+          Right-click <Code>{primary.file}</Code> → <b>Extract Here</b>. Note the
+          folder — you’ll pick <Code>manifest.json</Code> from inside it.
+        </p>
+      ),
+    },
+    {
+      title: "Open the debugging page",
+      icon: ToggleRight,
+      body: () => (
+        <p>
+          Paste <CopyButton text="about:debugging#/runtime/this-firefox" /> into
+          your address bar.
+        </p>
+      ),
+    },
+    {
+      title: "Load Temporary Add-on",
+      icon: FolderOpen,
+      body: () => (
+        <div className="space-y-2">
+          <p className="flex flex-wrap items-center gap-1.5">
+            Click <MockButton icon={MousePointerClick} label="Load Temporary Add-on…" />
+            and pick <Code>manifest.json</Code> inside the extracted folder.
+          </p>
+          <p className="text-[11px] text-ink-400">
+            Firefox clears temporary add-ons on restart — just re-load it next time.
+          </p>
+        </div>
+      ),
+    },
+  ];
+}
+
+/* ─────────────────────────── pieces ─────────────────────────── */
+
+function DownloadButtons({
+  primary, alt, onDownload,
+}: {
+  primary: ArtefactSpec;
+  alt: ArtefactSpec;
+  onDownload: () => void;
+}) {
+  const PrimaryIcon = primary.file.includes("chrome") ? Chrome : Globe2;
+  const AltIcon     = alt.file.includes("chrome") ? Chrome : Globe2;
+  return (
+    <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2.5">
+      <a
+        href={primary.href}
+        download
+        onClick={onDownload}
+        className="btn-brand !py-3 !px-5 justify-center"
+      >
+        <PrimaryIcon size={16} /> {primary.label}
+        <Download size={15} className="ml-1" />
+      </a>
+      <a
+        href={alt.href}
+        download
+        onClick={onDownload}
+        className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13px] font-semibold border border-white/14 text-ink-300 hover:text-ink-50 hover:border-white/30 transition-colors"
+      >
+        <AltIcon size={14} /> {alt.label}
+      </a>
+    </div>
+  );
+}
+
+function MockToggle() {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-white/12 bg-white/[0.03] text-[11px] font-semibold text-ink-200 align-middle">
+      Developer mode
+      <span className="relative w-7 h-4 rounded-full bg-brand-500">
+        <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-white" />
+      </span>
+    </span>
+  );
+}
+
+function MockButton({ icon: Icon, label }: { icon: typeof MousePointerClick; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-brand-500/40 bg-brand-500/10 text-[12px] font-semibold text-brand-300 align-middle whitespace-nowrap">
+      <Icon size={12} /> {label}
+    </span>
+  );
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -219,116 +433,22 @@ function CopyButton({ text }: { text: string }) {
           await navigator.clipboard.writeText(text);
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
-        } catch { /* clipboard blocked — the text is still visible to copy by hand */ }
+        } catch { /* clipboard blocked — text is still visible to copy by hand */ }
       }}
-      title="Copy — browsers block sites from opening this page for you"
-      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-100 bg-ink-900/[0.05] border border-white/10 px-1.5 py-0.5 rounded hover:bg-ink-900/[0.09] transition-colors"
+      title="Copy to clipboard"
+      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-100 bg-white/[0.05] border border-white/12 px-2 py-0.5 rounded hover:bg-white/[0.09] transition-colors"
     >
       {text}
       {copied
-        ? <Check size={11} className="text-emerald-400" />
-        : <Copy size={11} className="text-ink-400" />}
+        ? <Check size={12} className="text-emerald-400" />
+        : <Copy size={12} className="text-ink-400" />}
     </button>
-  );
-}
-
-/* ─────────────────────────── steps ─────────────────────────── */
-
-function InstallSteps({ primary, downloaded }: { primary: Exclude<Browser, "other">; downloaded: boolean }) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-      className="mb-16"
-    >
-      <header className="flex items-end justify-between mb-6">
-        <div>
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
-            <span className="w-6 h-[3px] hazard rounded-full" />
-            Three steps to live
-          </p>
-          <h2 className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight">Load it like a developer would.</h2>
-        </div>
-        <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-ink-400">
-          <Sparkles size={11} /> Web Store / AMO publish pending
-        </span>
-      </header>
-
-      {primary === "chrome"
-        ? <ChromeSteps downloaded={downloaded} />
-        : <FirefoxSteps downloaded={downloaded} />}
-    </motion.section>
-  );
-}
-
-function ChromeSteps({ downloaded }: { downloaded: boolean }) {
-  return (
-    <ol className="space-y-3">
-      <Step n="01" icon={FileArchive} done={downloaded} title="Unzip the file">
-        Right-click <Code>blackthorn-chrome.zip</Code> → Extract All. Remember the folder.
-      </Step>
-      <Step n="02" icon={FolderOpen} title="Open chrome://extensions/">
-        Copy <CopyButton text="chrome://extensions/" /> and paste it into your address bar (or Menu → Extensions). Toggle <b>Developer mode</b> on (top right).
-      </Step>
-      <Step n="03" icon={ShieldCheck} title="Load unpacked">
-        Click <b>"Load unpacked"</b> and pick the extracted <Code>blackthorn-chrome</Code> folder. Baret appears in your toolbar — click it to create your wallet.
-      </Step>
-    </ol>
-  );
-}
-
-function FirefoxSteps({ downloaded }: { downloaded: boolean }) {
-  return (
-    <ol className="space-y-3">
-      <Step n="01" icon={FileArchive} done={downloaded} title="Unzip the file">
-        Right-click <Code>blackthorn-firefox.zip</Code> → Extract Here. Remember the folder.
-      </Step>
-      <Step n="02" icon={FolderOpen} title="Open about:debugging">
-        Copy <CopyButton text="about:debugging#/runtime/this-firefox" /> and paste it into your address bar.
-      </Step>
-      <Step n="03" icon={ShieldCheck} title="Load Temporary Add-on…">
-        Click <b>"Load Temporary Add-on…"</b> and pick <Code>manifest.json</Code> inside the extracted folder.
-        <span className="block mt-1.5 text-ink-400 text-[11px]">
-          Firefox temporary add-ons clear on restart — re-load after each browser restart.
-        </span>
-      </Step>
-    </ol>
-  );
-}
-
-function Step({
-  n, icon: Icon, title, done, children,
-}: {
-  n: string;
-  icon: typeof FileArchive;
-  title: string;
-  done?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-4 p-5 card">
-      <div
-        className={`relative w-11 h-11 rounded-xl grid place-items-center font-mono text-xs font-bold shrink-0 ${
-          done ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/35" : "bg-ink-900 text-brand-400"
-        }`}
-      >
-        {done ? <Check size={16} /> : <Icon size={16} />}
-        <span className="absolute -top-2 -right-2 text-[10px] font-bold font-mono text-white bg-brand-500 px-1.5 py-0.5 rounded-md">
-          {n}
-        </span>
-      </div>
-      <div className="flex-1 min-w-0 pt-1">
-        <p className="font-display font-bold text-base tracking-tight">{title}</p>
-        <p className="text-sm text-ink-300 mt-1.5 leading-relaxed">{children}</p>
-      </div>
-    </li>
   );
 }
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="font-mono text-[12px] text-ink-100 bg-ink-900/[0.05] border border-white/10 px-1.5 py-0.5 rounded">
+    <code className="font-mono text-[12px] text-ink-100 bg-white/[0.05] border border-white/10 px-1.5 py-0.5 rounded">
       {children}
     </code>
   );
