@@ -7,8 +7,14 @@ import {
   Download, Chrome, Globe2, ShieldCheck, Sparkles, Lock, Cpu, Eye,
   Check, ChevronRight, ArrowRight, MonitorSmartphone, FileArchive,
   FolderOpen, BookOpen, HardHat, Copy, ToggleRight, MousePointerClick,
-  Pin,
+  Pin, ExternalLink, RotateCcw,
 } from "lucide-react";
+
+const IS_MAC =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const META_KEY = IS_MAC ? "⌘" : "Ctrl";
+const PROGRESS_KEY = "baret-install-progress";
 import { BackdropGrid, LandingHeader, LandingFooter, HazardRule } from "../components/LandingChrome";
 
 type Browser = "chrome" | "firefox" | "other";
@@ -127,7 +133,20 @@ function InstallGuide({
     ? chromeSteps(ARTEFACTS.chrome, ARTEFACTS[altKey])
     : firefoxSteps(ARTEFACTS.firefox, ARTEFACTS[altKey]);
 
-  const [done, setDone] = useState<boolean[]>(() => steps.map(() => false));
+  // Restore progress synchronously from localStorage (client-only SPA).
+  const [done, setDone] = useState<boolean[]>(() => {
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem(PROGRESS_KEY) : null;
+      const arr = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(arr) && arr.length === steps.length) return arr.map(Boolean);
+    } catch { /* ignore corrupt/blocked storage */ }
+    return steps.map(() => false);
+  });
+  useEffect(() => {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(done)); } catch { /* ignore */ }
+  }, [done]);
+  const reset = () => setDone(steps.map(() => false));
+
   const completed = done.filter(Boolean).length;
   const allDone = completed === steps.length;
   // The "current" step is the first not-yet-done one.
@@ -149,9 +168,20 @@ function InstallGuide({
           <span className="w-6 h-[3px] hazard rounded-full" />
           {steps.length} steps to live
         </p>
-        <span className="text-[11px] font-mono text-ink-400">
-          {completed}/{steps.length} done
-        </span>
+        <div className="flex items-center gap-3">
+          {completed > 0 && (
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-100 transition-colors"
+            >
+              <RotateCcw size={11} /> Reset
+            </button>
+          )}
+          <span className="text-[11px] font-mono text-ink-400">
+            {completed}/{steps.length} done
+          </span>
+        </div>
       </div>
       <div className="h-1.5 rounded-full bg-white/8 overflow-hidden mb-7">
         <motion.div
@@ -290,11 +320,13 @@ function chromeSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
       icon: ToggleRight,
       body: () => (
         <div className="space-y-2.5">
-          <p>
-            Paste <CopyButton text="chrome://extensions/" /> into your address bar
-            (browsers block sites from opening it for you).
+          <p>Jump to your extensions page:</p>
+          <AddressBarAction url="chrome://extensions/" />
+          <p className="text-[11px] text-ink-400 leading-relaxed">
+            Chrome blocks sites from opening this page, so <b>Open</b> also copies it —
+            if no tab appears, press <Code>{META_KEY}+L</Code> and paste.
           </p>
-          <p className="flex flex-wrap items-center gap-2">
+          <p className="flex flex-wrap items-center gap-2 pt-0.5">
             Then flip <b>Developer mode</b> on — top-right corner:
             <MockToggle />
           </p>
@@ -346,10 +378,14 @@ function firefoxSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
       title: "Open the debugging page",
       icon: ToggleRight,
       body: () => (
-        <p>
-          Paste <CopyButton text="about:debugging#/runtime/this-firefox" /> into
-          your address bar.
-        </p>
+        <div className="space-y-2.5">
+          <p>Jump to the add-on debugging page:</p>
+          <AddressBarAction url="about:debugging#/runtime/this-firefox" />
+          <p className="text-[11px] text-ink-400 leading-relaxed">
+            Firefox blocks sites from opening this page, so <b>Open</b> also copies it —
+            if no tab appears, press <Code>{META_KEY}+L</Code> and paste.
+          </p>
+        </div>
       ),
     },
     {
@@ -423,26 +459,41 @@ function MockButton({ icon: Icon, label }: { icon: typeof MousePointerClick; lab
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+/** URL chip with both Copy and a best-effort Open (browsers block chrome://
+ *  and about: navigations, so Open always copies first as a safety net). */
+function AddressBarAction({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
+  const flash = () => { setCopied(true); setTimeout(() => setCopied(false), 1600); };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
+    flash();
+  };
+  const open = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
+    try { window.open(url, "_blank", "noopener"); } catch { /* blocked — copy is the fallback */ }
+    flash();
+  };
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch { /* clipboard blocked — text is still visible to copy by hand */ }
-      }}
-      title="Copy to clipboard"
-      className="inline-flex items-center gap-1.5 align-middle font-mono text-[12px] text-ink-100 bg-white/[0.05] border border-white/12 px-2 py-0.5 rounded hover:bg-white/[0.09] transition-colors"
-    >
-      {text}
-      {copied
-        ? <Check size={12} className="text-emerald-400" />
-        : <Copy size={12} className="text-ink-400" />}
-    </button>
+    <span className="inline-flex flex-wrap items-center gap-2 align-middle">
+      <code className="font-mono text-[12px] text-ink-100 bg-white/[0.05] border border-white/10 px-2 py-1 rounded">
+        {url}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold border border-white/14 text-ink-200 hover:text-ink-50 hover:border-white/30 transition-colors"
+      >
+        {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <button
+        type="button"
+        onClick={open}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold border border-brand-500/40 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 transition-colors"
+      >
+        <ExternalLink size={12} /> Open
+      </button>
+    </span>
   );
 }
 
