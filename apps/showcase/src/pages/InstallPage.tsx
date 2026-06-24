@@ -26,8 +26,8 @@ interface ArtefactSpec {
 }
 
 const ARTEFACTS: Record<Exclude<Browser, "other">, ArtefactSpec> = {
-  chrome:  { label: "Baret for Chrome / Brave / Edge", href: "/blackthorn-chrome.zip",  file: "blackthorn-chrome.zip"  },
-  firefox: { label: "Baret for Firefox",               href: "/blackthorn-firefox.zip", file: "blackthorn-firefox.zip" },
+  chrome:  { label: "Baret for Chrome / Brave / Edge", href: "/BaretWallet-chrome.zip",  file: "BaretWallet-chrome.zip"  },
+  firefox: { label: "Baret for Firefox",               href: "/BaretWallet-firefox.zip", file: "BaretWallet-firefox.zip" },
 };
 
 function detectBrowser(): Browser {
@@ -336,7 +336,7 @@ function chromeSteps(primary: ArtefactSpec, alt: ArtefactSpec): StepDef[] {
         <div className="space-y-2.5">
           <p className="flex flex-wrap items-center gap-1.5">
             Click <MockButton icon={MousePointerClick} label="Load unpacked" /> and
-            select the extracted <Code>blackthorn-chrome</Code> folder.
+            select the extracted <Code>BaretWallet-chrome</Code> folder.
           </p>
           <p className="flex flex-wrap items-center gap-1.5">
             <Pin size={13} className="text-brand-400" />

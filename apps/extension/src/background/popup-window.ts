@@ -11,7 +11,10 @@
 
 import browser from "webextension-polyfill";
 
-const POPUP_URL_PATH = "src/popup/index.html";
+// `?popout=1` tells the popup to fill the window (viewport-fill) instead of
+// rendering at the fixed 360×600 toolbar-popup size — otherwise the UI sits in
+// a small box in the corner of this larger standalone window. See main.tsx.
+const POPUP_URL_PATH = "src/popup/index.html?popout=1";
 const POPUP_WIDTH = 400;
 const POPUP_HEIGHT = 640;
 

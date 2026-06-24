@@ -18,8 +18,8 @@ const EXTENSION_ROOT = join(__dirname, "..");
 const SHOWCASE_PUBLIC = join(EXTENSION_ROOT, "..", "showcase", "public");
 
 const TARGETS = [
-  { srcDir: "dist",         outName: "blackthorn-chrome.zip"  },
-  { srcDir: "dist-firefox", outName: "blackthorn-firefox.zip" },
+  { srcDir: "dist",         outName: "BaretWallet-chrome.zip"  },
+  { srcDir: "dist-firefox", outName: "BaretWallet-firefox.zip" },
 ];
 
 if (!existsSync(SHOWCASE_PUBLIC)) mkdirSync(SHOWCASE_PUBLIC, { recursive: true });

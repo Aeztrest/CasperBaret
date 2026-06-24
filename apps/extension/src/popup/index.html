@@ -7,7 +7,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <style>html, body { width: 360px; height: 600px; margin: 0; padding: 0; }</style>
+    <!--
+      The popup shares index.css with the options page, whose base layer forces
+      `html, body, #root { height: 100% }`. That rule loads after this file's
+      inline <style> and (without !important) would win, collapsing the toolbar
+      popup's height to its content — leaving the wallet cramped and tiny. We
+      pin a definite pixel size here with !important so the popup keeps a real
+      600px canvas, while `body`/`#root` fill it.
+
+      When opened as a standalone window (sign/connect — see popup-window.ts),
+      main.tsx sets `data-popout`, switching to viewport-fill so the UI spans
+      the whole window instead of sitting in a 360×600 box in its corner.
+    -->
+    <style>
+      html, body { margin: 0; padding: 0; }
+      html { width: 360px !important; height: 600px !important; }
+      body, #root { width: 100% !important; height: 100% !important; }
+      html[data-popout="true"] { width: 100vw !important; height: 100vh !important; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -14,8 +14,8 @@ export default defineManifest(({ mode }) => {
 
   return {
     manifest_version: 3,
-    name: "Baret — Smart Wallet",
-    short_name: "Baret",
+    name: "BaretWallet",
+    short_name: "BaretWallet",
     version: pkg.version,
     description: "The hard hat for your Casper wallet — every transaction simulated, explained, and blocked when dangerous.",
 
