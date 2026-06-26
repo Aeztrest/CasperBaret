@@ -8,18 +8,14 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Send, Download, Sparkles, Loader2 } from "lucide-react";
+import { Send, Download, Plus, Loader2 } from "lucide-react";
 import { useRpc, useWalletState } from "../shared/state-context";
 import { tokensFor, formatTokenAmount, type TokenDef } from "../shared/tokens";
 import { ReceiveScreen } from "./ReceiveScreen";
 import { SendScreen } from "./SendScreen";
+import { AcquireSheet } from "./AcquireSheet";
 
 const MOTES_PER_CSPR = 1_000_000_000;
-
-// Casper's testnet faucet is captcha-gated — there's no programmatic airdrop
-// (unlike Solana's friendbot). So the button copies the authority address and
-// opens the faucet page; the user pastes it and solves the captcha there.
-const FAUCET_URL = "https://testnet.cspr.live/tools/faucet";
 
 interface TokenBalance {
   raw: string;
@@ -31,9 +27,7 @@ export function Home() {
   const rpc = useRpc();
   const [balance, setBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Record<string, TokenBalance>>({});
-  const [airdropMsg, setAirdropMsg] = useState<string | null>(null);
-  const [airdropError, setAirdropError] = useState<string | null>(null);
-  const [overlay, setOverlay] = useState<"send" | "receive" | null>(null);
+  const [overlay, setOverlay] = useState<"send" | "receive" | "acquire" | null>(null);
 
   const tokens = state ? tokensFor(state.network) : [];
 
@@ -72,29 +66,6 @@ export function Home() {
     return () => { cancelled = true; void cancelled; };
   }, [refreshBalance, refreshTokens]);
 
-  const onAirdrop = async () => {
-    setAirdropError(null);
-    setAirdropMsg(null);
-
-    if (state?.network !== "testnet") {
-      setAirdropError("The faucet is only available on testnet.");
-      setTimeout(() => setAirdropError(null), 4000);
-      return;
-    }
-
-    try {
-      if (state.authorityAddress) {
-        await navigator.clipboard.writeText(state.authorityAddress);
-      }
-    } catch {
-      /* clipboard optional */
-    }
-
-    window.open(FAUCET_URL, "_blank", "noopener,noreferrer");
-    setAirdropMsg("Address copied — paste it on the faucet page, solve the captcha, then come back.");
-    setTimeout(() => setAirdropMsg(null), 6000);
-  };
-
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 relative">
       <section
@@ -113,6 +84,7 @@ export function Home() {
             symbol="CSPR"
             name="Casper"
             amount={balance === null ? null : balance.toFixed(4)}
+            onClick={() => setOverlay("acquire")}
           />
           {tokens.map((t) => (
             <TokenRow
@@ -121,6 +93,7 @@ export function Home() {
               name={t.name}
               badge={t.kind === "stablecoin" ? "stable" : undefined}
               amount={amountFor(tokenBalances[t.packageHash], t)}
+              onClick={() => setOverlay("acquire")}
             />
           ))}
         </div>
@@ -128,25 +101,8 @@ export function Home() {
         <div className="mt-4 grid grid-cols-3 gap-2">
           <ActionButton icon={Send} label="Send" onClick={() => setOverlay("send")} />
           <ActionButton icon={Download} label="Receive" onClick={() => setOverlay("receive")} />
-          <ActionButton icon={Sparkles} label="Faucet" onClick={onAirdrop} />
+          <ActionButton icon={Plus} label="Add funds" onClick={() => setOverlay("acquire")} />
         </div>
-
-        {airdropMsg && (
-          <div
-            className="mt-3 px-3 py-1.5 rounded-input text-[11px] flex items-center gap-1.5"
-            style={{ background: "var(--ok-dim)", color: "var(--ok)" }}
-          >
-            <Sparkles size={11} /> {airdropMsg}
-          </div>
-        )}
-        {airdropError && (
-          <div
-            className="mt-3 px-3 py-1.5 rounded-input text-[11px]"
-            style={{ background: "var(--bad-dim)", color: "var(--bad)" }}
-          >
-            {airdropError}
-          </div>
-        )}
       </section>
 
       <section className="card flex-1 flex flex-col gap-2">
@@ -176,6 +132,14 @@ export function Home() {
           onSent={refreshBalance}
         />
       )}
+      {overlay === "acquire" && state?.authorityAddress && (
+        <AcquireSheet
+          address={state.authorityAddress}
+          network={state.network}
+          tokens={tokens}
+          onClose={() => setOverlay(null)}
+        />
+      )}
     </div>
   );
 }
@@ -192,14 +156,22 @@ function TokenRow({
   name,
   amount,
   badge,
+  onClick,
 }: {
   symbol: string;
   name: string;
   amount: string | null;
   badge?: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-3">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className="flex items-center justify-between py-3 w-full text-left rounded-input
+                 enabled:hover:bg-black/[0.04] disabled:cursor-default px-1 -mx-1"
+    >
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
@@ -218,7 +190,7 @@ function TokenRow({
       <span className="text-base font-extrabold font-mono tracking-tight tabular-nums">
         {amount === null ? "…" : amount}
       </span>
-    </div>
+    </button>
   );
 }
 

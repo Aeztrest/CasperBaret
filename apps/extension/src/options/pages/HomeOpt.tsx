@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import {
   Send,
   Download,
-  Sparkles,
+  Plus,
   ExternalLink,
   Shield,
   Clock,
@@ -25,13 +25,10 @@ import { tokensFor, formatTokenAmount, type TokenDef } from "../../shared/tokens
 import {
   OptionsSendModal,
   OptionsReceiveModal,
+  OptionsAcquireModal,
 } from "../components/SendReceiveModal";
 
 const MOTES_PER_CSPR = 1_000_000_000;
-
-// Casper's testnet faucet is captcha-gated — no programmatic airdrop. The
-// button copies the address and opens the faucet page (see popup Home.tsx).
-const FAUCET_URL = "https://testnet.cspr.live/tools/faucet";
 
 interface TokenBalance {
   raw: string;
@@ -45,9 +42,7 @@ export function HomeOpt() {
   const [authBal, setAuthBal] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Record<string, TokenBalance>>({});
   const [policy, setPolicy] = useState<GuardPolicy | null>(null);
-  const [airdropMsg, setAirdropMsg] = useState<string | null>(null);
-  const [airdropError, setAirdropError] = useState<string | null>(null);
-  const [overlay, setOverlay] = useState<"send" | "receive" | null>(null);
+  const [overlay, setOverlay] = useState<"send" | "receive" | "acquire" | null>(null);
   const [copied, setCopied] = useState(false);
 
   const tokens = state ? tokensFor(state.network) : [];
@@ -101,25 +96,6 @@ export function HomeOpt() {
       .call("policy.read", undefined as never)
       .then((p) => setPolicy(p as GuardPolicy));
   }, [rpc]);
-
-  const onAirdrop = async () => {
-    setAirdropError(null);
-    setAirdropMsg(null);
-    if (state?.network !== "testnet") {
-      setAirdropError("The faucet is only available on testnet.");
-      setTimeout(() => setAirdropError(null), 4000);
-      return;
-    }
-    const owner = state.walletAddress ?? state.authorityAddress;
-    try {
-      if (owner) await navigator.clipboard.writeText(owner);
-    } catch {
-      /* clipboard optional */
-    }
-    window.open(FAUCET_URL, "_blank", "noopener,noreferrer");
-    setAirdropMsg("Address copied — paste it on the faucet page, solve the captcha, then come back.");
-    setTimeout(() => setAirdropMsg(null), 6000);
-  };
 
   const onCopyAddress = async () => {
     const addr = state?.walletAddress ?? state?.authorityAddress;
@@ -189,27 +165,11 @@ export function HomeOpt() {
           <button className="btn-ghost" onClick={() => setOverlay("receive")}>
             <Download size={13} /> Receive
           </button>
-          <button onClick={onAirdrop} className="btn-ghost">
-            <Sparkles size={13} /> Faucet
+          <button onClick={() => setOverlay("acquire")} className="btn-ghost">
+            <Plus size={13} /> Add funds
           </button>
         </div>
 
-        {airdropMsg && (
-          <p
-            className="text-[11px] mt-3"
-            style={{ color: "var(--ok)" }}
-          >
-            {airdropMsg}
-          </p>
-        )}
-        {airdropError && (
-          <p
-            className="text-[11px] mt-3"
-            style={{ color: "var(--bad)" }}
-          >
-            {airdropError}
-          </p>
-        )}
       </section>
 
       <section className="card">
@@ -297,6 +257,14 @@ export function HomeOpt() {
         <OptionsReceiveModal
           address={heroAddress}
           network={state.network}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+      {overlay === "acquire" && heroAddress && (
+        <OptionsAcquireModal
+          address={heroAddress}
+          network={state.network}
+          tokens={tokens}
           onClose={() => setOverlay(null)}
         />
       )}

@@ -7,6 +7,8 @@
 import { useEffect, type ReactNode } from "react";
 import { SendScreen } from "../../popup/SendScreen";
 import { ReceiveScreen } from "../../popup/ReceiveScreen";
+import { AcquireSheet } from "../../popup/AcquireSheet";
+import type { TokenDef } from "../../shared/tokens";
 
 interface SendProps {
   authorityAddress: string;
@@ -19,6 +21,13 @@ interface SendProps {
 interface ReceiveProps {
   address: string;
   network: string;
+  onClose: () => void;
+}
+
+interface AcquireProps {
+  address: string;
+  network: string;
+  tokens: TokenDef[];
   onClose: () => void;
 }
 
@@ -73,6 +82,19 @@ export function OptionsReceiveModal(props: ReceiveProps) {
       <ReceiveScreen
         address={props.address}
         network={props.network}
+        onClose={props.onClose}
+      />
+    </ModalShell>
+  );
+}
+
+export function OptionsAcquireModal(props: AcquireProps) {
+  return (
+    <ModalShell onClose={props.onClose}>
+      <AcquireSheet
+        address={props.address}
+        network={props.network}
+        tokens={props.tokens}
         onClose={props.onClose}
       />
     </ModalShell>
