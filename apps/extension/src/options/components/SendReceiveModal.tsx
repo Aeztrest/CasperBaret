@@ -30,6 +30,7 @@ interface AcquireProps {
   network: string;
   tokens: TokenDef[];
   onClose: () => void;
+  onFunded?: () => void;
 }
 
 function ModalShell({ onClose, children }: { onClose: () => void; children: ReactNode }) {
@@ -97,6 +98,7 @@ export function OptionsAcquireModal(props: AcquireProps) {
         network={props.network}
         tokens={props.tokens}
         onClose={props.onClose}
+        onFunded={props.onFunded}
       />
     </ModalShell>
   );

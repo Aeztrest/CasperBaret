@@ -44,6 +44,16 @@ const envSchema = z.object({
   X402_TOKEN_NAME: z.string().default("Cep18x402"),
   X402_TOKEN_VERSION: z.string().default("1"),
 
+  /** Treasury-backed CSPR faucet (POST /demo/faucet). */
+  FAUCET_ENABLED: z.string().optional(),
+  /** 64-hex ed25519 private key of the funded treasury account. */
+  FAUCET_PRIVATE_KEY: z.string().optional(),
+  FAUCET_PRIVATE_KEY_ALGO: z.enum(["ed25519", "secp256k1"]).default("ed25519"),
+  /** CSPR sent per successful claim. */
+  FAUCET_AMOUNT_CSPR: z.coerce.number().positive().default(1000),
+  /** Per-address (and per-IP) cooldown between claims. */
+  FAUCET_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(120),
+
   /** csv of contract package hashes treated as risky. */
   RISKY_CONTRACT_PACKAGES: z.string().optional(),
   /** csv of contract package hashes treated as known-safe. */
@@ -77,6 +87,15 @@ export type X402Config = {
   tokenVersion: string;
 };
 
+export type FaucetConfig = {
+  enabled: boolean;
+  /** 64-hex private key of the treasury account (empty when disabled). */
+  privateKeyHex: string;
+  algo: "ed25519" | "secp256k1";
+  amountCspr: number;
+  cooldownSeconds: number;
+};
+
 export type AppConfig = {
   nodeEnv: "development" | "test" | "production";
   port: number;
@@ -84,6 +103,7 @@ export type AppConfig = {
   apiKeys: string[];
   casper: CasperNetworkConfig;
   x402: X402Config;
+  faucet: FaucetConfig;
   riskyContractPackages: Set<string>;
   knownSafeContractPackages: Set<string>;
   maxBodyBytes: number;
@@ -167,6 +187,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     tokenVersion: e.X402_TOKEN_VERSION,
   };
 
+  const faucetEnabled = boolish(e.FAUCET_ENABLED);
+  let faucetKey = "";
+  if (faucetEnabled) {
+    faucetKey = (e.FAUCET_PRIVATE_KEY ?? "").trim().toLowerCase().replace(/^0x/, "");
+    if (!/^[0-9a-f]{64}$/.test(faucetKey)) {
+      throw new Error("FAUCET_PRIVATE_KEY must be a 64-hex private key when FAUCET_ENABLED=true");
+    }
+  }
+  const faucet: FaucetConfig = {
+    enabled: faucetEnabled,
+    privateKeyHex: faucetKey,
+    algo: e.FAUCET_PRIVATE_KEY_ALGO,
+    amountCspr: e.FAUCET_AMOUNT_CSPR,
+    cooldownSeconds: e.FAUCET_COOLDOWN_SECONDS,
+  };
+
   return {
     nodeEnv: e.NODE_ENV,
     port: e.PORT,
@@ -174,6 +210,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiKeys,
     casper,
     x402,
+    faucet,
     riskyContractPackages: splitCsv(e.RISKY_CONTRACT_PACKAGES),
     knownSafeContractPackages: splitCsv(e.KNOWN_SAFE_CONTRACT_PACKAGES),
     maxBodyBytes: e.MAX_BODY_BYTES,

@@ -138,6 +138,7 @@ export function Home() {
           network={state.network}
           tokens={tokens}
           onClose={() => setOverlay(null)}
+          onFunded={() => { void refreshBalance(); void refreshTokens(); }}
         />
       )}
     </div>

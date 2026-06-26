@@ -275,6 +275,7 @@ export function HomeOpt() {
           network={state.network}
           tokens={tokens}
           onClose={() => setOverlay(null)}
+          onFunded={() => { void refresh(); }}
         />
       )}
       {overlay === "accounts" && (

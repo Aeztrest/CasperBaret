@@ -72,9 +72,10 @@ import {
 } from "../crypto/sub-key-cache";
 
 const POLICY_STORAGE_KEY = "baret.policy.v1";
-// Casper testnet faucet is captcha-gated (no friendbot equivalent). Surface a
-// link in the UI instead; the airdrop RPC is a stub.
-const FAUCET_URL = "https://testnet.cspr.live/tools/faucet";
+// Baret's own treasury-backed faucet (apps/server POST /demo/faucet). Casper's
+// public faucet is captcha-gated, so we run our own and dispense from a funded
+// account. Same base URL as the analyze server (host_permissions covers it).
+const FAUCET_ENDPOINT = "http://localhost:8080/demo/faucet";
 
 type Handler<M extends ExtRpcMethod> = (
   req: ExtRpcRequest<M>,
@@ -237,11 +238,34 @@ const airdropHandler: Handler<"wallet.airdrop"> = async () => {
   if (snap.network !== "testnet") {
     throw new Error("The faucet is only available on testnet.");
   }
-  // TODO(casper): the Casper testnet faucet is captcha-gated — no programmatic
-  // friendbot equivalent. Direct the user to the faucet page instead.
-  throw new Error(
-    `Request testnet CSPR from the Casper faucet: ${FAUCET_URL}`,
-  );
+  const address = snap.authorityAddress;
+  if (!address) throw new Error("No address available — wallet not initialized.");
+
+  // Claim from Baret's treasury-backed faucet. The server signs + sends a fixed
+  // CSPR transfer and enforces the per-address cooldown; we surface its message.
+  let res: Response;
+  try {
+    res = await fetch(FAUCET_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    });
+  } catch {
+    throw new Error("Couldn't reach the faucet server. Is it running?");
+  }
+
+  const data = (await res.json().catch(() => ({}))) as {
+    transactionHash?: string;
+    amountCspr?: number;
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || `Faucet error (HTTP ${res.status}).`);
+  }
+  return {
+    transactionHash: data.transactionHash ?? "",
+    amountCspr: data.amountCspr ?? 0,
+  };
 };
 
 const provisionSmartWalletHandler: Handler<

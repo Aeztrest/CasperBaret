@@ -1,22 +1,25 @@
 /**
  * Acquire sheet — in-wallet "how to get funds" for every asset.
  *
- * Casper has no programmatic faucet (captcha-gated) and the demo USDC is a
- * CEP-18 with no public faucet yet, so this surface gives the user a clear,
- * actionable path for each token instead of a dead end: copy address, open the
- * right page, follow the steps. Rendered as a full-surface overlay so it works
- * unchanged in the popup and (wrapped in a modal) in the options page.
+ * CSPR is dispensed by Baret's own treasury-backed faucet (one tap → 1,000 CSPR
+ * via the wallet.airdrop RPC → apps/server POST /demo/faucet), with the
+ * captcha-gated cspr.live faucet kept as a fallback. The demo USDC (CEP-18) has
+ * no faucet yet, so its card explains how to receive it by transfer. Rendered
+ * as a full-surface overlay so it works in the popup and (wrapped) in options.
  */
 
 import { useState } from "react";
-import { X, Copy, Check, ExternalLink, Coins } from "lucide-react";
+import { X, Copy, Check, ExternalLink, Coins, Loader2, Droplet } from "lucide-react";
 import type { TokenDef } from "../shared/tokens";
+import { useRpc } from "../shared/state-context";
 
 interface Props {
   address: string;
   network: string;
   tokens: TokenDef[];
   onClose: () => void;
+  /** Called after a successful CSPR claim so the caller can refresh balances. */
+  onFunded?: () => void;
 }
 
 const NETWORK_LABEL: Record<string, string> = {
@@ -24,14 +27,48 @@ const NETWORK_LABEL: Record<string, string> = {
   mainnet: "Mainnet",
 };
 
-const FAUCET_URL = "https://testnet.cspr.live/tools/faucet";
+const CSPR_LIVE_FAUCET = "https://testnet.cspr.live/tools/faucet";
 
 function explorerBase(network: string): string {
   return network === "mainnet" ? "https://cspr.live" : "https://testnet.cspr.live";
 }
 
-export function AcquireSheet({ address, network, tokens, onClose }: Props) {
+function useCopy(address: string) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch { /* ignore */ }
+  };
+  return { copied, copy };
+}
+
+export function AcquireSheet({ address, network, tokens, onClose, onFunded }: Props) {
+  const rpc = useRpc();
   const isTestnet = network === "testnet";
+
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const { copied, copy } = useCopy(address);
+
+  const requestCspr = async () => {
+    setBusy(true);
+    setErr(null);
+    setMsg(null);
+    try {
+      const r = await rpc.call("wallet.airdrop", undefined as never);
+      setMsg(`Sent ${r.amountCspr.toLocaleString()} CSPR — arriving in a few seconds.`);
+      onFunded?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+      setTimeout(() => { setMsg(null); setErr(null); }, 8000);
+    }
+  };
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col" style={{ background: "var(--bg)" }}>
@@ -47,113 +84,103 @@ export function AcquireSheet({ address, network, tokens, onClose }: Props) {
 
       <div className="flex-1 px-4 py-4 flex flex-col gap-3 overflow-y-auto">
         {/* Native CSPR */}
-        <AssetCard
-          symbol="CSPR"
-          title="Casper (CSPR)"
-          blurb={
-            isTestnet
-              ? "Free testnet CSPR from the Casper faucet — needed for transaction gas."
-              : "Buy CSPR on an exchange (Coinbase, Gate, Kraken…) and withdraw to your address below."
-          }
-          steps={
-            isTestnet
-              ? [
-                  "Copy your address (button below).",
-                  "Open the Casper faucet and paste it.",
-                  "Solve the captcha and request — CSPR arrives in seconds.",
-                ]
-              : [
-                  "Copy your address (button below).",
-                  "On your exchange, withdraw CSPR to it.",
-                  "Pick the Casper mainnet network when withdrawing.",
-                ]
-          }
-          address={address}
-          primary={
-            isTestnet
-              ? { label: "Copy address & open faucet", href: FAUCET_URL }
-              : undefined
-          }
-        />
+        <section className="card !p-4">
+          <CardHeader symbol="CSPR" title="Casper (CSPR)" />
+
+          {isTestnet ? (
+            <>
+              <p className="text-xs text-text-muted leading-relaxed mb-3">
+                Get free testnet CSPR for gas — straight to your wallet, no captcha.
+                1,000 CSPR per claim, ~2&nbsp;min cooldown.
+              </p>
+              <button onClick={requestCspr} disabled={busy} className="btn-primary w-full !py-2.5 text-sm">
+                {busy ? <Loader2 size={13} className="animate-spin" /> : <Droplet size={13} />}
+                {busy ? "Requesting…" : "Request 1,000 CSPR"}
+              </button>
+
+              {msg && (
+                <p className="text-[11px] mt-2 flex items-center gap-1.5" style={{ color: "var(--ok)" }}>
+                  <Check size={11} /> {msg}
+                </p>
+              )}
+              {err && (
+                <p className="text-[11px] mt-2" style={{ color: "var(--bad)" }}>{err}</p>
+              )}
+
+              <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: "var(--line)" }}>
+                <a
+                  href={CSPR_LIVE_FAUCET}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-text-faint hover:text-text inline-flex items-center gap-1"
+                >
+                  cspr.live faucet <ExternalLink size={10} />
+                </a>
+                <CopyAddressButton copied={copied} onCopy={copy} />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-text-muted leading-relaxed mb-3">
+                Buy CSPR on an exchange (Coinbase, Gate, Kraken…) and withdraw to your
+                address over the Casper mainnet network.
+              </p>
+              <CopyAddressButton copied={copied} onCopy={copy} wide />
+            </>
+          )}
+        </section>
 
         {/* CEP-18 tokens (e.g. demo USDC) */}
         {tokens.map((t) => (
-          <AssetCard
-            key={t.packageHash}
-            symbol={t.symbol}
-            title={`${t.name}`}
-            blurb="Demo CEP-18 stablecoin used for x402 micropayments. No public faucet yet — receive it by transfer."
-            steps={[
-              "Copy your address (button below).",
-              "Share it with whoever holds the demo token (treasury / teammate).",
-              "They send you some via a CEP-18 transfer.",
-            ]}
-            address={address}
-            note="A one-click demo-USDC faucet is planned."
-            primary={{
-              label: "View token on cspr.live",
-              href: `${explorerBase(network)}/contract-package/${t.packageHash}`,
-            }}
-          />
+          <TokenAcquireCard key={t.packageHash} token={t} network={network} address={address} />
         ))}
       </div>
     </div>
   );
 }
 
-function AssetCard({
-  symbol,
-  title,
-  blurb,
-  steps,
-  address,
-  primary,
-  note,
-}: {
-  symbol: string;
-  title: string;
-  blurb: string;
-  steps: string[];
-  address: string;
-  primary?: { label: string; href: string };
-  note?: string;
-}) {
-  const [copied, setCopied] = useState(false);
+function CardHeader({ symbol, title }: { symbol: string; title: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-2">
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+        style={{ background: "var(--accent-dim)", color: "var(--accent-soft)" }}
+      >
+        {symbol.slice(0, 3)}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-none">{title}</p>
+        <p className="text-text-faint text-[10px] mt-1 flex items-center gap-1">
+          <Coins size={10} /> {symbol}
+        </p>
+      </div>
+    </div>
+  );
+}
 
-  const copyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* ignore */
-    }
-  };
+function CopyAddressButton({ copied, onCopy, wide }: { copied: boolean; onCopy: () => void; wide?: boolean }) {
+  return (
+    <button onClick={onCopy} className={`btn-ghost !py-1.5 text-xs ${wide ? "w-full" : ""}`}>
+      {copied ? <Check size={12} className="text-ok" /> : <Copy size={12} />}
+      {copied ? "Copied" : "Copy address"}
+    </button>
+  );
+}
 
-  const onPrimary = async () => {
-    await copyAddress();
-    if (primary) window.open(primary.href, "_blank", "noopener,noreferrer");
-  };
-
+function TokenAcquireCard({ token, network, address }: { token: TokenDef; network: string; address: string }) {
+  const { copied, copy } = useCopy(address);
+  const steps = [
+    "Copy your address (button below).",
+    "Share it with whoever holds the demo token (treasury / teammate).",
+    "They send you some via a CEP-18 transfer.",
+  ];
   return (
     <section className="card !p-4">
-      <div className="flex items-center gap-3 mb-2">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-          style={{ background: "var(--accent-dim)", color: "var(--accent-soft)" }}
-        >
-          {symbol.slice(0, 3)}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold leading-none">{title}</p>
-          <p className="text-text-faint text-[10px] mt-1 flex items-center gap-1">
-            <Coins size={10} /> {symbol}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-xs text-text-muted leading-relaxed mb-3">{blurb}</p>
-
+      <CardHeader symbol={token.symbol} title={token.name} />
+      <p className="text-xs text-text-muted leading-relaxed mb-3">
+        Demo CEP-18 stablecoin used for x402 micropayments. No public faucet yet —
+        receive it by transfer.
+      </p>
       <ol className="space-y-1.5 mb-3">
         {steps.map((s, i) => (
           <li key={i} className="flex gap-2 text-[11px] text-text-muted">
@@ -167,20 +194,18 @@ function AssetCard({
           </li>
         ))}
       </ol>
-
       <div className="flex flex-wrap gap-2">
-        {primary && (
-          <button onClick={onPrimary} className="btn-primary !py-2 text-xs">
-            {primary.label} <ExternalLink size={11} />
-          </button>
-        )}
-        <button onClick={copyAddress} className="btn-ghost !py-2 text-xs">
-          {copied ? <Check size={12} className="text-ok" /> : <Copy size={12} />}
-          {copied ? "Copied" : "Copy address"}
-        </button>
+        <a
+          href={`${explorerBase(network)}/contract-package/${token.packageHash}`}
+          target="_blank"
+          rel="noreferrer"
+          className="btn-primary !py-2 text-xs"
+        >
+          View token on cspr.live <ExternalLink size={11} />
+        </a>
+        <CopyAddressButton copied={copied} onCopy={copy} />
       </div>
-
-      {note && <p className="text-[10px] text-text-faint mt-2">{note}</p>}
+      <p className="text-[10px] text-text-faint mt-2">A one-click demo-USDC faucet is planned.</p>
     </section>
   );
 }
