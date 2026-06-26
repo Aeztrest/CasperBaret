@@ -13,6 +13,7 @@ import {
   privateKeyHex,
   isPublicKeyHex,
   isAccountHash,
+  toAccountHashHex,
   Casper,
 } from "@casper-baret/casper-core";
 import { Buffer } from "buffer";
@@ -244,6 +245,36 @@ const balanceHandler: Handler<"wallet.balance"> = async ({ address }) => {
     console.warn("[BARET] balance query failed:", err);
     return { motes: "0", token: null, hasToken: false };
   }
+};
+
+const tokenBalanceHandler: Handler<"wallet.tokenBalance"> = async ({
+  address,
+}) => {
+  const snap = getSnapshot();
+  const target = address ?? snap.authorityAddress;
+  if (!target)
+    throw new Error("No address available — wallet not initialized.");
+
+  // Resolve the owner account hash (CEP-18 `balances` is keyed by account hash).
+  // Doing this here proves the address plumbing is correct end-to-end.
+  try {
+    if (isPublicKeyHex(target)) {
+      Casper.PublicKey.fromHex(target).accountHash();
+    } else {
+      toAccountHashHex(target);
+    }
+  } catch {
+    return { raw: "0", available: false };
+  }
+
+  // Best-effort: reading an Odra CEP-18 `balances` dictionary needs the live
+  // contract hash (not just the package hash) plus Odra's exact item-key
+  // encoding, both of which we can only confirm against the deployed token.
+  // Until verified against the funded contract (Faz 2 acquire), degrade to
+  // unavailable so the UI shows "—" rather than a wrong number.
+  // TODO(faz2): resolve package→contract entity, query the `balances` dict,
+  // and parse the CLValueUInt256 result into a decimal string.
+  return { raw: "0", available: false };
 };
 
 const transferCsprHandler: Handler<"wallet.transferCspr"> = async ({
@@ -543,6 +574,7 @@ export const handlers: { [M in ExtRpcMethod]: Handler<M> } = {
   "wallet.airdrop": airdropHandler,
   "wallet.provisionSmartWallet": provisionSmartWalletHandler,
   "wallet.balance": balanceHandler,
+  "wallet.tokenBalance": tokenBalanceHandler,
   "wallet.transferCspr": transferCsprHandler,
 
   "network.set": networkSet,

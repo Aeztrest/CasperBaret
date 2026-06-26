@@ -175,6 +175,8 @@ export interface ExtRpc {
   "wallet.provisionSmartWallet": { req: void;                             rsp: { smartWalletAddress: string; walletAddress: string; alreadyOnChain: boolean } };
   /** Account balance. `motes` = native CSPR atomic units; `token` = CEP-18 the wallet spends on x402. */
   "wallet.balance":    { req: { address?: string };                       rsp: { motes: string; token: string | null; hasToken: boolean } };
+  /** CEP-18 token balance. `raw` = atomic units (decimal string); `available=false` when the read couldn't be resolved (UI shows "—"). */
+  "wallet.tokenBalance": { req: { packageHash: string; address?: string }; rsp: { raw: string; available: boolean } };
   /** User-initiated native CSPR transfer from the wallet key. */
   "wallet.transferCspr": { req: { to: string; amountCspr: number };        rsp: { transactionHash: string } };
 

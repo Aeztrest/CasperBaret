@@ -18,6 +18,11 @@ function shortAddr(s: string | null): string {
   return `${s.slice(0, 4)}…${s.slice(-4)}`;
 }
 
+const NETWORK_LABEL: Record<string, string> = {
+  testnet: "Testnet",
+  mainnet: "Mainnet",
+};
+
 export function TopStrip({ state, onOpenAccount, onOpenSettings }: Props) {
   return (
     <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
@@ -26,7 +31,7 @@ export function TopStrip({ state, onOpenAccount, onOpenSettings }: Props) {
           <Mark size={14} />
         </div>
         <div>
-          <p className="text-[11px] text-text-faint leading-tight">Devnet</p>
+          <p className="text-[11px] text-text-faint leading-tight">{NETWORK_LABEL[state.network] ?? state.network}</p>
           <p className="text-xs font-mono text-text leading-tight">{shortAddr(state.walletAddress)}</p>
         </div>
         <ChevronDown size={11} className="text-text-faint" />

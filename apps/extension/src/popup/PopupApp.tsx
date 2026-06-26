@@ -17,12 +17,14 @@ import { Allowances } from "./Allowances";
 import { Settings } from "./Settings";
 import { SignRequest } from "./SignRequest";
 import { ConnectApproval } from "./ConnectApproval";
+import { AccountSheet } from "./AccountSheet";
 
 export function PopupApp() {
   const { state, loading, error } = useWalletContext();
   const rpc = useRpc();
   const [tab, setTab] = useState<PopupTab>("home");
   const [pendingKind, setPendingKind] = useState<string | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   // When phase=signing, the head of the queue may be a transaction OR a
   // connect-approval. Poll the queue head so the popup routes to the right
@@ -68,10 +70,10 @@ export function PopupApp() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       <TopStrip
         state={state}
-        onOpenAccount={() => { /* T22: account picker sheet */ }}
+        onOpenAccount={() => setAccountOpen(true)}
         onOpenSettings={() => setTab("settings")}
       />
 
@@ -83,6 +85,14 @@ export function PopupApp() {
       </div>
 
       <TabBar active={tab} onChange={setTab} alertCount={state.alertsUnread} />
+
+      {accountOpen && state.walletAddress && (
+        <AccountSheet
+          address={state.walletAddress}
+          network={state.network}
+          onClose={() => setAccountOpen(false)}
+        />
+      )}
     </div>
   );
 }

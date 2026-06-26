@@ -1,12 +1,12 @@
 /**
- * Receive overlay — shows the authority address as a copyable string + QR.
- * Phantom/Solflare-style. Address is what other wallets send SOL/SPL to.
- *
- * Sent in popup overlay mode by Home.tsx.
+ * Account sheet — opened from the TopStrip account button. Shows the active
+ * account's full address with one-tap copy + QR. This is the surface that
+ * fixes "I can't see or copy my address" and is the seam Faz 3 extends into a
+ * multi-account switcher (an account list lands above the address block).
  */
 
 import { useEffect, useState } from "react";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, QrCode } from "lucide-react";
 import QRCode from "qrcode";
 
 interface Props {
@@ -15,7 +15,12 @@ interface Props {
   onClose: () => void;
 }
 
-export function ReceiveScreen({ address, network, onClose }: Props) {
+const NETWORK_LABEL: Record<string, string> = {
+  testnet: "Testnet",
+  mainnet: "Mainnet",
+};
+
+export function AccountSheet({ address, network, onClose }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -24,10 +29,11 @@ export function ReceiveScreen({ address, network, onClose }: Props) {
     QRCode.toDataURL(address, {
       errorCorrectionLevel: "M",
       margin: 1,
-      width: 224,
+      width: 220,
       color: { dark: "#FFFFFF", light: "#00000000" },
-    }).then((url) => { if (!cancelled) setQrDataUrl(url); })
-      .catch(() => { /* leave null; address still copyable */ });
+    })
+      .then((url) => { if (!cancelled) setQrDataUrl(url); })
+      .catch(() => { /* leave null; address stays copyable */ });
     return () => { cancelled = true; };
   }, [address]);
 
@@ -44,25 +50,23 @@ export function ReceiveScreen({ address, network, onClose }: Props) {
   return (
     <div className="absolute inset-0 z-30 flex flex-col" style={{ background: "var(--bg)" }}>
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--line)" }}>
-        <p className="font-semibold text-sm">Receive</p>
-        <button onClick={onClose} className="p-1.5 rounded-input hover:bg-black/5">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-sm">Account</p>
+          <span className="pill pill-live">{NETWORK_LABEL[network] ?? network}</span>
+        </div>
+        <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-input hover:bg-black/5">
           <X size={16} />
         </button>
       </div>
 
       <div className="flex-1 px-5 py-6 flex flex-col items-center gap-5 overflow-y-auto">
-        <p className="text-text-faint text-[11px] text-center max-w-[260px]">
-          Send <span className="text-text">CSPR</span> or any CEP-18 token to this address on{" "}
-          <span className="text-text">{network}</span>.
-        </p>
-
         <div
           className="rounded-card p-4 flex items-center justify-center"
           style={{ background: "rgba(255,255,255,0.045)", border: "1px solid var(--line)" }}
         >
           {qrDataUrl
-            ? <img src={qrDataUrl} alt="Wallet address QR" className="w-56 h-56" />
-            : <div className="w-56 h-56 flex items-center justify-center text-text-faint text-xs">generating…</div>}
+            ? <img src={qrDataUrl} alt="Account address QR" className="w-52 h-52" />
+            : <div className="w-52 h-52 flex items-center justify-center text-text-faint"><QrCode size={32} /></div>}
         </div>
 
         <div className="w-full">
@@ -77,9 +81,9 @@ export function ReceiveScreen({ address, network, onClose }: Props) {
               ? <Check size={14} className="shrink-0 text-ok mt-0.5" />
               : <Copy size={14} className="shrink-0 text-text-faint group-hover:text-text mt-0.5" />}
           </button>
-          {copied && (
-            <p className="text-[10px] text-ok mt-1.5">Copied to clipboard</p>
-          )}
+          <p className="text-[10px] mt-1.5" style={{ color: copied ? "var(--ok)" : "var(--text-faint)" }}>
+            {copied ? "Copied to clipboard" : "Tap the address to copy it"}
+          </p>
         </div>
       </div>
     </div>

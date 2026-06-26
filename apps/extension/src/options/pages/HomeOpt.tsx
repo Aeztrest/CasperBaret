@@ -12,14 +12,16 @@ import {
   Send,
   Download,
   Sparkles,
-  Loader2,
   ExternalLink,
   Shield,
   Clock,
   ArrowRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useRpc, useWalletState } from "../../shared/state-context";
 import type { GuardPolicy } from "@casper-baret/casper-guard";
+import { tokensFor, formatTokenAmount, type TokenDef } from "../../shared/tokens";
 import {
   OptionsSendModal,
   OptionsReceiveModal,
@@ -27,16 +29,28 @@ import {
 
 const MOTES_PER_CSPR = 1_000_000_000;
 
+// Casper's testnet faucet is captcha-gated — no programmatic airdrop. The
+// button copies the address and opens the faucet page (see popup Home.tsx).
+const FAUCET_URL = "https://testnet.cspr.live/tools/faucet";
+
+interface TokenBalance {
+  raw: string;
+  available: boolean;
+}
+
 export function HomeOpt() {
   const state = useWalletState();
   const rpc = useRpc();
   const [walletBal, setWalletBal] = useState<number | null>(null);
   const [authBal, setAuthBal] = useState<number | null>(null);
+  const [tokenBalances, setTokenBalances] = useState<Record<string, TokenBalance>>({});
   const [policy, setPolicy] = useState<GuardPolicy | null>(null);
-  const [airdropping, setAirdropping] = useState(false);
   const [airdropMsg, setAirdropMsg] = useState<string | null>(null);
   const [airdropError, setAirdropError] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<"send" | "receive" | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const tokens = state ? tokensFor(state.network) : [];
 
   const refresh = useCallback(async () => {
     if (!state) return;
@@ -54,6 +68,22 @@ export function HomeOpt() {
           address: state.authorityAddress,
         });
         setAuthBal(Number(r.motes) / MOTES_PER_CSPR);
+      }
+      const owner = state.walletAddress ?? state.authorityAddress;
+      if (owner) {
+        await Promise.all(
+          tokensFor(state.network).map(async (t) => {
+            try {
+              const tb = await rpc.call("wallet.tokenBalance", {
+                packageHash: t.packageHash,
+                address: owner,
+              });
+              setTokenBalances((prev) => ({ ...prev, [t.packageHash]: { raw: tb.raw, available: tb.available } }));
+            } catch {
+              setTokenBalances((prev) => ({ ...prev, [t.packageHash]: { raw: "0", available: false } }));
+            }
+          }),
+        );
       }
     } catch {
       /* ignore — UI shows last known */
@@ -73,21 +103,33 @@ export function HomeOpt() {
   }, [rpc]);
 
   const onAirdrop = async () => {
-    setAirdropping(true);
     setAirdropError(null);
     setAirdropMsg(null);
+    if (state?.network !== "testnet") {
+      setAirdropError("The faucet is only available on testnet.");
+      setTimeout(() => setAirdropError(null), 4000);
+      return;
+    }
+    const owner = state.walletAddress ?? state.authorityAddress;
     try {
-      const r = await rpc.call("wallet.airdrop", undefined as never);
-      setAirdropMsg(`Received ${r.amountCspr} testnet CSPR`);
-      await refresh();
-    } catch (err) {
-      setAirdropError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setAirdropping(false);
-      setTimeout(() => {
-        setAirdropMsg(null);
-        setAirdropError(null);
-      }, 4000);
+      if (owner) await navigator.clipboard.writeText(owner);
+    } catch {
+      /* clipboard optional */
+    }
+    window.open(FAUCET_URL, "_blank", "noopener,noreferrer");
+    setAirdropMsg("Address copied — paste it on the faucet page, solve the captcha, then come back.");
+    setTimeout(() => setAirdropMsg(null), 6000);
+  };
+
+  const onCopyAddress = async () => {
+    const addr = state?.walletAddress ?? state?.authorityAddress;
+    if (!addr) return;
+    try {
+      await navigator.clipboard.writeText(addr);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -117,9 +159,17 @@ export function HomeOpt() {
           border: "1px solid var(--line)",
         }}
       >
-        <p className="label">
-          {heroLabel} · {shortAddr(heroAddress)}
-        </p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="label !mb-0">{heroLabel}</p>
+          <button
+            onClick={onCopyAddress}
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-text-muted hover:text-text rounded-input px-1.5 py-0.5 hover:bg-black/[0.05]"
+            title="Copy address"
+          >
+            {shortAddr(heroAddress)}
+            {copied ? <Check size={12} className="text-ok" /> : <Copy size={12} className="text-text-faint" />}
+          </button>
+        </div>
         <p className="text-5xl font-extrabold leading-none font-mono tracking-tight">
           {heroBalance === null ? "—" : heroBalance.toFixed(4)}
           <span className="text-2xl text-text-faint font-bold ml-2">CSPR</span>
@@ -139,20 +189,8 @@ export function HomeOpt() {
           <button className="btn-ghost" onClick={() => setOverlay("receive")}>
             <Download size={13} /> Receive
           </button>
-          <button
-            onClick={onAirdrop}
-            disabled={airdropping}
-            className="btn-ghost"
-          >
-            {airdropping ? (
-              <>
-                <Loader2 size={13} className="animate-spin" /> Airdropping…
-              </>
-            ) : (
-              <>
-                <Sparkles size={13} /> Friendbot airdrop
-              </>
-            )}
+          <button onClick={onAirdrop} className="btn-ghost">
+            <Sparkles size={13} /> Faucet
           </button>
         </div>
 
@@ -172,6 +210,25 @@ export function HomeOpt() {
             {airdropError}
           </p>
         )}
+      </section>
+
+      <section className="card">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-bold text-sm">Assets</h2>
+          <span className="text-[10px] text-text-faint">{state.network}</span>
+        </div>
+        <div className="flex flex-col divide-y" style={{ borderColor: "var(--line)" }}>
+          <TokenRow symbol="CSPR" name="Casper" amount={heroBalance === null ? null : heroBalance.toFixed(4)} />
+          {tokens.map((t) => (
+            <TokenRow
+              key={t.packageHash}
+              symbol={t.symbol}
+              name={t.name}
+              badge={t.kind === "stablecoin" ? "stable" : undefined}
+              amount={amountFor(tokenBalances[t.packageHash], t)}
+            />
+          ))}
+        </div>
       </section>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -276,6 +333,48 @@ function PolicySummary({ policy }: { policy: GuardPolicy | null }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Display amount for a CEP-18 token, or "—" when the balance couldn't be read. */
+function amountFor(bal: TokenBalance | undefined, token: TokenDef): string | null {
+  if (!bal) return null; // still loading
+  if (!bal.available) return "—";
+  return formatTokenAmount(bal.raw, token.decimals);
+}
+
+function TokenRow({
+  symbol,
+  name,
+  amount,
+  badge,
+}: {
+  symbol: string;
+  name: string;
+  amount: string | null;
+  badge?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+          style={{ background: "var(--accent-dim)", color: "var(--accent-soft)" }}
+        >
+          {symbol.slice(0, 3)}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold leading-none">{symbol}</span>
+            {badge && <span className="pill pill-ok">{badge}</span>}
+          </div>
+          <span className="text-text-faint text-[11px] truncate block mt-0.5">{name}</span>
+        </div>
+      </div>
+      <span className="text-lg font-extrabold font-mono tracking-tight tabular-nums">
+        {amount === null ? "…" : amount}
+      </span>
+    </div>
   );
 }
 
