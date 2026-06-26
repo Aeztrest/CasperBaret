@@ -6,7 +6,7 @@
  * reads from here via the message router.
  */
 
-import type { CasperNetwork, WalletStateSnapshot } from "@casper-baret/ext-protocol";
+import type { AccountInfo, CasperNetwork, WalletStateSnapshot } from "@casper-baret/ext-protocol";
 
 export type WalletPhase =
   | "uninitialized"  // no keystore present
@@ -22,6 +22,10 @@ export interface WalletState {
   authorityAddress: string | null;
   alertsUnread: number;
   watchedAddresses: string[];
+  /** All accounts in this wallet (empty until unlocked / loaded). */
+  accounts: AccountInfo[];
+  /** Index of the active account within `accounts`. */
+  activeIndex: number;
   /** Idle timeout in ms (default 15 min). */
   idleTimeoutMs: number;
   /** Last activity timestamp; used to compute auto-lock. */
@@ -35,6 +39,8 @@ export const INITIAL_STATE: WalletState = {
   authorityAddress: null,
   alertsUnread: 0,
   watchedAddresses: [],
+  accounts: [],
+  activeIndex: 0,
   idleTimeoutMs: 15 * 60 * 1000,
   lastActivityAt: Date.now(),
 };
@@ -42,10 +48,11 @@ export const INITIAL_STATE: WalletState = {
 /* ────────────── Actions (the only way to mutate state) ────────────── */
 
 export type Action =
-  | { type: "wallet.created"; walletAddress: string; authorityAddress: string }
-  | { type: "wallet.unlocked"; walletAddress: string; authorityAddress: string }
+  | { type: "wallet.created"; walletAddress: string; authorityAddress: string; accounts: AccountInfo[]; activeIndex: number }
+  | { type: "wallet.unlocked"; walletAddress: string; authorityAddress: string; accounts: AccountInfo[]; activeIndex: number }
   | { type: "wallet.locked" }
   | { type: "wallet.reset" }
+  | { type: "accounts.set"; accounts: AccountInfo[]; activeIndex: number; walletAddress: string; authorityAddress: string }
   | { type: "network.set"; network: CasperNetwork }
   | { type: "sign.start" }
   | { type: "sign.end" }
@@ -62,6 +69,18 @@ export function reduce(state: WalletState, action: Action): WalletState {
       return {
         ...state,
         phase: "ready",
+        walletAddress: action.walletAddress,
+        authorityAddress: action.authorityAddress,
+        accounts: action.accounts,
+        activeIndex: action.activeIndex,
+        lastActivityAt: Date.now(),
+      };
+
+    case "accounts.set":
+      return {
+        ...state,
+        accounts: action.accounts,
+        activeIndex: action.activeIndex,
         walletAddress: action.walletAddress,
         authorityAddress: action.authorityAddress,
         lastActivityAt: Date.now(),
@@ -113,5 +132,7 @@ export function snapshot(s: WalletState): WalletStateSnapshot {
     authorityAddress: s.authorityAddress,
     alertsUnread: s.alertsUnread,
     watchedAddresses: s.watchedAddresses,
+    accounts: s.accounts,
+    activeIndex: s.activeIndex,
   };
 }

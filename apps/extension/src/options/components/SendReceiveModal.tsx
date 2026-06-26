@@ -8,6 +8,7 @@ import { useEffect, type ReactNode } from "react";
 import { SendScreen } from "../../popup/SendScreen";
 import { ReceiveScreen } from "../../popup/ReceiveScreen";
 import { AcquireSheet } from "../../popup/AcquireSheet";
+import { AccountSheet } from "../../popup/AccountSheet";
 import type { TokenDef } from "../../shared/tokens";
 
 interface SendProps {
@@ -97,6 +98,14 @@ export function OptionsAcquireModal(props: AcquireProps) {
         tokens={props.tokens}
         onClose={props.onClose}
       />
+    </ModalShell>
+  );
+}
+
+export function OptionsAccountsModal({ onClose }: { onClose: () => void }) {
+  return (
+    <ModalShell onClose={onClose}>
+      <AccountSheet onClose={onClose} />
     </ModalShell>
   );
 }

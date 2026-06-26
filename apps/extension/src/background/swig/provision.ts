@@ -13,7 +13,7 @@
  * returns it without doing anything.
  */
 
-import { readKeystore, writeKeystore } from "../db/keystore";
+import { readKeystore, writeKeystore, activeAccount } from "../db/keystore";
 
 export interface ProvisionResult {
   smartWalletAddress: string;
@@ -25,17 +25,24 @@ export async function provisionSmartWallet(): Promise<ProvisionResult> {
   const row = await readKeystore();
   if (!row) throw new Error("No wallet found.");
 
-  if (row.smartWalletAddress) {
+  // Provision the active account (each account has its own smart-wallet slot).
+  const acct = activeAccount(row);
+  if (acct.smartWalletAddress) {
     return {
-      smartWalletAddress: row.smartWalletAddress,
-      walletAddress: row.smartWalletAddress,
+      smartWalletAddress: acct.smartWalletAddress,
+      walletAddress: acct.smartWalletAddress,
       alreadyOnChain: true,
     };
   }
 
   // No-op: the user's own account acts as the wallet until PaymentGuard lands.
-  const smartWalletAddress = row.authorityPubkey;
-  await writeKeystore({ ...row, smartWalletAddress });
+  const smartWalletAddress = acct.authorityPubkey;
+  await writeKeystore({
+    ...row,
+    accounts: row.accounts.map((a) =>
+      a.index === acct.index ? { ...a, smartWalletAddress } : a,
+    ),
+  });
 
   return {
     smartWalletAddress,

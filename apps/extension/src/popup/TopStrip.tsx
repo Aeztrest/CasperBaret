@@ -23,6 +23,11 @@ const NETWORK_LABEL: Record<string, string> = {
   mainnet: "Mainnet",
 };
 
+function accountName(state: WalletStateSnapshot): string | null {
+  const a = state.accounts.find((acc) => acc.index === state.activeIndex);
+  return a?.name ?? null;
+}
+
 export function TopStrip({ state, onOpenAccount, onOpenSettings }: Props) {
   return (
     <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
@@ -31,7 +36,9 @@ export function TopStrip({ state, onOpenAccount, onOpenSettings }: Props) {
           <Mark size={14} />
         </div>
         <div>
-          <p className="text-[11px] text-text-faint leading-tight">{NETWORK_LABEL[state.network] ?? state.network}</p>
+          <p className="text-[11px] text-text-faint leading-tight">
+            {accountName(state) ?? (NETWORK_LABEL[state.network] ?? state.network)}
+          </p>
           <p className="text-xs font-mono text-text leading-tight">{shortAddr(state.walletAddress)}</p>
         </div>
         <ChevronDown size={11} className="text-text-faint" />

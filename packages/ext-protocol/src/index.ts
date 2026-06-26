@@ -44,6 +44,15 @@ export type WalletPhase =
   | "signing"
   | "alert";
 
+/** One HD account in the wallet, as surfaced to the UI account switcher. */
+export interface AccountInfo {
+  index: number;
+  name: string;
+  /** Address the wallet shows for this account (smart-wallet or authority pubkey). */
+  address: string;
+  authorityAddress: string;
+}
+
 export interface WalletStateSnapshot {
   phase: WalletPhase;
   network: CasperNetwork;
@@ -51,6 +60,10 @@ export interface WalletStateSnapshot {
   authorityAddress: string | null;
   alertsUnread: number;
   watchedAddresses: string[];
+  /** All accounts in this wallet (empty until unlocked). */
+  accounts: AccountInfo[];
+  /** Index of the active account within `accounts`. */
+  activeIndex: number;
 }
 
 export interface AllowanceSnapshot {
@@ -179,6 +192,16 @@ export interface ExtRpc {
   "wallet.tokenBalance": { req: { packageHash: string; address?: string }; rsp: { raw: string; available: boolean } };
   /** User-initiated native CSPR transfer from the wallet key. */
   "wallet.transferCspr": { req: { to: string; amountCspr: number };        rsp: { transactionHash: string } };
+
+  /* HD accounts ──────────────────────────── */
+  /** All accounts in this wallet. */
+  "wallet.listAccounts":  { req: void;                                     rsp: AccountInfo[] };
+  /** Derive + add the next HD account; returns it and makes it active. */
+  "wallet.addAccount":    { req: { name?: string };                        rsp: AccountInfo };
+  /** Switch the active account. */
+  "wallet.selectAccount": { req: { index: number };                        rsp: { ok: true } };
+  /** Rename an account. */
+  "wallet.renameAccount": { req: { index: number; name: string };          rsp: { ok: true } };
 
   /* Sign + tx ────────────────────────────── */
   "tx.sign":           { req: { requestId: string; accept: boolean; remember?: boolean };     rsp: { signed?: string; signature?: string; rejection?: string; ok?: true } };

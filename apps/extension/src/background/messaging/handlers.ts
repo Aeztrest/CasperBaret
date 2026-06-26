@@ -19,6 +19,7 @@ import {
 import { Buffer } from "buffer";
 import browser from "webextension-polyfill";
 import type {
+  AccountInfo,
   ExtRpcMethod,
   ExtRpcRequest,
   ExtRpcResponse,
@@ -27,12 +28,22 @@ import { BALANCED_POLICY, type GuardPolicy } from "@casper-baret/casper-guard";
 
 import { dispatch, getSnapshot } from "../state/store";
 import { encryptWithPassphrase, decryptWithPassphrase } from "../crypto/kdf";
-import { isUnlocked, lock, unlockWith, useAuthority } from "../crypto/session";
+import {
+  isUnlocked,
+  lock,
+  unlockWith,
+  useAuthority,
+  setActiveAccount,
+  derivePublicKeyHex,
+} from "../crypto/session";
 import {
   clearKeystore,
   hasKeystore,
   readKeystore,
   writeKeystore,
+  activeAccount,
+  type AccountMeta,
+  type KeystoreRow,
 } from "../db/keystore";
 import { getRpcClient, getChainName } from "../rpc/connection";
 import { provisionSmartWallet } from "../swig/provision";
@@ -101,20 +112,32 @@ const createHandler: Handler<"wallet.create"> = async ({
     throw new Error("Passphrase must be at least 8 characters.");
   }
 
+  // Account 0 ("root") uses the 32-byte master entropy directly as its key —
+  // identical to the pre-HD wallet, so this address is stable. HD siblings
+  // (Account 2+) derive from the same entropy's mnemonic seed (crypto/hd.ts).
   const authority = await generateKeypair("ed25519");
-  const seedBytes = new Uint8Array(Buffer.from(privateKeyHex(authority), "hex"));
+  const entropy = new Uint8Array(Buffer.from(privateKeyHex(authority), "hex"));
 
-  const blob = await encryptWithPassphrase(seedBytes, passphrase);
-  await writeKeystore({
-    id: "primary",
-    blob,
+  const blob = await encryptWithPassphrase(entropy, passphrase);
+  const account0: AccountMeta = {
+    index: 0,
+    name: "Account 1",
+    kind: "root",
     authorityPubkey: authority.publicKeyHex,
     smartWalletAddress: null,
+  };
+  const row: KeystoreRow = {
+    id: "primary",
+    version: 2,
+    blob,
+    accounts: [account0],
+    activeIndex: 0,
     createdAt: Date.now(),
-  });
+  };
+  await writeKeystore(row);
 
-  unlockWith(seedBytes);
-  seedBytes.fill(0);
+  unlockWith(entropy, { kind: "root", index: 0 });
+  entropy.fill(0);
 
   dispatch({ type: "network.set", network });
   // PaymentGuard not yet provisioned; surface the public key as the logical
@@ -123,6 +146,8 @@ const createHandler: Handler<"wallet.create"> = async ({
     type: "wallet.created",
     walletAddress: authority.publicKeyHex,
     authorityAddress: authority.publicKeyHex,
+    accounts: toAccountInfos(row),
+    activeIndex: 0,
   });
 
   return {
@@ -131,26 +156,39 @@ const createHandler: Handler<"wallet.create"> = async ({
   };
 };
 
+/** Project the keystore's account metadata into the UI-facing AccountInfo[]. */
+function toAccountInfos(row: KeystoreRow): AccountInfo[] {
+  return row.accounts.map((a) => ({
+    index: a.index,
+    name: a.name,
+    address: a.smartWalletAddress ?? a.authorityPubkey,
+    authorityAddress: a.authorityPubkey,
+  }));
+}
+
 const unlockHandler: Handler<"wallet.unlock"> = async ({ passphrase }) => {
   const row = await readKeystore();
   if (!row) throw new Error("No wallet found on this device.");
-  const secret = await decryptWithPassphrase(row.blob, passphrase);
-  if (secret.length !== 32) {
-    secret.fill(0);
+  const entropy = await decryptWithPassphrase(row.blob, passphrase);
+  if (entropy.length !== 32) {
+    entropy.fill(0);
     throw new Error(
-      `Keystore seed must be 32 bytes (got ${secret.length}); reset and recreate.`,
+      `Keystore entropy must be 32 bytes (got ${entropy.length}); reset and recreate.`,
     );
   }
-  unlockWith(secret);
-  secret.fill(0);
+  const acct = activeAccount(row);
+  unlockWith(entropy, { kind: acct.kind, index: acct.index });
+  entropy.fill(0);
 
   await preloadActiveSubKeys(passphrase);
 
-  const wallet = row.smartWalletAddress ?? row.authorityPubkey;
+  const wallet = acct.smartWalletAddress ?? acct.authorityPubkey;
   dispatch({
     type: "wallet.unlocked",
     walletAddress: wallet,
-    authorityAddress: row.authorityPubkey,
+    authorityAddress: acct.authorityPubkey,
+    accounts: toAccountInfos(row),
+    activeIndex: row.activeIndex,
   });
   return { ok: true };
 };
@@ -309,6 +347,95 @@ const transferCsprHandler: Handler<"wallet.transferCspr"> = async ({
   tx.sign(kp.privateKey);
   const res = await rpc.putTransaction(tx);
   return { transactionHash: res.transactionHash?.toHex?.() ?? tx.hash.toHex() };
+};
+
+/* ────────────── HD accounts ────────────── */
+
+const listAccountsHandler: Handler<"wallet.listAccounts"> = async () => {
+  const row = await readKeystore();
+  return row ? toAccountInfos(row) : [];
+};
+
+const addAccountHandler: Handler<"wallet.addAccount"> = async ({ name } = {}) => {
+  if (!isUnlocked()) throw new Error("Unlock the wallet first.");
+  const row = await readKeystore();
+  if (!row) throw new Error("No wallet found.");
+
+  // Append-only: account index == array position. Next index is one past the max.
+  const nextIndex = row.accounts.reduce((m, a) => Math.max(m, a.index), -1) + 1;
+  const authorityPubkey = await derivePublicKeyHex({ kind: "hd", index: nextIndex });
+  const label = name?.trim() || `Account ${nextIndex + 1}`;
+  const meta: AccountMeta = {
+    index: nextIndex,
+    name: label,
+    kind: "hd",
+    authorityPubkey,
+    smartWalletAddress: null,
+  };
+  const updated: KeystoreRow = {
+    ...row,
+    accounts: [...row.accounts, meta],
+    activeIndex: nextIndex,
+  };
+  await writeKeystore(updated);
+  setActiveAccount({ kind: "hd", index: nextIndex });
+
+  const walletAddress = meta.smartWalletAddress ?? meta.authorityPubkey;
+  dispatch({
+    type: "accounts.set",
+    accounts: toAccountInfos(updated),
+    activeIndex: nextIndex,
+    walletAddress,
+    authorityAddress: authorityPubkey,
+  });
+  return { index: nextIndex, name: label, address: walletAddress, authorityAddress: authorityPubkey };
+};
+
+const selectAccountHandler: Handler<"wallet.selectAccount"> = async ({ index }) => {
+  if (!isUnlocked()) throw new Error("Unlock the wallet first.");
+  const row = await readKeystore();
+  if (!row) throw new Error("No wallet found.");
+  const target = row.accounts.find((a) => a.index === index);
+  if (!target) throw new Error(`No account with index ${index}.`);
+
+  const updated: KeystoreRow = { ...row, activeIndex: index };
+  await writeKeystore(updated);
+  setActiveAccount({ kind: target.kind, index: target.index });
+
+  const walletAddress = target.smartWalletAddress ?? target.authorityPubkey;
+  dispatch({
+    type: "accounts.set",
+    accounts: toAccountInfos(updated),
+    activeIndex: index,
+    walletAddress,
+    authorityAddress: target.authorityPubkey,
+  });
+  return { ok: true };
+};
+
+const renameAccountHandler: Handler<"wallet.renameAccount"> = async ({ index, name }) => {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Account name cannot be empty.");
+  const row = await readKeystore();
+  if (!row) throw new Error("No wallet found.");
+  if (!row.accounts.some((a) => a.index === index))
+    throw new Error(`No account with index ${index}.`);
+
+  const updated: KeystoreRow = {
+    ...row,
+    accounts: row.accounts.map((a) => (a.index === index ? { ...a, name: trimmed } : a)),
+  };
+  await writeKeystore(updated);
+
+  const acct = activeAccount(updated);
+  dispatch({
+    type: "accounts.set",
+    accounts: toAccountInfos(updated),
+    activeIndex: updated.activeIndex,
+    walletAddress: acct.smartWalletAddress ?? acct.authorityPubkey,
+    authorityAddress: acct.authorityPubkey,
+  });
+  return { ok: true };
 };
 
 /* ────────────── Network ────────────── */
@@ -576,6 +703,11 @@ export const handlers: { [M in ExtRpcMethod]: Handler<M> } = {
   "wallet.balance": balanceHandler,
   "wallet.tokenBalance": tokenBalanceHandler,
   "wallet.transferCspr": transferCsprHandler,
+
+  "wallet.listAccounts": listAccountsHandler,
+  "wallet.addAccount": addAccountHandler,
+  "wallet.selectAccount": selectAccountHandler,
+  "wallet.renameAccount": renameAccountHandler,
 
   "network.set": networkSet,
 

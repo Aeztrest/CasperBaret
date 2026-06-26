@@ -10,7 +10,7 @@ import browser from "webextension-polyfill";
 import { startRouter } from "./messaging/router";
 import { dispatch, rehydrate, subscribe } from "./state/store";
 import { INITIAL_STATE } from "./state/machine";
-import { hasKeystore, readKeystore } from "./db/keystore";
+import { hasKeystore, readKeystore, activeAccount } from "./db/keystore";
 import { startMonitorLifecycle } from "./rpc/monitor";
 import { countUnread } from "./db/alerts";
 import { openPopupWindow } from "./popup-window";
@@ -30,7 +30,14 @@ async function bootstrap(): Promise<void> {
 
   // Smart wallet not yet provisioned → fall back to the authority address so
   // UI surfaces a non-null wallet identifier while locked.
-  const walletAddress = row.smartWalletAddress ?? row.authorityPubkey;
+  const acct = activeAccount(row);
+  const walletAddress = acct.smartWalletAddress ?? acct.authorityPubkey;
+  const accounts = row.accounts.map((a) => ({
+    index: a.index,
+    name: a.name,
+    address: a.smartWalletAddress ?? a.authorityPubkey,
+    authorityAddress: a.authorityPubkey,
+  }));
 
   let alertsUnread = 0;
   try {
@@ -43,8 +50,10 @@ async function bootstrap(): Promise<void> {
     ...INITIAL_STATE,
     phase: "locked",
     walletAddress,
-    authorityAddress: row.authorityPubkey,
+    authorityAddress: acct.authorityPubkey,
     alertsUnread,
+    accounts,
+    activeIndex: row.activeIndex,
   });
   void dispatch;
 }

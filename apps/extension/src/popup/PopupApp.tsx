@@ -86,12 +86,8 @@ export function PopupApp() {
 
       <TabBar active={tab} onChange={setTab} alertCount={state.alertsUnread} />
 
-      {accountOpen && state.walletAddress && (
-        <AccountSheet
-          address={state.walletAddress}
-          network={state.network}
-          onClose={() => setAccountOpen(false)}
-        />
+      {accountOpen && (
+        <AccountSheet onClose={() => setAccountOpen(false)} />
       )}
     </div>
   );

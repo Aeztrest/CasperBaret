@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Copy,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import { useRpc, useWalletState } from "../../shared/state-context";
 import type { GuardPolicy } from "@casper-baret/casper-guard";
@@ -26,6 +27,7 @@ import {
   OptionsSendModal,
   OptionsReceiveModal,
   OptionsAcquireModal,
+  OptionsAccountsModal,
 } from "../components/SendReceiveModal";
 
 const MOTES_PER_CSPR = 1_000_000_000;
@@ -42,7 +44,7 @@ export function HomeOpt() {
   const [authBal, setAuthBal] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Record<string, TokenBalance>>({});
   const [policy, setPolicy] = useState<GuardPolicy | null>(null);
-  const [overlay, setOverlay] = useState<"send" | "receive" | "acquire" | null>(null);
+  const [overlay, setOverlay] = useState<"send" | "receive" | "acquire" | "accounts" | null>(null);
   const [copied, setCopied] = useState(false);
 
   const tokens = state ? tokensFor(state.network) : [];
@@ -113,6 +115,7 @@ export function HomeOpt() {
 
   const heroBalance = state.walletAddress ? walletBal : authBal;
   const heroAddress = state.walletAddress ?? state.authorityAddress;
+  const activeName = state.accounts.find((a) => a.index === state.activeIndex)?.name ?? null;
   const heroLabel = state.walletAddress
     ? "Smart wallet"
     : "Authority key (smart wallet pending)";
@@ -135,8 +138,14 @@ export function HomeOpt() {
           border: "1px solid var(--line)",
         }}
       >
-        <div className="flex items-center gap-2 mb-1">
-          <p className="label !mb-0">{heroLabel}</p>
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <button
+            onClick={() => setOverlay("accounts")}
+            className="inline-flex items-center gap-1 label !mb-0 hover:text-text"
+            title="Switch account"
+          >
+            {activeName ?? heroLabel} <ChevronDown size={12} />
+          </button>
           <button
             onClick={onCopyAddress}
             className="inline-flex items-center gap-1.5 text-xs font-mono text-text-muted hover:text-text rounded-input px-1.5 py-0.5 hover:bg-black/[0.05]"
@@ -267,6 +276,9 @@ export function HomeOpt() {
           tokens={tokens}
           onClose={() => setOverlay(null)}
         />
+      )}
+      {overlay === "accounts" && (
+        <OptionsAccountsModal onClose={() => setOverlay(null)} />
       )}
     </div>
   );
