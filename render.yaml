@@ -1,0 +1,66 @@
+# Render blueprint for the Baret Casper server (analyze + x402 + CSPR faucet).
+#
+# Usage:
+#   1. render.com → New → Blueprint → connect the GitHub repo. Render reads this
+#      file and provisions the service below.
+#   2. Set the one secret it asks for: FAUCET_PRIVATE_KEY (kept out of git).
+#   3. Deploy → Render gives a https://<name>.onrender.com URL.
+#
+# The server listens on $PORT (Render injects it); see apps/server/src/index.ts.
+# The Dockerfile COPYs from the repo root, so dockerContext must be the root.
+services:
+  - type: web
+    name: baret-server
+    runtime: docker
+    repo: https://github.com/Aeztrest/CasperBaret
+    branch: main
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./apps/server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CASPER_NETWORK
+        value: testnet
+      # Behind Render's proxy — trust X-Forwarded-For so the faucet's per-IP
+      # cooldown sees the real client IP.
+      - key: DELTAG_TRUST_PROXY
+        value: "1"
+
+      # --- x402 paywall (GET /demo/scrybe) ---
+      - key: X402_ENABLED
+        value: "true"
+      - key: X402_FACILITATOR_URL
+        value: http://localhost:4022
+      - key: CEP18_X402_PACKAGE
+        value: 89ae0441d3ae2b1e619fbbb6cb14a58c7ad2004131e3f14b5d384007435a6231
+      - key: X402_PAY_TO
+        value: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      - key: X402_PRICE_ATOMIC
+        value: "10000"
+      - key: X402_TOKEN_NAME
+        value: Cep18x402
+      - key: X402_TOKEN_VERSION
+        value: "1"
+
+      # --- CSPR faucet (POST /demo/faucet) ---
+      - key: FAUCET_ENABLED
+        value: "true"
+      # Secret — entered in the Render dashboard, not committed.
+      - key: FAUCET_PRIVATE_KEY
+        sync: false
+      - key: FAUCET_PRIVATE_KEY_ALGO
+        value: ed25519
+      - key: FAUCET_AMOUNT_CSPR
+        value: "1000"
+      - key: FAUCET_COOLDOWN_SECONDS
+        value: "120"
+
+      # --- Contract reputation (mirror the showcase scenarios) ---
+      - key: RISKY_CONTRACT_PACKAGES
+        value: deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeadd
+      - key: KNOWN_SAFE_CONTRACT_PACKAGES
+        value: "1111111111111111111111111111111111111111111111111111111111111111,2222222222222222222222222222222222222222222222222222222222222222"
