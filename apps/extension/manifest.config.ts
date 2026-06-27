@@ -81,7 +81,8 @@ export default defineManifest(({ mode }) => {
       // x402 facilitator.
       "https://www.x402.org/*",
       "https://x402.org/*",
-      // Baret analyze server (dev + production placeholder).
+      // Baret analyze + faucet server — hosted (Render) + local dev.
+      "https://baret-server.onrender.com/*",
       "http://localhost:8080/*",
     ],
 

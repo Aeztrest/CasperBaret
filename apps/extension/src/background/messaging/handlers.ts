@@ -74,8 +74,9 @@ import {
 const POLICY_STORAGE_KEY = "baret.policy.v1";
 // Baret's own treasury-backed faucet (apps/server POST /demo/faucet). Casper's
 // public faucet is captcha-gated, so we run our own and dispense from a funded
-// account. Same base URL as the analyze server (host_permissions covers it).
-const FAUCET_ENDPOINT = "http://localhost:8080/demo/faucet";
+// account. Hosted on Render (host_permissions covers it); for local dev point
+// this at http://localhost:8080/demo/faucet.
+const FAUCET_ENDPOINT = "https://baret-server.onrender.com/demo/faucet";
 
 type Handler<M extends ExtRpcMethod> = (
   req: ExtRpcRequest<M>,

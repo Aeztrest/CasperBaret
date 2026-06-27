@@ -13,7 +13,9 @@ import type {
   RiskFindingPayload,
 } from "@casper-baret/ext-protocol";
 
-const DEFAULT_BASE_URL = "http://localhost:8080";
+// Hosted analyze server on Render. For local dev, override via opts.baseUrl or
+// point this at http://localhost:8080.
+const DEFAULT_BASE_URL = "https://baret-server.onrender.com";
 const ANALYZE_TIMEOUT_MS = 12_000;
 
 export interface AnalyzeClientOptions {
