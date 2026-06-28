@@ -40,6 +40,22 @@ export function WalletModal({
     setAvailable(initialAvailable);
   }, [initialAvailable]);
 
+  // When the modal opens with no providers yet, poll until the inpage script
+  // fires window.baret (the extension may load slightly after React mounts).
+  useEffect(() => {
+    if (!open) return;
+    if (discoverCasperProviders().length > 0) return;
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      const found = discoverCasperProviders();
+      if (found.length > 0) { setAvailable(found); return; }
+      setTimeout(tick, 200);
+    };
+    const t = setTimeout(tick, 200);
+    return () => { stopped = true; clearTimeout(t); };
+  }, [open]);
+
   const rescan = useCallback(() => {
     setRescanning(true);
     try {
