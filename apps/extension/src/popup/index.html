@@ -8,22 +8,47 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <!--
-      The popup shares index.css with the options page, whose base layer forces
-      `html, body, #root { height: 100% }`. That rule loads after this file's
-      inline <style> and (without !important) would win, collapsing the toolbar
-      popup's height to its content — leaving the wallet cramped and tiny. We
-      pin a definite pixel size here with !important so the popup keeps a real
-      600px canvas, while `body`/`#root` fill it.
+      Size the popup to exactly 360×600px.
 
-      When opened as a standalone window (sign/connect — see popup-window.ts),
-      main.tsx sets `data-popout`, switching to viewport-fill so the UI spans
-      the whole window instead of sitting in a 360×600 box in its corner.
+      Chrome and Firefox both size the popup panel to the document's scrollable
+      area — they read body (not html) for this. Setting the size on html alone
+      is unreliable in Firefox: the panel can grow past 360px if content has
+      wider intrinsic size. We set body + #root explicitly and overflow:hidden
+      so the panel never exceeds 360×600 regardless of child content.
+
+      index.css @layer base also touches html/body/root — the !important rules
+      here win since inline <style> !important beats linked-stylesheet !important
+      in the CSS cascade.
+
+      When opened as a standalone sign/connect window (?popout=1) main.tsx sets
+      data-popout on <html>, overriding body back to viewport-fill so the wallet
+      spans the whole window rather than sitting in a 360×600 box.
     -->
     <style>
-      html, body { margin: 0; padding: 0; overflow-x: hidden; }
-      html { width: 360px !important; height: 600px !important; }
-      body, #root { width: 100% !important; height: 100% !important; }
-      html[data-popout="true"] { width: 100vw !important; height: 100vh !important; overflow-x: visible; }
+      html { margin: 0; padding: 0; }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 360px !important;
+        min-width: 360px !important;
+        max-width: 360px !important;
+        height: 600px !important;
+        overflow: hidden !important;
+      }
+      #root {
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden;
+      }
+      /* Popout (sign/connect standalone window): fill the whole window. */
+      html[data-popout="true"] body {
+        width: 100vw !important;
+        min-width: 0 !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        overflow: visible !important;
+      }
+      html[data-popout="true"] #root { overflow: visible; }
     </style>
   </head>
   <body>
