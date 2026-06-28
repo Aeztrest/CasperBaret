@@ -53,7 +53,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
       <SidebarOpt />
-      <main className="flex-1 overflow-y-auto px-12 py-10 max-w-5xl mx-auto w-full">
+      <main className="flex-1 overflow-y-auto px-8 py-8 max-w-3xl mx-auto w-full">
         {children}
       </main>
     </div>

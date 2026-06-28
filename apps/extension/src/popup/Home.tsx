@@ -67,54 +67,56 @@ export function Home() {
   }, [refreshBalance, refreshTokens]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 relative">
-      <section
-        className="rounded-card p-4 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, rgba(225,20,40,0.08), rgba(225,20,40,0.015))",
-          border: "1px solid var(--line)",
-        }}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <p className="label !mb-0">Assets</p>
-        </div>
+    <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        <section
+          className="rounded-card p-4 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(225,20,40,0.08), rgba(225,20,40,0.015))",
+            border: "1px solid var(--line)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-1">
+            <p className="label !mb-0">Assets</p>
+          </div>
 
-        <div className="flex flex-col divide-y" style={{ borderColor: "var(--line)" }}>
-          <TokenRow
-            symbol="CSPR"
-            name="Casper"
-            amount={balance === null ? null : balance.toFixed(4)}
-            onClick={() => setOverlay("acquire")}
-          />
-          {tokens.map((t) => (
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--line)" }}>
             <TokenRow
-              key={t.packageHash}
-              symbol={t.symbol}
-              name={t.name}
-              badge={t.kind === "stablecoin" ? "stable" : undefined}
-              amount={amountFor(tokenBalances[t.packageHash], t)}
+              symbol="CSPR"
+              name="Casper"
+              amount={balance === null ? null : balance.toFixed(4)}
               onClick={() => setOverlay("acquire")}
             />
-          ))}
-        </div>
+            {tokens.map((t) => (
+              <TokenRow
+                key={t.packageHash}
+                symbol={t.symbol}
+                name={t.name}
+                badge={t.kind === "stablecoin" ? "stable" : undefined}
+                amount={amountFor(tokenBalances[t.packageHash], t)}
+                onClick={() => setOverlay("acquire")}
+              />
+            ))}
+          </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <ActionButton icon={Send} label="Send" onClick={() => setOverlay("send")} />
-          <ActionButton icon={Download} label="Receive" onClick={() => setOverlay("receive")} />
-          <ActionButton icon={Plus} label="Add funds" onClick={() => setOverlay("acquire")} />
-        </div>
-      </section>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <ActionButton icon={Send} label="Send" onClick={() => setOverlay("send")} />
+            <ActionButton icon={Download} label="Receive" onClick={() => setOverlay("receive")} />
+            <ActionButton icon={Plus} label="Add funds" onClick={() => setOverlay("acquire")} />
+          </div>
+        </section>
 
-      <section className="card flex-1 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <p className="label !mb-0">Recent activity</p>
-          <span className="text-[10px] text-text-faint">live in T26</span>
-        </div>
-        <p className="text-xs text-text-faint">
-          Your transactions, dApp signatures, and x402 payments will live here
-          once the allowance ledger is online.
-        </p>
-      </section>
+        <section className="card flex-1 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="label !mb-0">Recent activity</p>
+            <span className="text-[10px] text-text-faint">live in T26</span>
+          </div>
+          <p className="text-xs text-text-faint">
+            Your transactions, dApp signatures, and x402 payments will live here
+            once the allowance ledger is online.
+          </p>
+        </section>
+      </div>
 
       {overlay === "receive" && state?.authorityAddress && (
         <ReceiveScreen

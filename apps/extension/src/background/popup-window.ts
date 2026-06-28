@@ -15,8 +15,8 @@ import browser from "webextension-polyfill";
 // rendering at the fixed 360×600 toolbar-popup size — otherwise the UI sits in
 // a small box in the corner of this larger standalone window. See main.tsx.
 const POPUP_URL_PATH = "src/popup/index.html?popout=1";
-const POPUP_WIDTH = 400;
-const POPUP_HEIGHT = 640;
+const POPUP_WIDTH = 380;
+const POPUP_HEIGHT = 620;
 
 let currentPopupWindowId: number | null = null;
 
