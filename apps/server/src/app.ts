@@ -32,6 +32,33 @@ export async function buildApp(config: AppConfig, opts: BuildAppOptions = {}) {
     trustProxy: config.trustProxy,
   });
 
+  // CORS — allow configured origins and localhost for dev
+  if (config.corsOrigins.length > 0) {
+    const allowedSet = new Set(config.corsOrigins);
+    app.addHook("onRequest", async (req, reply) => {
+      const origin = req.headers.origin;
+      const allowed =
+        origin &&
+        (allowedSet.has(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin));
+      if (allowed) {
+        reply.header("Access-Control-Allow-Origin", origin!);
+        reply.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        reply.header(
+          "Access-Control-Allow-Headers",
+          "accept, content-type, x-payment, x-api-key, authorization",
+        );
+        reply.header(
+          "Access-Control-Expose-Headers",
+          "x-payment-required, x-payment-response",
+        );
+        reply.header("Access-Control-Max-Age", "86400");
+      }
+      if (req.method === "OPTIONS") {
+        return reply.code(204).send();
+      }
+    });
+  }
+
   if (config.rateLimitMax > 0) {
     await app.register(rateLimit, {
       max: config.rateLimitMax,

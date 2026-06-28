@@ -183,8 +183,11 @@ export class WalletStandardBridge {
  */
 export function discoverCasperProviders(): CasperWalletProvider[] {
   const out: CasperWalletProvider[] = [];
-  const provider = window.baret ?? window.CasperWalletProvider;
-  if (provider) out.push(provider);
+  if (window.baret) out.push(window.baret);
+  // CasperWalletProvider is Baret's alias — skip duplicates
+  if (window.CasperWalletProvider && window.CasperWalletProvider !== window.baret) {
+    out.push(window.CasperWalletProvider);
+  }
   return out;
 }
 

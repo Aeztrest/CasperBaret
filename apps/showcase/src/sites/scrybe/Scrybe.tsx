@@ -47,6 +47,12 @@ interface AnswerEntry {
   finishedAt?: number;
 }
 
+// In production the showcase is on Vercel but the API server is on Render.
+// VITE_SCRYBE_API can be set to /api (Vite proxy) during local dev.
+const SCRYBE_API_BASE =
+  (import.meta.env.VITE_SCRYBE_API as string | undefined) ??
+  "https://baret-server.onrender.com";
+
 const SUGGESTIONS = [
   "What is the Casper Network?",
   "How does Casper proof-of-stake work?",
@@ -94,9 +100,10 @@ export default function Scrybe() {
 
     try {
       // 1. First request — expect 402
-      const initial = await fetch(`/api/demo/scrybe?q=${encodeURIComponent(q)}`, {
-        headers: { accept: "application/json" },
-      });
+      const initial = await fetch(
+        `${SCRYBE_API_BASE}/demo/scrybe?q=${encodeURIComponent(q)}`,
+        { headers: { accept: "application/json" } },
+      );
 
       if (initial.status === 200) {
         // unlikely (server always requires payment) but handle anyway
@@ -109,7 +116,13 @@ export default function Scrybe() {
       }
       if (initial.status !== 402) {
         const body = await initial.json().catch(() => ({}));
-        throw new Error(body.error ?? `Server returned ${initial.status}`);
+        const errMsg =
+          typeof body.error === "string"
+            ? body.error
+            : (typeof body.error?.message === "string" ? body.error.message : null) ??
+              body.message ??
+              `Server returned ${initial.status}`;
+        throw new Error(String(errMsg));
       }
 
       // 2. Parse the 402 contract
@@ -126,12 +139,10 @@ export default function Scrybe() {
 
       // 4. Replay with the signed payload in X-PAYMENT
       update({ phase: "settling" });
-      const settled = await fetch(`/api/demo/scrybe?q=${encodeURIComponent(q)}`, {
-        headers: {
-          accept: "application/json",
-          "X-PAYMENT": headerValue,
-        },
-      });
+      const settled = await fetch(
+        `${SCRYBE_API_BASE}/demo/scrybe?q=${encodeURIComponent(q)}`,
+        { headers: { accept: "application/json", "X-PAYMENT": headerValue } },
+      );
 
       const body = await settled.json().catch(() => ({}));
       if (settled.status === 200) {
@@ -144,7 +155,17 @@ export default function Scrybe() {
           finishedAt: Date.now(),
         });
       } else {
-        throw new Error(body.detail || body.error || `Settle failed (${settled.status})`);
+        const detail =
+          typeof body.detail === "string" ? body.detail : null;
+        const errField =
+          typeof body.error === "string"
+            ? body.error
+            : typeof body.error?.message === "string"
+              ? body.error.message
+              : null;
+        throw new Error(
+          String(detail ?? errField ?? `Settle failed (${settled.status})`),
+        );
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

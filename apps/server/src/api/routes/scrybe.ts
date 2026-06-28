@@ -137,6 +137,24 @@ export function registerScrybeRoute(
       });
     }
 
+    // Demo mode: skip facilitator entirely, return a synthetic answer.
+    if (config.x402.demoMode) {
+      const demoHash = Buffer.from(`demo-${Date.now()}-${q.slice(0, 16)}`)
+        .toString("hex")
+        .padEnd(64, "0")
+        .slice(0, 64);
+      reply.header(
+        PAYMENT_RESPONSE_HEADER,
+        base64Json({ success: true, transaction: demoHash, network: requirements.network }),
+      );
+      return reply.send({
+        answer: answerFor(q),
+        paid: true,
+        settlement: demoHash,
+        network: requirements.network,
+      });
+    }
+
     // Verify with the facilitator.
     const verifyRes = await verifyPayment(
       facilitatorUrl,

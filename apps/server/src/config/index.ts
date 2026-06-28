@@ -36,7 +36,10 @@ const envSchema = z.object({
   CEP18_X402_PACKAGE: z.string().optional(),
 
   X402_ENABLED: z.string().optional(),
+  X402_DEMO_MODE: z.string().optional(),
   X402_FACILITATOR_URL: z.string().url().optional(),
+  /** Comma-separated origins allowed via CORS (e.g. https://baret-casper.vercel.app). */
+  CORS_ORIGINS: z.string().optional(),
   /** x402 wire addr ("00"+64hex) or bare 64hex account hash — normalized to x402. */
   X402_PAY_TO: z.string().optional(),
   /** Atomic token amount per paywalled request. */
@@ -75,6 +78,8 @@ export type { CasperNetworkId };
 
 export type X402Config = {
   enabled: boolean;
+  /** Skip facilitator verify/settle — return a synthetic demo response. */
+  demoMode: boolean;
   facilitatorUrl: string;
   /** Normalized x402 wire address ("00"+64hex). */
   payTo: string;
@@ -112,6 +117,8 @@ export type AppConfig = {
   rateLimitMax: number;
   rateLimitWindowMs: number;
   trustProxy: boolean;
+  /** Allowed CORS origins — empty means no CORS headers. */
+  corsOrigins: string[];
 };
 
 function splitCsv(raw: string | undefined): Set<string> {
@@ -178,6 +185,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   const x402: X402Config = {
     enabled: x402Enabled,
+    demoMode: boolish(e.X402_DEMO_MODE),
     facilitatorUrl: e.X402_FACILITATOR_URL?.trim() || "http://localhost:4022",
     payTo,
     asset,
@@ -203,6 +211,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     cooldownSeconds: e.FAUCET_COOLDOWN_SECONDS,
   };
 
+  const corsOrigins = e.CORS_ORIGINS
+    ? e.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
   return {
     nodeEnv: e.NODE_ENV,
     port: e.PORT,
@@ -218,6 +230,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     rateLimitMax: e.DELTAG_RATE_LIMIT_MAX,
     rateLimitWindowMs: e.DELTAG_RATE_LIMIT_WINDOW_MS,
     trustProxy: boolish(e.DELTAG_TRUST_PROXY),
+    corsOrigins,
   };
 }
 
