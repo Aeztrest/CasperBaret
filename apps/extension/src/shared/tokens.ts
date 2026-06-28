@@ -31,7 +31,7 @@ export const CEP18_TOKENS: Record<CasperNetwork, TokenDef[]> = {
   testnet: [
     {
       symbol: "USDC",
-      name: "USD Coin (demo CEP-18)",
+      name: "USD Coin",
       packageHash:
         "89ae0441d3ae2b1e619fbbb6cb14a58c7ad2004131e3f14b5d384007435a6231",
       decimals: 9,

@@ -92,6 +92,7 @@ export function AcquireSheet({ address, network, tokens, onClose, onFunded }: Pr
               <p className="text-xs text-text-muted leading-relaxed mb-3">
                 Get free testnet CSPR for gas — straight to your wallet, no captcha.
                 1,000 CSPR per claim, ~2&nbsp;min cooldown.
+                {" "}<span className="text-text-faint">First request may take up to 30&nbsp;s while the server wakes up.</span>
               </p>
               <button onClick={requestCspr} disabled={busy} className="btn-primary w-full !py-2.5 text-sm">
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <Droplet size={13} />}
@@ -171,15 +172,15 @@ function TokenAcquireCard({ token, network, address }: { token: TokenDef; networ
   const { copied, copy } = useCopy(address);
   const steps = [
     "Copy your address (button below).",
-    "Share it with whoever holds the demo token (treasury / teammate).",
+    "Share it with whoever holds USDC (treasury / teammate).",
     "They send you some via a CEP-18 transfer.",
   ];
   return (
     <section className="card !p-4">
       <CardHeader symbol={token.symbol} title={token.name} />
       <p className="text-xs text-text-muted leading-relaxed mb-3">
-        Demo CEP-18 stablecoin used for x402 micropayments. No public faucet yet —
-        receive it by transfer.
+        CEP-18 stablecoin used for x402 micropayments on Casper testnet.
+        No public faucet yet — receive it by transfer.
       </p>
       <ol className="space-y-1.5 mb-3">
         {steps.map((s, i) => (
@@ -201,11 +202,10 @@ function TokenAcquireCard({ token, network, address }: { token: TokenDef; networ
           rel="noreferrer"
           className="btn-primary !py-2 text-xs"
         >
-          View token on cspr.live <ExternalLink size={11} />
+          View on cspr.live <ExternalLink size={11} />
         </a>
         <CopyAddressButton copied={copied} onCopy={copy} />
       </div>
-      <p className="text-[10px] text-text-faint mt-2">A one-click demo-USDC faucet is planned.</p>
     </section>
   );
 }

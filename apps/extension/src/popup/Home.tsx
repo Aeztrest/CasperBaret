@@ -1,14 +1,5 @@
-/**
- * Popup home tab.
- *
- * Shows a portfolio token list (native CSPR + configured CEP-18 tokens like the
- * demo USDC) so the user can see every asset and how much they hold at a glance.
- * Send/Receive open as full-popup overlays; Faucet opens the captcha-gated
- * Casper faucet with the address pre-copied (no programmatic airdrop exists).
- */
-
-import { useCallback, useEffect, useState } from "react";
-import { Send, Download, Plus, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Send, Download, Plus } from "lucide-react";
 import { useRpc, useWalletState } from "../shared/state-context";
 import { tokensFor, formatTokenAmount, type TokenDef } from "../shared/tokens";
 import { ReceiveScreen } from "./ReceiveScreen";
@@ -17,9 +8,25 @@ import { AcquireSheet } from "./AcquireSheet";
 
 const MOTES_PER_CSPR = 1_000_000_000;
 
+// Poll balance every 6s while the popup is open.
+const POLL_INTERVAL_MS = 6_000;
+// After an airdrop, poll faster (every 3s) for up to 30s until balance changes.
+const POST_AIRDROP_POLL_MS = 3_000;
+const POST_AIRDROP_DURATION_MS = 30_000;
+
 interface TokenBalance {
   raw: string;
   available: boolean;
+}
+
+// Token icon colors — index falls back to accent red.
+const TOKEN_COLORS: Record<string, { bg: string; fg: string }> = {
+  CSPR: { bg: "#1f1b0e", fg: "#f5a623" },
+  USDC: { bg: "#0d1a2e", fg: "#2775ca" },
+};
+
+function tokenColor(symbol: string) {
+  return TOKEN_COLORS[symbol] ?? { bg: "var(--accent-dim)", fg: "var(--accent-soft)" };
 }
 
 export function Home() {
@@ -28,96 +35,116 @@ export function Home() {
   const [balance, setBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Record<string, TokenBalance>>({});
   const [overlay, setOverlay] = useState<"send" | "receive" | "acquire" | null>(null);
+  const postAirdropTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const tokens = state ? tokensFor(state.network) : [];
 
-  const refreshBalance = useCallback(async () => {
+  const fetchBalance = useCallback(async () => {
     if (!state?.authorityAddress) return;
     try {
       const r = await rpc.call("wallet.balance", { address: state.authorityAddress });
       setBalance(Number(r.motes) / MOTES_PER_CSPR);
-    } catch {
-      /* keep last value */
-    }
+    } catch { /* keep last */ }
   }, [state?.authorityAddress, rpc]);
 
-  const refreshTokens = useCallback(async () => {
+  const fetchTokens = useCallback(async () => {
     if (!state?.authorityAddress) return;
-    const list = tokensFor(state.network);
     await Promise.all(
-      list.map(async (t) => {
+      tokensFor(state.network).map(async (t) => {
         try {
           const r = await rpc.call("wallet.tokenBalance", {
             packageHash: t.packageHash,
             address: state.authorityAddress!,
           });
-          setTokenBalances((prev) => ({ ...prev, [t.packageHash]: { raw: r.raw, available: r.available } }));
+          setTokenBalances((p) => ({ ...p, [t.packageHash]: { raw: r.raw, available: r.available } }));
         } catch {
-          setTokenBalances((prev) => ({ ...prev, [t.packageHash]: { raw: "0", available: false } }));
+          setTokenBalances((p) => ({ ...p, [t.packageHash]: { raw: "0", available: false } }));
         }
       }),
     );
   }, [state?.authorityAddress, state?.network, rpc]);
 
+  // Background polling while popup is open.
   useEffect(() => {
-    let cancelled = false;
-    void refreshBalance();
-    void refreshTokens();
-    return () => { cancelled = true; void cancelled; };
-  }, [refreshBalance, refreshTokens]);
+    void fetchBalance();
+    void fetchTokens();
+    const id = setInterval(() => { void fetchBalance(); void fetchTokens(); }, POLL_INTERVAL_MS);
+    pollRef.current = id;
+    return () => { clearInterval(id); if (postAirdropTimer.current) clearTimeout(postAirdropTimer.current); };
+  }, [fetchBalance, fetchTokens]);
+
+  // After airdrop: poll at 3s cadence for 30s so balance updates promptly.
+  const onFunded = useCallback(() => {
+    if (postAirdropTimer.current) clearTimeout(postAirdropTimer.current);
+    // Switch to fast poll.
+    if (pollRef.current) clearInterval(pollRef.current);
+    const fast = setInterval(() => { void fetchBalance(); void fetchTokens(); }, POST_AIRDROP_POLL_MS);
+    pollRef.current = fast;
+    // Return to normal after 30s.
+    postAirdropTimer.current = setTimeout(() => {
+      clearInterval(fast);
+      const normal = setInterval(() => { void fetchBalance(); void fetchTokens(); }, POLL_INTERVAL_MS);
+      pollRef.current = normal;
+    }, POST_AIRDROP_DURATION_MS);
+  }, [fetchBalance, fetchTokens]);
 
   return (
     <div className="flex-1 flex flex-col relative">
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-        <section
-          className="rounded-card p-4 relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, rgba(225,20,40,0.08), rgba(225,20,40,0.015))",
-            border: "1px solid var(--line)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-1">
-            <p className="label !mb-0">Assets</p>
+      <div className="flex-1 overflow-y-auto flex flex-col">
+
+        {/* ── Portfolio hero ─────────────────────── */}
+        <div className="px-4 pt-5 pb-4">
+          <p className="text-[11px] uppercase tracking-widest font-semibold text-text-faint mb-1">
+            Total balance
+          </p>
+          <div className="flex items-end gap-1.5">
+            <span className="text-3xl font-extrabold tabular-nums tracking-tight leading-none">
+              {balance === null ? "—" : balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+            </span>
+            <span className="text-base font-bold text-text-faint mb-0.5">CSPR</span>
           </div>
 
-          <div className="flex flex-col divide-y" style={{ borderColor: "var(--line)" }}>
+          {/* ── Action buttons ──────────────────── */}
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <ActionBtn icon={Send}     label="Send"      onClick={() => setOverlay("send")} />
+            <ActionBtn icon={Download} label="Receive"   onClick={() => setOverlay("receive")} />
+            <ActionBtn icon={Plus}     label="Add funds" onClick={() => setOverlay("acquire")} />
+          </div>
+        </div>
+
+        {/* ── Token list ─────────────────────────── */}
+        <div
+          className="mx-4 mb-4 rounded-card overflow-hidden"
+          style={{ border: "1px solid var(--line)", background: "var(--bg-card)" }}
+        >
+          <p className="px-4 pt-3 pb-2 text-[10px] uppercase tracking-widest font-bold text-text-faint">
+            Assets
+          </p>
+
+          {/* CSPR row */}
+          <TokenRow
+            symbol="CSPR"
+            name="Casper"
+            amount={balance === null ? null : balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+            onClick={() => setOverlay("acquire")}
+          />
+
+          {/* CEP-18 tokens */}
+          {tokens.map((t) => (
             <TokenRow
-              symbol="CSPR"
-              name="Casper"
-              amount={balance === null ? null : balance.toFixed(4)}
+              key={t.packageHash}
+              symbol={t.symbol}
+              name={t.name}
+              badge={t.kind === "stablecoin" ? "stable" : undefined}
+              amount={amountFor(tokenBalances[t.packageHash], t)}
               onClick={() => setOverlay("acquire")}
             />
-            {tokens.map((t) => (
-              <TokenRow
-                key={t.packageHash}
-                symbol={t.symbol}
-                name={t.name}
-                badge={t.kind === "stablecoin" ? "stable" : undefined}
-                amount={amountFor(tokenBalances[t.packageHash], t)}
-                onClick={() => setOverlay("acquire")}
-              />
-            ))}
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <ActionButton icon={Send} label="Send" onClick={() => setOverlay("send")} />
-            <ActionButton icon={Download} label="Receive" onClick={() => setOverlay("receive")} />
-            <ActionButton icon={Plus} label="Add funds" onClick={() => setOverlay("acquire")} />
-          </div>
-        </section>
-
-        <section className="card flex-1 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <p className="label !mb-0">Recent activity</p>
-            <span className="text-[10px] text-text-faint">live in T26</span>
-          </div>
-          <p className="text-xs text-text-faint">
-            Your transactions, dApp signatures, and x402 payments will live here
-            once the allowance ledger is online.
-          </p>
-        </section>
+          ))}
+        </div>
       </div>
 
+      {/* ── Overlays (outside scroll so they cover full popup) ── */}
       {overlay === "receive" && state?.authorityAddress && (
         <ReceiveScreen
           address={state.authorityAddress}
@@ -131,7 +158,7 @@ export function Home() {
           network={state.network}
           balanceCspr={balance}
           onClose={() => setOverlay(null)}
-          onSent={refreshBalance}
+          onSent={fetchBalance}
         />
       )}
       {overlay === "acquire" && state?.authorityAddress && (
@@ -140,26 +167,21 @@ export function Home() {
           network={state.network}
           tokens={tokens}
           onClose={() => setOverlay(null)}
-          onFunded={() => { void refreshBalance(); void refreshTokens(); }}
+          onFunded={onFunded}
         />
       )}
     </div>
   );
 }
 
-/** Display amount for a CEP-18 token, or "—" when the balance couldn't be read. */
 function amountFor(bal: TokenBalance | undefined, token: TokenDef): string | null {
-  if (!bal) return null; // still loading
+  if (!bal) return null;
   if (!bal.available) return "—";
   return formatTokenAmount(bal.raw, token.decimals);
 }
 
 function TokenRow({
-  symbol,
-  name,
-  amount,
-  badge,
-  onClick,
+  symbol, name, amount, badge, onClick,
 }: {
   symbol: string;
   name: string;
@@ -167,61 +189,61 @@ function TokenRow({
   badge?: string;
   onClick?: () => void;
 }) {
+  const { bg, fg } = tokenColor(symbol);
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={!onClick}
-      className="flex items-center justify-between py-3 w-full text-left rounded-input
-                 enabled:hover:bg-black/[0.04] disabled:cursor-default px-1 -mx-1"
+      className="w-full flex items-center gap-3 px-4 py-3 text-left border-t transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+      style={{ borderColor: "var(--line)" }}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-          style={{ background: "var(--accent-dim)", color: "var(--accent-soft)" }}
-        >
-          {symbol.slice(0, 3)}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold leading-none">{symbol}</span>
-            {badge && <span className="pill pill-ok">{badge}</span>}
-          </div>
-          <span className="text-text-faint text-[10px] truncate block mt-0.5">{name}</span>
-        </div>
+      {/* Icon */}
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+        style={{ background: bg, color: fg, border: `1px solid ${fg}22` }}
+      >
+        {symbol.slice(0, 3)}
       </div>
-      <span className="text-base font-extrabold font-mono tracking-tight tabular-nums">
-        {amount === null ? "…" : amount}
+
+      {/* Name + badge */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-sm font-semibold leading-none">{symbol}</span>
+          {badge && (
+            <span
+              className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
+              style={{ background: "var(--ok-dim)", color: "var(--ok)" }}
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] text-text-faint leading-none">{name}</span>
+      </div>
+
+      {/* Amount */}
+      <span className="text-sm font-bold tabular-nums text-right shrink-0">
+        {amount === null ? <span className="text-text-faint text-xs">…</span> : amount}
       </span>
     </button>
   );
 }
 
-function ActionButton({
-  icon: Icon,
-  label,
-  onClick,
-  loading,
+function ActionBtn({
+  icon: Icon, label, onClick,
 }: {
   icon: typeof Send;
   label: string;
   onClick?: () => void;
-  loading?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      disabled={!onClick || loading}
-      className="flex flex-col items-center gap-1 py-2.5 rounded-input transition-all
-                 hover:bg-black/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--line)" }}
+      className="flex flex-col items-center gap-1.5 py-3 rounded-card transition-colors hover:bg-white/[0.06] active:bg-white/[0.09]"
+      style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}
     >
-      {loading ? (
-        <Loader2 size={14} className="animate-spin text-text" />
-      ) : (
-        <Icon size={14} className="text-text" />
-      )}
-      <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+      <Icon size={15} className="text-text" />
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-faint">{label}</span>
     </button>
   );
 }

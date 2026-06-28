@@ -7,6 +7,7 @@
 import { ChevronRight, Lock, ExternalLink, Trash2 } from "lucide-react";
 import browser from "webextension-polyfill";
 import { useRpc, useWalletState } from "../shared/state-context";
+import { version as APP_VERSION } from "../../package.json";
 
 export function Settings() {
   const rpc = useRpc();
@@ -61,7 +62,7 @@ export function Settings() {
         </button>
       </Section>
 
-      <p className="text-[10px] text-text-faint text-center mt-auto pt-3">Baret · v0.1.0 · open source</p>
+      <p className="text-[10px] text-text-faint text-center mt-auto pt-3">Baret · v{APP_VERSION} · open source</p>
     </div>
   );
 }
