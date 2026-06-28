@@ -12,9 +12,10 @@
  */
 
 import { keypairFromHex, type CasperKeypair } from "@casper-baret/casper-core";
+import { HDNodeWallet } from "ethers";
 import { Buffer } from "buffer";
 import { secureZero } from "./kdf";
-import { deriveHdPrivateKeyHex } from "./hd";
+import { deriveHdPrivateKeyHex, entropyToMnemonicStr } from "./hd";
 import { dispatch, getState } from "../state/store";
 
 /** Which account the session currently signs as. */
@@ -75,6 +76,18 @@ export async function useAuthority(): Promise<CasperKeypair> {
 export async function derivePublicKeyHex(acct: ActiveAccount): Promise<string> {
   const kp = await keypairFromHex(privateKeyHexFor(acct), "ed25519");
   return kp.publicKeyHex;
+}
+
+/**
+ * Get an ethers HDNodeWallet for the EVM account derived from the same entropy.
+ * Uses standard BIP44 Ethereum path m/44'/60'/0'/0/0 — different coin type
+ * from Casper so the keys are independent. Same mnemonic, different chain.
+ */
+export function useEvmWallet(): HDNodeWallet {
+  if (!entropyBytes) throw new Error("Wallet is locked. Unlock before signing.");
+  resetIdle();
+  const mnemonic = entropyToMnemonicStr(entropyBytes);
+  return HDNodeWallet.fromPhrase(mnemonic, "", "m/44'/60'/0'/0/0");
 }
 
 export function lock(): void {

@@ -8,6 +8,7 @@
  */
 
 import { installCasperWalletProvider } from "./wallet-standard";
+import { installEip1193Provider } from "./evm-provider";
 import { installX402Interceptor } from "./x402-interceptor";
 
 try {
@@ -15,6 +16,13 @@ try {
   console.info("[BARET] Casper wallet provider installed (window.baret)");
 } catch (err) {
   console.error("[BARET] wallet provider install failed:", err);
+}
+
+try {
+  installEip1193Provider();
+  console.info("[BARET] EIP-1193 provider installed (window.ethereum + EIP-6963)");
+} catch (err) {
+  console.error("[BARET] EVM provider install failed:", err);
 }
 
 try {

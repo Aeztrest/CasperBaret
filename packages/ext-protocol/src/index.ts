@@ -206,7 +206,7 @@ export interface ExtRpc {
   /* Sign + tx ────────────────────────────── */
   "tx.sign":           { req: { requestId: string; accept: boolean; remember?: boolean };     rsp: { signed?: string; signature?: string; rejection?: string; ok?: true } };
   "tx.send":           { req: { txBase64: string };                       rsp: { signature: string } };
-  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect"; origin: string; payloadBase64: string; label?: string } | null };
+  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect" | "typedData" | "evmTransaction" | "evmTransactionAndSend"; origin: string; payloadBase64: string; label?: string } | null };
   "tx.analyzeRequest": { req: { requestId: string };                      rsp: AnalyzeResponse };
 
   /* Allowance ledger ─────────────────────── */

@@ -13,7 +13,11 @@ export type SignKind =
   | "transaction"
   | "transactionAndSend"
   | "x402Payment"
-  | "connect";
+  | "connect"
+  // EVM (Monad) kinds
+  | "typedData"
+  | "evmTransaction"
+  | "evmTransactionAndSend";
 
 export interface SignRequest {
   requestId: string;
@@ -53,7 +57,11 @@ export type SignSuccess =
       signerAddress: string;
     }
   | { kind: "message"; signedMessage: string; signerAddress: string }
-  | { kind: "connect"; rememberOrigin: boolean };
+  | { kind: "connect"; rememberOrigin: boolean }
+  // EVM (Monad) results
+  | { kind: "typedData"; signature: string; signerAddress: string }
+  | { kind: "evmTransaction"; signedTransaction: string; signerAddress: string }
+  | { kind: "evmTransactionAndSend"; txHash: string; signerAddress: string };
 
 const queue = new Map<string, SignRequest>();
 

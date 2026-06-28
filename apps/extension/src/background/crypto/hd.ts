@@ -69,3 +69,4 @@ export function deriveHdPrivateKeyHex(entropy: Uint8Array, accountIndex: number)
   node = slip10CKD(node, accountIndex);
   return Buffer.from(node.key).toString("hex");
 }
+
