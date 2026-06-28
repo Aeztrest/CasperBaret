@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "nodeVersion": "22.x",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm build:packages && pnpm build:server && pnpm build:showcase",
   "outputDirectory": "apps/showcase/dist",
