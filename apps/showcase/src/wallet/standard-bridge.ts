@@ -285,13 +285,14 @@ export function discoverCasperProviders(): CasperWalletProvider[] {
 
   const cwp = window.CasperWalletProvider;
   if (cwp && cwp !== window.baret) {
-    if (typeof (cwp as { name?: string }).name === "string") {
-      // Already a plain provider object (another wallet using the same global)
-      out.push(cwp as CasperWalletProvider);
-    } else {
-      // Constructor function — official Casper Wallet
+    if (typeof cwp === "function") {
+      // Official Casper Wallet sets window.CasperWalletProvider as a constructor
       out.push(wrapOfficialCasperWallet(cwp));
+    } else if (typeof (cwp as { name?: string }).name === "string" && (cwp as { name?: string }).name) {
+      // Another plain Casper provider object with a proper name
+      out.push(cwp as CasperWalletProvider);
     }
+    // Skip nameless objects — they're incomplete / stale aliases
   }
   return out;
 }
