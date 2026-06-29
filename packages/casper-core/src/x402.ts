@@ -243,16 +243,18 @@ export function verifyX402Signature(
     { domainTypes: CASPER_DOMAIN_TYPES },
   );
 
-  // Verify: signAndAddAlgorithmBytes produces [algo_byte (1)] + [raw_sig (64)] = 65 bytes
+  // Verify: signAndAddAlgorithmBytes produces [algo_byte (1)] + [raw_sig (64)] = 65 bytes.
+  // PublicKey.verifySignature(message, sig) in casper-js-sdk v5 strips the algo byte
+  // internally — pass the full 65-byte sig; stripping it here causes a double-strip
+  // that reduces to 63 bytes and throws "Expected 64 bytes".
   const sigBytes = Buffer.from(payload.payload.signature, "hex");
   if (sigBytes.length !== 65) {
     return { isValid: false, invalidReason: `signature must be 65 bytes, got ${sigBytes.length}` };
   }
-  const rawSig = sigBytes.slice(1);
 
   try {
     const pubKey = PublicKey.fromHex(payload.payload.publicKey);
-    const valid = pubKey.verifySignature(digest, rawSig);
+    const valid = pubKey.verifySignature(digest, sigBytes);
     if (!valid) {
       return { isValid: false, invalidReason: "invalid_signature" };
     }

@@ -150,10 +150,10 @@ export function WalletModal({
                 <BaretMissing othersCount={others.length} />
               )}
 
-              {others.length > 0 && (
+              {!baret && others.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase tracking-wider text-ink-400 font-bold px-1 mb-1.5">
-                    {baret ? "Other Casper wallets" : "Wallets detected"}
+                    Wallets detected
                   </p>
                   {others.map((w) => (
                     <button
