@@ -181,12 +181,117 @@ export class WalletStandardBridge {
  * `window.baret` (with a `window.CasperWalletProvider` alias). Returns a
  * stable list the picker renders; empty when the extension isn't present yet.
  */
+// Official Casper Wallet icon (Casper Network red diamond / node shape)
+const OFFICIAL_CASPER_ICON = (() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <rect width="24" height="24" rx="5" fill="#1A1A2E"/>
+    <polygon points="12,3 20,8 20,16 12,21 4,16 4,8" fill="none" stroke="#FF473A" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="2.5" fill="#FF473A"/>
+    <line x1="12" y1="5" x2="12" y2="9.5" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+    <line x1="12" y1="14.5" x2="12" y2="19" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+    <line x1="5.5" y1="8.5" x2="9.8" y2="10.8" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+    <line x1="14.2" y1="13.2" x2="18.5" y2="15.5" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+    <line x1="18.5" y1="8.5" x2="14.2" y2="10.8" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+    <line x1="9.8" y1="13.2" x2="5.5" y2="15.5" stroke="#FF473A" stroke-width="1" opacity="0.7"/>
+  </svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+})();
+
+/**
+ * Official Casper Wallet (by Casper Association) sets window.CasperWalletProvider
+ * as a constructor function, not a plain provider object.  We wrap it so it
+ * appears in the picker with the right name/icon and a working connect flow.
+ */
+function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
+  type OfficialProvider = {
+    requestConnection: () => Promise<boolean | void>;
+    disconnectFromSite: () => Promise<void>;
+    getActivePublicKey: () => Promise<string>;
+    isConnected: () => Promise<boolean>;
+    signMessage: (msg: string, pk: string) => Promise<{ signatureHex: string }>;
+    sign: (deployJson: string, pk: string) => Promise<{ deployJson: string }>;
+    signTransaction: (deployJson: string, pk: string) => Promise<{ deployJson: string }>;
+  };
+  const factory = ctor as () => OfficialProvider;
+  let inst: OfficialProvider | null = null;
+  const get = () => { inst ??= factory(); return inst; };
+
+  return {
+    name: "Casper Wallet",
+    icon: OFFICIAL_CASPER_ICON,
+
+    connect: () =>
+      new Promise((resolve, reject) => {
+        const provider = get();
+        // The official wallet fires "casper-wallet:connected" after requestConnection.
+        const onConnected = () => {
+          provider.getActivePublicKey().then(
+            (pk) => resolve({ publicKey: pk, accountHash: pk, address: pk }),
+            reject,
+          );
+        };
+        window.addEventListener("casper-wallet:connected", onConnected, { once: true });
+        Promise.resolve(provider.requestConnection())
+          .then((approved) => {
+            // Some builds resolve the promise directly (true = connected)
+            if (approved === true) {
+              window.removeEventListener("casper-wallet:connected", onConnected);
+              provider.getActivePublicKey().then(
+                (pk) => resolve({ publicKey: pk, accountHash: pk, address: pk }),
+                reject,
+              );
+            } else if (approved === false) {
+              window.removeEventListener("casper-wallet:connected", onConnected);
+              reject(new Error("Connection rejected by Casper Wallet"));
+            }
+            // If void, wait for the event (handled above)
+          })
+          .catch((err) => {
+            window.removeEventListener("casper-wallet:connected", onConnected);
+            reject(err);
+          });
+      }),
+
+    disconnect: async () => { await get().disconnectFromSite().catch(() => {}); },
+    isConnected: async () => get().isConnected().catch(() => false),
+    getActivePublicKey: async () => get().getActivePublicKey(),
+    getNetwork: async () => ({ network: "testnet", caip2: "casper:casper-test" }),
+
+    signMessage: async (message: string) => {
+      const pk = await get().getActivePublicKey();
+      const res = await get().signMessage(message, pk);
+      return res?.signatureHex ?? "";
+    },
+
+    signTransaction: async (deployJson: string) => {
+      const pk = await get().getActivePublicKey();
+      // Official wallet has both .sign() and .signTransaction() depending on version
+      const signFn = get().sign ?? get().signTransaction;
+      const res = await signFn(deployJson, pk);
+      return res?.deployJson ?? deployJson;
+    },
+
+    payX402: async () => {
+      throw new Error(
+        "x402 micropayments require Baret Wallet. Connect Baret to use Scrybe.",
+      );
+    },
+  };
+}
+
 export function discoverCasperProviders(): CasperWalletProvider[] {
   const out: CasperWalletProvider[] = [];
   if (window.baret) out.push(window.baret);
-  // CasperWalletProvider is Baret's alias — skip duplicates
-  if (window.CasperWalletProvider && window.CasperWalletProvider !== window.baret) {
-    out.push(window.CasperWalletProvider);
+
+  const cwp = window.CasperWalletProvider;
+  if (cwp && cwp !== window.baret) {
+    if (typeof (cwp as { name?: string }).name === "string") {
+      // Already a plain provider object (another wallet using the same global)
+      out.push(cwp as CasperWalletProvider);
+    } else {
+      // Constructor function — official Casper Wallet
+      out.push(wrapOfficialCasperWallet(cwp));
+    }
   }
   return out;
 }
