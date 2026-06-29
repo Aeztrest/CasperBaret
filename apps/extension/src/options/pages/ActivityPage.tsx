@@ -133,12 +133,12 @@ function ActivityRow({ entry, network }: { entry: HistoryEntry; network: string 
 
         {entry.signature && (
           <a
-            href={stellarExplorerTx(entry.signature, network)}
+            href={casperExplorerTx(entry.signature, network)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-accent-soft hover:text-text mt-1.5"
           >
-            View on Stellar Expert <ExternalLink size={9} />
+            View on Explorer <ExternalLink size={9} />
           </a>
         )}
       </div>
@@ -148,9 +148,10 @@ function ActivityRow({ entry, network }: { entry: HistoryEntry; network: string 
 
 /* ───────────── helpers ───────────── */
 
-function stellarExplorerTx(sig: string, network: string): string {
-  const net = network === "pubnet" || network === "mainnet" || network === "public" ? "public" : "testnet";
-  return `https://stellar.expert/explorer/${net}/tx/${sig}`;
+function casperExplorerTx(sig: string, network: string): string {
+  return network === "mainnet"
+    ? `https://cspr.live/deploy/${sig}`
+    : `https://testnet.cspr.live/deploy/${sig}`;
 }
 
 function pretty(origin: string): string {

@@ -1,5 +1,5 @@
 /**
- * RPC handlers — one per method in @casper-baret/ext-protocol's ExtRpc (Stellar build).
+ * RPC handlers — one per method in @casper-baret/ext-protocol's ExtRpc.
  *
  * Many methods land progressively as their subsystems are built; today the
  * wallet lifecycle, balance, transfer, airdrop, sign drain, ledger, history
@@ -48,7 +48,6 @@ import {
 import { getRpcClient, getChainName } from "../rpc/connection";
 import { provisionSmartWallet } from "../swig/provision";
 import { performSign } from "../wallet-standard/handlers";
-import { performEvmSign } from "../evm/handlers";
 import { closePopupWindow } from "../popup-window";
 import {
   peek as peekById,
@@ -656,10 +655,7 @@ const txSignHandler: Handler<"tx.sign"> = async ({
     return { rejection: "User declined" };
   }
   try {
-    const isEvmKind = req.kind === "typedData" || req.kind === "evmTransaction" || req.kind === "evmTransactionAndSend";
-    const result = isEvmKind
-      ? await performEvmSign(req.kind, req.payloadBase64)
-      : await performSign(req.kind, req.payloadBase64, { signerPubkey: req.signerPubkey });
+    const result = await performSign(req.kind, req.payloadBase64, { signerPubkey: req.signerPubkey });
     req.resolve(result);
     endSignFlowIfDrained();
     const signature =
@@ -671,21 +667,17 @@ const txSignHandler: Handler<"tx.sign"> = async ({
       summary: `Signed ${kindLabel(req.kind)} for ${req.origin}`,
       decision: "allow",
       reasons: [],
-      broadcast: result.kind === "transactionAndSend" || result.kind === "evmTransactionAndSend",
+      broadcast: result.kind === "transactionAndSend",
       createdAt: Date.now(),
     });
     if (result.kind === "transactionAndSend")
       return { signed: result.signedTransaction, signature: result.signature };
-    if (result.kind === "evmTransactionAndSend")
-      return { signature: result.txHash };
-    if (result.kind === "transaction" || result.kind === "evmTransaction")
+    if (result.kind === "transaction")
       return { signed: result.signedTransaction };
     if (result.kind === "x402Payment")
       return { signed: result.headerValue };
     if (result.kind === "message")
       return { signature: result.signedMessage };
-    if (result.kind === "typedData")
-      return { signature: result.signature };
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -710,9 +702,6 @@ function kindLabel(kind: string): string {
   if (kind === "message") return "message";
   if (kind === "x402Payment") return "x402 payment";
   if (kind === "transactionAndSend") return "+broadcast tx";
-  if (kind === "typedData") return "EVM typed-data";
-  if (kind === "evmTransaction") return "EVM transaction";
-  if (kind === "evmTransactionAndSend") return "EVM tx + broadcast";
   return "transaction";
 }
 

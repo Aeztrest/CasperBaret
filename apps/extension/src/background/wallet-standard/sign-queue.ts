@@ -13,11 +13,7 @@ export type SignKind =
   | "transaction"
   | "transactionAndSend"
   | "x402Payment"
-  | "connect"
-  // EVM (Monad) kinds
-  | "typedData"
-  | "evmTransaction"
-  | "evmTransactionAndSend";
+  | "connect";
 
 export interface SignRequest {
   requestId: string;
@@ -30,10 +26,7 @@ export interface SignRequest {
    *  - x402Payment: JSON CasperPaymentRequirements.
    */
   payloadBase64: string;
-  /**
-   * When set, signs with this sub-key (Stellar-era; no-op on Casper since the
-   * sub-key cache always returns null and we fall back to the main key).
-   */
+  /** When set, signs with this sub-key (no-op on Casper; falls back to main key). */
   signerPubkey?: string;
   /** Free-form display label rendered in the popup. */
   label?: string;
@@ -57,11 +50,7 @@ export type SignSuccess =
       signerAddress: string;
     }
   | { kind: "message"; signedMessage: string; signerAddress: string }
-  | { kind: "connect"; rememberOrigin: boolean }
-  // EVM (Monad) results
-  | { kind: "typedData"; signature: string; signerAddress: string }
-  | { kind: "evmTransaction"; signedTransaction: string; signerAddress: string }
-  | { kind: "evmTransactionAndSend"; txHash: string; signerAddress: string };
+  | { kind: "connect"; rememberOrigin: boolean };
 
 const queue = new Map<string, SignRequest>();
 

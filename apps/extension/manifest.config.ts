@@ -84,8 +84,6 @@ export default defineManifest(({ mode }) => {
       // Baret analyze + faucet server — hosted (Render) + local dev.
       "https://baret-server.onrender.com/*",
       "http://localhost:8080/*",
-      // Monad testnet RPC (for EIP-1193 EVM provider).
-      "https://testnet-rpc.monad.xyz/*",
     ],
 
     content_security_policy: {

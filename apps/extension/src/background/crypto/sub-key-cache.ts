@@ -1,14 +1,6 @@
 /**
- * Sub-key cache — NO-OP on Casper.
- *
- * The Stellar build used per-merchant ed25519 sub-keys that acted as scoped
- * signers on a Soroban smart-wallet contract. Casper has no equivalent smart-
- * wallet sub-signer layer wired yet (PaymentGuard caps live on-chain instead),
- * so this module is reduced to no-ops to keep the unlock/lock lifecycle and
- * the (Stellar-era) callers compiling.
- *
- * TODO(casper): if per-merchant scoped keys are reintroduced, back them with a
- * PaymentGuard authorization instead of a contract sub-signer.
+ * Sub-key cache — no-op stubs. Per-merchant scoped sub-keys are not yet
+ * wired on Casper; PaymentGuard caps live on-chain instead.
  */
 
 import type { CasperKeypair } from "@casper-baret/casper-core";

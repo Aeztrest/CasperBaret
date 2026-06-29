@@ -11,8 +11,6 @@
 
 import { Casper, type CasperKeypair, type CasperPaymentRequirements } from "@casper-baret/casper-core";
 import { Buffer } from "buffer";
-import { evm_handlers } from "../evm/handlers";
-
 import { dispatch, getState } from "../state/store";
 import { isUnlocked, useAuthority } from "../crypto/session";
 import { getCaip2, getRpcClient } from "../rpc/connection";
@@ -319,8 +317,6 @@ export const wallet_standard_handlers: Record<string, WsHandler> = {
   "ws.signAndSendTransaction": wsSignAndSendTransaction,
   "ws.payX402": wsPayX402,
   "x402.review": x402Review,
-  // EIP-1193 EVM (Monad) methods — discovered via EIP-6963 in inpage
-  ...evm_handlers,
 };
 
 /* ────────────── Encoding helpers ────────────── */

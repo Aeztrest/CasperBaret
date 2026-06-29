@@ -34,8 +34,6 @@ export interface Envelope<TMethod extends string, TPayload> {
 
 /** Casper network id used across all extension surfaces. */
 export type CasperNetwork = "testnet" | "mainnet";
-/** @deprecated alias kept for any straggler imports — use {@link CasperNetwork}. */
-export type StellarNetwork = CasperNetwork;
 
 export type WalletPhase =
   | "uninitialized"
@@ -206,7 +204,7 @@ export interface ExtRpc {
   /* Sign + tx ────────────────────────────── */
   "tx.sign":           { req: { requestId: string; accept: boolean; remember?: boolean };     rsp: { signed?: string; signature?: string; rejection?: string; ok?: true } };
   "tx.send":           { req: { txBase64: string };                       rsp: { signature: string } };
-  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect" | "typedData" | "evmTransaction" | "evmTransactionAndSend"; origin: string; payloadBase64: string; label?: string } | null };
+  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect"; origin: string; payloadBase64: string; label?: string } | null };
   "tx.analyzeRequest": { req: { requestId: string };                      rsp: AnalyzeResponse };
 
   /* Allowance ledger ─────────────────────── */
