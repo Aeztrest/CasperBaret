@@ -191,6 +191,39 @@ export function discoverCasperProviders(): CasperWalletProvider[] {
   return out;
 }
 
+/** Minimal shape returned for each EIP-6963 announced wallet. */
+export interface Eip6963WalletInfo {
+  name: string;
+  icon: string;
+  rdns: string;
+}
+
+const BARET_RDNS = "dev.baret.wallet";
+
+/**
+ * Synchronously discover all EIP-6963 wallets (MetaMask, Phantom, etc.).
+ * Dispatches `eip6963:requestProvider`; all conforming wallets respond
+ * synchronously via `eip6963:announceProvider`. Baret's own EVM provider
+ * is filtered out (it's already shown as the Casper wallet).
+ */
+export function discoverEip6963Providers(): Eip6963WalletInfo[] {
+  const found: Eip6963WalletInfo[] = [];
+  const seen = new Set<string>();
+
+  const handler = (event: Event) => {
+    const info = (event as CustomEvent<{ info: Eip6963WalletInfo }>).detail?.info;
+    if (!info?.rdns || seen.has(info.rdns) || info.rdns === BARET_RDNS) return;
+    seen.add(info.rdns);
+    found.push({ name: info.name, icon: info.icon, rdns: info.rdns });
+  };
+
+  window.addEventListener("eip6963:announceProvider", handler);
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  window.removeEventListener("eip6963:announceProvider", handler);
+
+  return found;
+}
+
 /**
  * Wait briefly for the Baret provider to register. The inpage script fires a
  * `baret:walletReady` event on install; we resolve as soon as it lands (or the
