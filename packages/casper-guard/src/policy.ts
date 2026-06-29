@@ -163,8 +163,10 @@ export const BALANCED_POLICY: GuardPolicy = {
   blockThresholdWeakening: true,
   allowWarnings: true,
   requireSuccessfulSimulation: true,
-  // x402 — Balanced auto-approves micropayments under caps (no popup).
-  x402AutoApprove: true,
+  // x402 — show a confirmation popup for every payment so the user sees the
+  // Baret x402 firewall in action. The caps are still the guard; this just
+  // surfaces the signing step rather than running silently in the background.
+  x402AutoApprove: false,
   maxX402PerTx: 1.00,
   x402HourlyCap: 5.00,
   x402DailyCap: 25.00,

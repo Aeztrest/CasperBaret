@@ -17,6 +17,7 @@ import { registerHealthRoutes } from "./api/routes/health.js";
 import { registerAnalyzeRoute } from "./api/routes/analyze.js";
 import { registerScrybeRoute, type ScrybeDeps } from "./api/routes/scrybe.js";
 import { registerFaucetRoute } from "./api/routes/faucet.js";
+import { registerFacilitatorRoutes } from "./api/routes/facilitator.js";
 
 export interface BuildAppOptions {
   /** Injectable x402 facilitator URL / fetch — used by tests. */
@@ -93,6 +94,7 @@ export async function buildApp(config: AppConfig, opts: BuildAppOptions = {}) {
 
   registerHealthRoutes(app, config);
   registerAnalyzeRoute(app, config);
+  registerFacilitatorRoutes(app, config);
   registerScrybeRoute(app, config, opts.scrybe);
   registerFaucetRoute(app, config);
 

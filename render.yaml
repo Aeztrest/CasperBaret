@@ -33,19 +33,18 @@ services:
       # --- x402 paywall (GET /demo/scrybe) ---
       - key: X402_ENABLED
         value: "true"
-      # Demo mode — skip real facilitator; wallet still signs, server returns
-      # a synthetic settle hash so the full x402 flow shows in the showcase.
-      - key: X402_DEMO_MODE
-        value: "true"
+      # Built-in facilitator: the server verifies + settles itself.
+      # /facilitate/verify does pure crypto; /facilitate/settle calls CEP-18.
       - key: X402_FACILITATOR_URL
-        value: http://localhost:4022
+        value: "https://baret-server.onrender.com"
       # Allow the Vercel showcase to call this Render server directly.
       - key: CORS_ORIGINS
         value: "https://baret-casper.vercel.app"
       - key: CEP18_X402_PACKAGE
         value: 89ae0441d3ae2b1e619fbbb6cb14a58c7ad2004131e3f14b5d384007435a6231
+      # Treasury account — payments collected here. Computed from FAUCET_PRIVATE_KEY.
       - key: X402_PAY_TO
-        value: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        value: 083c722a55e16299dd8e5e0bf786ee3017daf7bb06af1618b573eeb36d608afa
       - key: X402_PRICE_ATOMIC
         value: "10000"
       - key: X402_TOKEN_NAME

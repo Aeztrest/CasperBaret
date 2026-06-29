@@ -16,6 +16,7 @@ import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosyst
 import type { CasperKeypair } from "./keys.js";
 import { signEip712Digest } from "./keys.js";
 import { toX402Address, stripPrefix } from "./address.js";
+import { PublicKey } from "./sdk.js";
 
 export const X402_VERSION = 2;
 export const PAYMENT_HEADER = "X-PAYMENT";
@@ -175,6 +176,94 @@ export function encodePaymentHeader(payload: ExactCasperPayload, accepted: Caspe
 export function decodePaymentHeader(headerValue: string): X402PaymentPayload {
   const json = Buffer.from(headerValue, "base64").toString("utf8");
   return JSON.parse(json) as X402PaymentPayload;
+}
+
+/**
+ * Cryptographically verify an X-PAYMENT payload against expected requirements.
+ * Pure crypto — no network calls, no external facilitator needed.
+ *
+ * Checks: EIP-712 signature validity, timing window, amount, payTo address.
+ * Returns `{ isValid: true, payer }` on success or `{ isValid: false, invalidReason }`.
+ */
+export function verifyX402Signature(
+  payload: X402PaymentPayload,
+  requirements: CasperPaymentRequirements,
+): { isValid: true; payer: string } | { isValid: false; invalidReason: string } {
+  const auth = payload.payload.authorization;
+
+  // Timing window
+  const now = Math.floor(Date.now() / 1000);
+  const validAfter = parseInt(auth.validAfter);
+  const validBefore = parseInt(auth.validBefore);
+  if (now <= validAfter) {
+    return { isValid: false, invalidReason: `payment not yet valid (validAfter=${validAfter})` };
+  }
+  if (now >= validBefore) {
+    return { isValid: false, invalidReason: `payment expired (validBefore=${validBefore}, now=${now})` };
+  }
+
+  // Amount
+  if (auth.value !== requirements.amount) {
+    return {
+      isValid: false,
+      invalidReason: `amount mismatch: expected ${requirements.amount}, got ${auth.value}`,
+    };
+  }
+
+  // payTo
+  const expectedPayTo = toX402Address(requirements.payTo);
+  if (auth.to !== expectedPayTo) {
+    return {
+      isValid: false,
+      invalidReason: `payTo mismatch: expected ${expectedPayTo}, got ${auth.to}`,
+    };
+  }
+
+  // Rebuild the EIP-712 digest from the exact authorization values
+  const name = requirements.extra.name ?? (requirements.extra.assetName as string | undefined);
+  const version = requirements.extra.version ?? "1";
+  if (!name) {
+    return { isValid: false, invalidReason: "requirements missing extra.name for EIP-712 domain" };
+  }
+  const assetHex = stripPrefix(requirements.asset).toLowerCase();
+  const domain = buildDomain(name, version, requirements.network, "0x" + assetHex);
+  const message = {
+    from: "0x" + auth.from,
+    to: "0x" + auth.to,
+    value: BigInt(auth.value),
+    validAfter: BigInt(auth.validAfter),
+    validBefore: BigInt(auth.validBefore),
+    nonce: "0x" + auth.nonce,
+  };
+  const digest = hashTypedData(
+    domain,
+    TRANSFER_WITH_AUTHORIZATION_TYPES,
+    "TransferWithAuthorization",
+    message,
+    { domainTypes: CASPER_DOMAIN_TYPES },
+  );
+
+  // Verify: signAndAddAlgorithmBytes produces [algo_byte (1)] + [raw_sig (64)] = 65 bytes
+  const sigBytes = Buffer.from(payload.payload.signature, "hex");
+  if (sigBytes.length !== 65) {
+    return { isValid: false, invalidReason: `signature must be 65 bytes, got ${sigBytes.length}` };
+  }
+  const rawSig = sigBytes.slice(1);
+
+  try {
+    const pubKey = PublicKey.fromHex(payload.payload.publicKey);
+    const valid = pubKey.verifySignature(digest, rawSig);
+    if (!valid) {
+      return { isValid: false, invalidReason: "invalid_signature" };
+    }
+  } catch (err) {
+    return {
+      isValid: false,
+      invalidReason: `signature verification failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  return { isValid: true, payer: auth.from };
 }
 
 /* ─────────────── facilitator HTTP client ─────────────── */

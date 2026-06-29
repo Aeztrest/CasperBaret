@@ -19,6 +19,7 @@ export const {
   RpcClient,
   SpeculativeClient,
   Args,
+  NamedArg,
   CLValue,
   CLValueUInt256,
   CLValueUInt512,
@@ -31,6 +32,7 @@ export const {
   Deploy,
   Conversions,
   Hash,
+  AccountHash,
   ContractHash,
   ContractPackageHash,
 } = Casper as unknown as typeof import("casper-js-sdk");

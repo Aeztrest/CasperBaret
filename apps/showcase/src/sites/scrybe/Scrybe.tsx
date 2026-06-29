@@ -363,7 +363,7 @@ function ProgressStep({ entry }: { entry: AnswerEntry }) {
   const PHASES: Array<{ key: Phase; label: string }> = [
     { key: "asking",    label: "Asking the oracle" },
     { key: "paywalled", label: "Building $0.001 CEP-18 payment" },
-    { key: "signing",   label: "Baret firewall reviewing + signing" },
+    { key: "signing",   label: "Wallet signing EIP-712 payment" },
     { key: "settling",  label: "Settling on Casper" },
   ];
   const idx = PHASES.findIndex((p) => p.key === entry.phase);
@@ -457,17 +457,27 @@ function HowItWorksDisclosure() {
 
 function friendlyError(msg: string): string {
   const m = msg.toLowerCase();
+  if (
+    m.includes("x402 micropayments require") ||
+    m.includes("require baret") ||
+    m.includes("baret wallet")
+  ) {
+    return "Scrybe uses HTTP 402 payments — signing the EIP-712 payment authorization requires Baret Wallet. Connect Baret to pay and ask.";
+  }
   if (m.includes("insufficient") || m.includes("balance")) {
-    return "Your wallet doesn't have enough testnet CEP-18 tokens to pay. Top up and retry.";
+    return "Your wallet doesn't have enough testnet CEP-18 tokens. Use the faucet on the home page first, then retry.";
   }
   if (m.includes("cap") || m.includes("policy")) {
-    return "This payment exceeds your Baret policy caps. Raise the x402 caps in the wallet, or approve the popup.";
+    return "This payment exceeds your Baret policy caps. Raise the x402 caps in the wallet settings, or approve the popup.";
   }
   if (m.includes("user rejected") || m.includes("rejected") || m.includes("declined")) {
     return "You declined the payment. No money moved.";
   }
   if (m.includes("not connected") || m.includes("no wallet")) {
     return "Connect the Baret wallet first, then ask.";
+  }
+  if (m.includes("on-chain settlement failed") || m.includes("entrypoint") || m.includes("entry_point")) {
+    return `On-chain settlement error: ${msg}`;
   }
   return msg;
 }
