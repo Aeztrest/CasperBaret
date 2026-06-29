@@ -30,10 +30,13 @@ const ORIGIN = () => window.location.origin;
 /* ────────────── Brand glyph for the wallet picker ────────────── */
 
 const ICON_DATA_URL: `data:image/svg+xml;base64,${string}` = (() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-    <rect width="24" height="24" rx="6" fill="#FF6A00"/>
-    <path d="M12 5L18 18H6Z" fill="#FFFFFF"/>
-    <rect x="4" y="19" width="16" height="1.6" rx="0.8" fill="#FFFFFF"/>
+  // Black rounded square + orange hard-hat dome + white brim — matches the
+  // extension's actual 128.png toolbar icon.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <rect width="24" height="24" rx="5" fill="#111111"/>
+    <path d="M12 5.5C8.134 5.5 5 8.634 5 12.5v2h14v-2C19 8.634 15.866 5.5 12 5.5Z" fill="#FF6800"/>
+    <rect x="4" y="14.5" width="16" height="2.5" rx="1.25" fill="#FFFFFF"/>
+    <circle cx="12" cy="5.5" r="1.25" fill="#FFFFFF"/>
   </svg>`;
   return `data:image/svg+xml;base64,${btoa(svg)}` as `data:image/svg+xml;base64,${string}`;
 })();
