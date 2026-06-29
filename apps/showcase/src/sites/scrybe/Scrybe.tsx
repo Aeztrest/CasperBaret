@@ -239,7 +239,7 @@ export default function Scrybe() {
               </h2>
               <p className="text-ink-50/55 mt-3 leading-relaxed max-w-xl">
                 Pay-per-question oracle running the HTTP&nbsp;402 protocol on Casper testnet.
-                Your wallet pays in CEP-18 — under your caps — and answers settle on-chain.
+                Your wallet pays in USDC (demo) — under your caps — and answers settle on-chain.
               </p>
             </div>
 
@@ -362,7 +362,7 @@ function ConversationEntry({ entry, onRetry }: {
 function ProgressStep({ entry }: { entry: AnswerEntry }) {
   const PHASES: Array<{ key: Phase; label: string }> = [
     { key: "asking",    label: "Asking the oracle" },
-    { key: "paywalled", label: "Building $0.001 CEP-18 payment" },
+    { key: "paywalled", label: "Building $0.001 USDC payment" },
     { key: "signing",   label: "Wallet signing EIP-712 payment" },
     { key: "settling",  label: "Settling on Casper" },
   ];
@@ -439,7 +439,7 @@ function HowItWorksDisclosure() {
         <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           {[
             { n: "01", t: "Ask",     b: "Page requests the answer" },
-            { n: "02", t: "402",     b: "Server demands CEP-18 payment" },
+            { n: "02", t: "402",     b: "Server demands USDC payment" },
             { n: "03", t: "Sign",    b: "Baret validates + signs" },
             { n: "04", t: "Settle",  b: "Facilitator settles on testnet" },
           ].map((s) => (

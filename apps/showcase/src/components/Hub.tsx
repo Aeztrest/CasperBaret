@@ -116,7 +116,7 @@ const SHOWCASE: SiteSpec[] = [
     name: "Scrybe",
     category: "x402",
     tagline: "Pay-per-question oracle",
-    description: "An AI Q&A service that auto-charges $0.001 in CEP-18 per answer via x402 on Casper. Tests whether the wallet caps an agent's spend.",
+    description: "An AI Q&A service that auto-charges $0.001 in USDC per answer via x402 on Casper. Tests whether the wallet caps an agent's spend.",
     catches: [
       "Per-merchant rolling spend cap",
       "Facilitator allowlist enforcement",

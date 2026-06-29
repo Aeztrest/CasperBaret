@@ -33,6 +33,11 @@ services:
       # --- x402 paywall (GET /demo/scrybe) ---
       - key: X402_ENABLED
         value: "true"
+      # Demo mode: settle via a CSPR self-transfer so the tx hash is real and
+      # shows "succeeded" on the explorer. Avoids needing the user to hold the
+      # demo CEP-18 token. Flip to false (or remove) for true on-chain CEP-18 settlement.
+      - key: X402_DEMO_MODE
+        value: "true"
       # Built-in facilitator: the server verifies + settles itself.
       # Routes live at /facilitate/{verify,settle,supported}.
       - key: X402_FACILITATOR_URL

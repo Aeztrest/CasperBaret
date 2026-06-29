@@ -150,10 +150,10 @@ export function WalletModal({
                 <BaretMissing othersCount={others.length} />
               )}
 
-              {!baret && others.length > 0 && (
+              {others.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase tracking-wider text-ink-400 font-bold px-1 mb-1.5">
-                    Wallets detected
+                    {baret ? "Other wallets" : "Wallets detected"}
                   </p>
                   {others.map((w) => (
                     <button
@@ -169,10 +169,10 @@ export function WalletModal({
                           <span className="text-sm font-bold text-ink-200">{w.name[0]}</span>
                         }
                       />
-                      <p className="text-sm text-ink-50 flex-1">{w.name}</p>
-                      <span className="text-[10px] text-ink-400">
-                        No Baret protection
-                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm text-ink-50">{w.name}</p>
+                        <p className="text-[10px] text-ink-400 mt-0.5">x402 payments not supported</p>
+                      </div>
                     </button>
                   ))}
                 </div>

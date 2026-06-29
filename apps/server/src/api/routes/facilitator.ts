@@ -27,6 +27,7 @@ import {
   CLValue,
   NamedArg,
   ContractCallBuilder,
+  Casper,
 } from "@casper-baret/casper-core";
 import type { AppConfig } from "../../config/index.js";
 
@@ -90,12 +91,37 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       const kp = await keypairFromHex(config.faucet.privateKeyHex, config.faucet.algo);
       const rpc = makeRpcClient(config.casper.rpcUrl);
 
+      // Demo mode: submit a real CSPR self-transfer (treasury→treasury, 1 mote) so the
+      // returned hash is genuinely on-chain and shows as succeeded in the explorer.
+      // Used when the demo CEP-18 token hasn't been distributed to the user yet.
+      if (config.x402.demoMode) {
+        const demoTxn = new Casper.NativeTransferBuilder()
+          .from(kp.privateKey.publicKey)
+          .target(kp.privateKey.publicKey)
+          .chainName(config.casper.chainName)
+          .payment(100_000_000)
+          .amount("1")
+          .build();
+        demoTxn.sign(kp.privateKey);
+        const demoRes = await rpc.putTransaction(demoTxn);
+        const txHash = demoRes.transactionHash?.toHex?.() ?? demoTxn.hash.toHex();
+        req.log.info({ txHash, payer: auth.from }, "x402 demo settlement (CSPR self-transfer)");
+        return reply.send({
+          success: true,
+          transaction: txHash,
+          network: config.casper.caip2,
+          payer: auth.from,
+          explorerUrl: explorerTxUrl(config.casper, txHash),
+        });
+      }
+
       // from/to in the authorization are "00"+64hex (x402 address, 33 bytes)
       // strip the leading "00" prefix to get the raw 32-byte account hash
       const fromBytes = Buffer.from(auth.from.slice(2), "hex"); // 32 bytes
       const toBytes = Buffer.from(auth.to.slice(2), "hex");     // 32 bytes
       const nonceBytes = Buffer.from(auth.nonce, "hex");         // 32 bytes
-      const sigBytes = Buffer.from(paymentPayload.payload.signature, "hex"); // 65 bytes
+      // The contract's ed25519_verify expects raw 64-byte sig (no algo-byte prefix)
+      const rawSig = Buffer.from(paymentPayload.payload.signature, "hex").slice(1); // 64 bytes
 
       const callBuilder = new ContractCallBuilder()
         .from(kp.privateKey.publicKey)
@@ -109,7 +135,7 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
             new NamedArg("valid_after",  CLValue.newCLUInt256(BigInt(auth.validAfter))),
             new NamedArg("valid_before", CLValue.newCLUInt256(BigInt(auth.validBefore))),
             new NamedArg("nonce",        CLValue.newCLByteArray(nonceBytes)),
-            new NamedArg("signature",    CLValue.newCLByteArray(sigBytes)),
+            new NamedArg("signature",    CLValue.newCLByteArray(rawSig)),
           ]),
         )
         .chainName(config.casper.chainName)
