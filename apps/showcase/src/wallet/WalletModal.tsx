@@ -12,9 +12,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import {
   discoverCasperProviders,
-  discoverEip6963Providers,
   type CasperWalletProvider,
-  type Eip6963WalletInfo,
 } from "./standard-bridge";
 
 interface Props {
@@ -36,19 +34,16 @@ export function WalletModal({
 }: Props) {
   const [available, setAvailable] =
     useState<CasperWalletProvider[]>(initialAvailable);
-  const [evmWallets, setEvmWallets] = useState<Eip6963WalletInfo[]>([]);
   const [rescanning, setRescanning] = useState(false);
 
   useEffect(() => {
     setAvailable(initialAvailable);
   }, [initialAvailable]);
 
-  // Discover all wallets when the modal opens.
+  // When the modal opens, poll until providers register.
   useEffect(() => {
     if (!open) return;
-    setEvmWallets(discoverEip6963Providers());
     if (discoverCasperProviders().length > 0) return;
-    // Poll until the Baret inpage script registers (may lag slightly after page load).
     let stopped = false;
     const tick = () => {
       if (stopped) return;
@@ -64,7 +59,6 @@ export function WalletModal({
     setRescanning(true);
     try {
       setAvailable(discoverCasperProviders());
-      setEvmWallets(discoverEip6963Providers());
     } catch {
       /* ignore */
     }
@@ -156,10 +150,10 @@ export function WalletModal({
                 <BaretMissing othersCount={others.length} />
               )}
 
-              {(others.length > 0 || evmWallets.length > 0) && (
+              {others.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase tracking-wider text-ink-400 font-bold px-1 mb-1.5">
-                    {baret ? "Other wallets" : "Wallets we did detect"}
+                    {baret ? "Other Casper wallets" : "Wallets detected"}
                   </p>
                   {others.map((w) => (
                     <button
@@ -180,23 +174,6 @@ export function WalletModal({
                         No Baret protection
                       </span>
                     </button>
-                  ))}
-                  {evmWallets.map((w) => (
-                    <div
-                      key={w.rdns}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl opacity-50 select-none"
-                      style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-                      title={`${w.name} supports EVM chains only — not Casper. Use Baret for this showcase.`}
-                    >
-                      <WalletIcon
-                        icon={w.icon}
-                        fallback={
-                          <span className="text-sm font-bold text-ink-200">{w.name[0]}</span>
-                        }
-                      />
-                      <p className="text-sm text-ink-300 flex-1">{w.name}</p>
-                      <span className="text-[10px] text-ink-500">EVM only</span>
-                    </div>
                   ))}
                 </div>
               )}
