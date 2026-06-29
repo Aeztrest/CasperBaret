@@ -72,7 +72,7 @@ export function WalletModal({
   }, []);
 
   const baret = available.find((w) => w.name === BARET_NAME);
-  const others = available.filter((w) => w.name !== BARET_NAME);
+  const others = available.filter((w) => w.name && w.name !== BARET_NAME);
 
   return (
     <AnimatePresence>
