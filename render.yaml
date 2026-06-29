@@ -34,9 +34,9 @@ services:
       - key: X402_ENABLED
         value: "true"
       # Built-in facilitator: the server verifies + settles itself.
-      # /facilitate/verify does pure crypto; /facilitate/settle calls CEP-18.
+      # Routes live at /facilitate/{verify,settle,supported}.
       - key: X402_FACILITATOR_URL
-        value: "https://baret-server.onrender.com"
+        value: "https://baret-server.onrender.com/facilitate"
       # Allow the Vercel showcase to call this Render server directly.
       - key: CORS_ORIGINS
         value: "https://baret-casper.vercel.app"

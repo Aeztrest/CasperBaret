@@ -33,6 +33,19 @@ export async function openPopupWindow(): Promise<void> {
     }
   }
 
+  // Prefer the native toolbar popup (Chrome 127+). It appears attached to the
+  // extension icon — no new window, no tab. Falls back to windows.create when
+  // openPopup is unavailable or blocked (Firefox, older Chrome).
+  try {
+    const action = (browser as unknown as { action?: { openPopup?: () => Promise<void> } }).action;
+    if (typeof action?.openPopup === "function") {
+      await action.openPopup();
+      return;
+    }
+  } catch {
+    // openPopup can throw if there is no active window or if it's not a user gesture.
+  }
+
   try {
     const url = browser.runtime.getURL(POPUP_URL_PATH);
     const created = await browser.windows.create({

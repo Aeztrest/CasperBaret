@@ -51,6 +51,11 @@ export function installX402Interceptor(): void {
     const res = await origFetch(input as RequestInfo, init);
     if (res.status !== 402) return res;
 
+    // If the page manages x402 payments itself (e.g. the Baret showcase calling
+    // window.baret.payX402 explicitly), skip auto-interception so the page's
+    // own flow runs instead of the interceptor firing with Baret's keys.
+    if ((window as unknown as { __baretX402Managed?: boolean }).__baretX402Managed) return res;
+
     const requirements = await parseRequirements(res);
     if (!requirements) return res; // Non-x402 402 — bubble up.
 

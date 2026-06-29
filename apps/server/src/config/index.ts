@@ -186,7 +186,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const x402: X402Config = {
     enabled: x402Enabled,
     demoMode: boolish(e.X402_DEMO_MODE),
-    facilitatorUrl: e.X402_FACILITATOR_URL?.trim() || "http://localhost:4022",
+    facilitatorUrl: e.X402_FACILITATOR_URL?.trim() || "http://localhost:8080/facilitate",
     payTo,
     asset,
     network: casper.caip2,
