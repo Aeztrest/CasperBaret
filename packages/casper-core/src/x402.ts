@@ -13,6 +13,7 @@
  */
 
 import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
+import { blake2b } from "@noble/hashes/blake2b";
 import type { CasperKeypair } from "./keys.js";
 import { signEip712Digest } from "./keys.js";
 import { toX402Address, stripPrefix } from "./address.js";
@@ -270,18 +271,35 @@ export function verifyX402Signature(
 
   if (sigScheme === "casperMessage") {
     const digestHex = Buffer.from(digest).toString("hex");
-    const candidates: Uint8Array[] = [
-      digest,                                            // (a) raw 32-byte digest
-      Buffer.from(digestHex, "ascii"),                   // (b) 64 ASCII bytes of hex string
+    const asciiBytes = Buffer.from(digestHex, "ascii");  // 64 ASCII bytes of hex string
+    // Different wallet implementations sign different byte sequences from the same hex digest.
+    // We try four candidates in order (most to least likely):
+    // (a) raw 32-byte digest — wallet parses hex as bytes before signing
+    // (b) 64 ASCII bytes of hex string — wallet signs the string as UTF-8
+    // (c) blake2b-256 of ASCII bytes — wallet pre-hashes the string (common in Casper ecosystem)
+    // (d) blake2b-256 of raw digest — wallet pre-hashes raw bytes
+    const candidates: [string, Uint8Array][] = [
+      ["raw-digest",       digest],
+      ["ascii-hex",        asciiBytes],
+      ["blake2b-ascii",    blake2b(asciiBytes, { dkLen: 32 })],
+      ["blake2b-digest",   blake2b(digest,     { dkLen: 32 })],
     ];
-    for (const candidate of candidates) {
+    for (const [label, candidate] of candidates) {
       try {
         const valid = pubKey.verifySignature(candidate, sigBytes);
-        if (valid) return { isValid: true, payer: auth.from };
+        if (valid) {
+          console.info(`[x402] casperMessage verified via candidate: ${label}`);
+          return { isValid: true, payer: auth.from };
+        }
       } catch {
         /* try next candidate */
       }
     }
+    console.error("[x402] casperMessage sig verification failed — tried all candidates", {
+      pubKey: payload.payload.publicKey,
+      sig: payload.payload.signature,
+      digestHex,
+    });
     return { isValid: false, invalidReason: "invalid_signature" };
   }
 

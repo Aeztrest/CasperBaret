@@ -214,6 +214,9 @@ importers:
       '@casper-ecosystem/casper-eip-712':
         specifier: ^1.2.1
         version: 1.2.1
+      '@noble/hashes':
+        specifier: ^1.8.0
+        version: 1.8.0
       casper-js-sdk:
         specifier: ^5.0.12
         version: 5.0.12

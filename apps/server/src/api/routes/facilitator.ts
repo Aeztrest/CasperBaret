@@ -91,16 +91,16 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       const kp = await keypairFromHex(config.faucet.privateKeyHex, config.faucet.algo);
       const rpc = makeRpcClient(config.casper.rpcUrl);
 
-      // Demo mode: submit a real CSPR self-transfer (treasury→treasury, 1 mote) so the
+      // Demo mode: submit a real CSPR self-transfer (treasury→treasury) so the
       // returned hash is genuinely on-chain and shows as succeeded in the explorer.
-      // Used when the demo CEP-18 token hasn't been distributed to the user yet.
+      // 2,500,000,000 motes = 2.5 CSPR — Casper testnet minimum transfer amount.
       if (config.x402.demoMode) {
         const demoTxn = new Casper.NativeTransferBuilder()
           .from(kp.privateKey.publicKey)
           .target(kp.privateKey.publicKey)
           .chainName(config.casper.chainName)
           .payment(100_000_000)
-          .amount("1")
+          .amount("2500000000")
           .build();
         demoTxn.sign(kp.privateKey);
         const demoRes = await rpc.putTransaction(demoTxn);
