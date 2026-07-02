@@ -1,6 +1,6 @@
 /**
  * Build an x402-Casper exact-scheme payment (EIP-712 TransferWithAuthorization
- * over CEP-18). No Soroban / auth-entry: the payer signs a typed-data digest
+ * over CEP-18). The payer signs a typed-data digest
  * and the facilitator submits the settlement deploy.
  *
  * `buildX402Header` is the single entry point used by both the policy-driven

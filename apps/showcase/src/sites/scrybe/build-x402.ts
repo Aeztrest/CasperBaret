@@ -1,8 +1,8 @@
 /**
  * x402-Casper payment client (showcase side).
  *
- * Casper x402 is EIP-712 `TransferWithAuthorization` over a CEP-18 token —
- * no trustlines, no auth-entry juggling. The flow is:
+ * Casper x402 is EIP-712 `TransferWithAuthorization` over a CEP-18 token.
+ * The flow is:
  *   1. GET the resource; the merchant answers HTTP 402 with
  *      `{ x402Version, accepts: [CasperPaymentRequirements] }`.
  *   2. Hand `accepts[0]` to `window.baret.payX402(req)`. The wallet runs its

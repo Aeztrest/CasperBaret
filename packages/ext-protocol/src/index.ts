@@ -114,39 +114,45 @@ export interface RiskFindingPayload {
   details?: Record<string, unknown>;
 }
 
+/** Native CSPR balance delta (amounts in motes, 1 CSPR = 1e9 motes). */
 export interface NativeBalanceChangePayload {
-  accountId: string;
-  preStroops: string | null;
-  postStroops: string | null;
-  deltaStroops: string | null;
+  accountHash: string;
+  preMotes: string | null;
+  postMotes: string | null;
+  deltaMotes: string | null;
 }
 
-export interface AssetBalanceChangePayload {
-  accountId: string;
-  /** `CODE:ISSUER` for classic; `C…` for Soroban contracts. */
-  asset: string;
-  assetCode: string;
-  assetIssuer: string | null;
-  preBalance: string;
-  postBalance: string;
+/** CEP-18 token balance delta. */
+export interface TokenBalanceChangePayload {
+  accountHash: string;
+  tokenPackage: string;
+  symbol: string;
+  pre: string;
+  post: string;
   delta: string;
   decimals: number;
 }
 
-export interface TrustlineChangePayload {
-  accountId: string;
-  asset: string;
-  newLimit: string;
-  direction: "added" | "removed" | "increased" | "decreased" | "unchanged";
+/** CEP-18 approve() allowance grant. */
+export interface AllowanceChangePayload {
+  kind: "cep18_allowance";
+  tokenPackage: string;
+  owner: string;
+  spender: string;
+  amount: string;
+  unlimited: boolean;
   message: string;
 }
 
-export interface SorobanAllowanceChangePayload {
-  tokenAddress: string;
-  fromAddress: string;
-  spender: string;
-  amount: string;
-  expirationLedger: number | null;
+/** Casper associated-key / action-threshold change (account multisig control). */
+export interface AccountControlChangePayload {
+  kind: "account_control";
+  account: string;
+  change:
+    | "add_associated_key"
+    | "remove_associated_key"
+    | "update_associated_key"
+    | "set_action_threshold";
   message: string;
 }
 
@@ -159,9 +165,9 @@ export interface AnalyzeResponse {
   riskFindings: RiskFindingPayload[];
   estimatedChanges: {
     native: NativeBalanceChangePayload[];
-    assets: AssetBalanceChangePayload[];
-    trustlines: TrustlineChangePayload[];
-    allowances: SorobanAllowanceChangePayload[];
+    tokens: TokenBalanceChangePayload[];
+    allowances: AllowanceChangePayload[];
+    accountControl: AccountControlChangePayload[];
   };
   simulationWarnings: string[];
   /** True when the analyze server was unreachable. UI must surface this prominently. */
@@ -252,7 +258,7 @@ export type ExtEventName = keyof ExtEvents;
 /**
  * Casper wallet provider methods, forwarded from the page through the content
  * script's `bx-wallet-standard` port. Transactions are carried as Casper tx
- * JSON strings (not Stellar XDR).
+ * JSON strings (Casper tx JSON, not XDR).
  */
 export interface ExtWalletStandardMethods {
   "ws.connect":         { req: { origin: string };                              rsp: { walletAddress: string; authorityAddress: string; publicKey: string; accountHash: string } };

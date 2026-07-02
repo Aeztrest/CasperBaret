@@ -1,5 +1,5 @@
 /**
- * Blackthorn analyze HTTP client (background-side, Stellar build).
+ * Blackthorn analyze HTTP client (background-side).
  *
  * Talks to the apps/server `/v1/analyze` endpoint to get a structured
  * verdict on a candidate transaction. Decides everything client-side after —
@@ -50,9 +50,9 @@ const SEVERITY_ORDER = {
 
 const EMPTY_CHANGES: AnalyzeResponse["estimatedChanges"] = {
   native: [],
-  assets: [],
-  trustlines: [],
+  tokens: [],
   allowances: [],
+  accountControl: [],
 };
 
 export async function analyzeTransaction(

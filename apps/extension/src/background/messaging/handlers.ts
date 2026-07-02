@@ -92,9 +92,9 @@ const notImplemented = <M extends ExtRpcMethod>(
 
 const EMPTY_CHANGES = {
   native: [] as never[],
-  assets: [] as never[],
-  trustlines: [] as never[],
+  tokens: [] as never[],
   allowances: [] as never[],
+  accountControl: [] as never[],
 };
 
 /* ────────────── Wallet lifecycle ────────────── */

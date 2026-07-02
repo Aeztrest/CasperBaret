@@ -242,7 +242,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       <button onClick={onNext} className="btn-primary px-6 py-3">
         Get started <ArrowRight size={13} />
       </button>
-      <p className="text-[10px] text-text-faint">Devnet only · Self-custody · Open source</p>
+      <p className="text-[10px] text-text-faint">Testnet only · Self-custody · Open source</p>
     </div>
   );
 }
@@ -460,8 +460,9 @@ function StepFund({
       </div>
 
       <p className="text-[11px] text-text-faint text-center">
-        Faucet rate-limited? Open <a href="https://faucet.solana.com" target="_blank" rel="noreferrer"
-           className="text-accent-soft hover:text-text">faucet.solana.com</a>.
+        Faucet rate-limited? Try again in a minute or fund manually via{" "}
+        <a href="https://testnet.cspr.live/tools/faucet" target="_blank" rel="noreferrer"
+           className="text-accent-soft hover:text-text">testnet.cspr.live</a>.
       </p>
     </div>
   );
@@ -484,7 +485,7 @@ function StepProvision({
       <div className="space-y-2">
         <h2 className="text-2xl font-extrabold tracking-tight">Provisioning smart wallet</h2>
         <p className="text-text-muted text-sm max-w-md mx-auto">
-          Submitting a Swig-create instruction to devnet. Takes a few seconds.
+          Deploying your Casper smart-wallet contract to testnet. Takes a few seconds.
         </p>
         {message && <p className="text-xs text-text-faint pt-1">{message}</p>}
       </div>

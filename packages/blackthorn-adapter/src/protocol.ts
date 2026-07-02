@@ -1,5 +1,5 @@
 /**
- * postMessage protocol between dApp and Blackthorn wallet popup (Stellar build).
+ * postMessage protocol between dApp and Blackthorn wallet popup.
  * All messages tagged with `__bt: "1"` so we can distinguish ours from
  * unrelated traffic on the page.
  */
@@ -23,12 +23,11 @@ export interface ConnectApprovedMessage {
   __bt: typeof PROTO_VERSION;
   type: "connect-approved";
   requestId: RequestId;
-  /** Smart-wallet (Passkey / Soroban contract) address (`C…`) where assets live. */
+  /** Smart-wallet address where assets live. */
   walletAddress: string;
   /** Authority ed25519 key (`G…`) that signs auth entries on behalf of the user. */
   authorityAddress: string;
-  /** Smart-wallet contract address — same family as `walletAddress`; mirrors the
-   *  Solana protocol's "swig PDA" field so consumers needn't branch. */
+  /** Smart-wallet contract address — same family as `walletAddress`. */
   smartWalletAddress: string;
 }
 
@@ -47,7 +46,7 @@ export interface SignApprovedMessage {
   requestId: RequestId;
   /** Base64-encoded signed `TransactionEnvelope` XDR. */
   signedTransactionXdr: string;
-  /** Present only when mode=signAndSend — Horizon tx hash. */
+  /** Present only when mode=signAndSend — deploy hash. */
   signature?: string;
 }
 
@@ -85,7 +84,7 @@ export interface SignRequestMessage {
   appName?: string;
   /** Base64-encoded unsigned `TransactionEnvelope` XDR. */
   transactionXdr: string;
-  /** sign = return signed tx, signAndSend = also broadcast through Horizon. */
+  /** sign = return signed tx, signAndSend = also broadcast. */
   mode: "sign" | "signAndSend";
 }
 

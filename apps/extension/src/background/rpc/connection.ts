@@ -1,7 +1,6 @@
 /**
  * Pooled Casper RPC clients per network. Reused across handlers so we don't
- * open redundant sockets. Casper has a single JSON-RPC endpoint per network
- * (no Horizon/Soroban split).
+ * open redundant sockets. One JSON-RPC endpoint per network.
  */
 
 import { makeRpcClient, networkConfig, type CasperNetworkConfig } from "@casper-baret/casper-core";

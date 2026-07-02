@@ -1,12 +1,12 @@
 /**
- * Post-sign monitor — STUBBED on Casper.
+ * Post-sign monitor — STUBBED.
  *
- * The Stellar build polled Horizon for transactions touching the wallet and
- * raised drift alerts for anything Baret didn't sign. Casper's RPC has no
- * direct "transactions for account" endpoint equivalent, so drift detection
- * is deferred.
+ * Drift detection is deferred: Casper's JSON-RPC has no direct
+ * "transactions for account" endpoint. Once the cspr.live event store
+ * or a suitable indexer is available, this is where we subscribe and
+ * alert on anything the user didn't sign.
  *
- * TODO(casper): reconcile via cspr.live API or the event store once available.
+ * TODO: subscribe via cspr.live API or event store once available.
  */
 
 export function startMonitorLifecycle(): void {

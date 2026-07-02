@@ -1,5 +1,5 @@
 /**
- * Background service worker entry (Stellar build).
+ * Background service worker entry.
  *
  * Lifecycle: this file runs every time Chrome wakes the worker. Heavy
  * subsystems (RPC sockets, IndexedDB) are opened on-demand by their callers,

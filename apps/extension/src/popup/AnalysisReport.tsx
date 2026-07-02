@@ -1,5 +1,5 @@
 /**
- * Compact AnalysisReport for the popup (Stellar build).
+ * Compact AnalysisReport for the popup.
  * Renders an AnalyzeResponse — the Blackthorn simulation verdict + findings
  * + balance changes — into a 360-wide column.
  */
@@ -48,23 +48,21 @@ const SEVERITY_TONE: Record<
   },
 };
 
-const STROOPS_PER_XLM = 10_000_000n;
+const MOTES_PER_CSPR = 1_000_000_000n;
 
 export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
   const findings = result.riskFindings ?? [];
   const reasons = result.reasons ?? [];
   const changes = result.estimatedChanges;
   const significantNative = changes.native.filter(
-    (n) =>
-      n.deltaStroops !== null &&
-      n.deltaStroops !== "0",
+    (n) => n.deltaMotes !== null && n.deltaMotes !== "0",
   );
 
   const hasAnyChange =
     significantNative.length > 0 ||
-    changes.assets.length > 0 ||
+    changes.tokens.length > 0 ||
     changes.allowances.length > 0 ||
-    changes.trustlines.length > 0;
+    changes.accountControl.length > 0;
 
   return (
     <div className="space-y-3">
@@ -75,33 +73,33 @@ export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
           <div className="space-y-1">
             {significantNative.map((n, i) => (
               <DeltaRow
-                key={`xlm-${i}`}
-                label={shortAddr(n.accountId)}
-                value={formatStroopsAsXlm(n.deltaStroops!)}
-                negative={(n.deltaStroops ?? "0").startsWith("-")}
+                key={`cspr-${i}`}
+                label={shortAddr(n.accountHash)}
+                value={formatMotesAsCspr(n.deltaMotes!)}
+                negative={(n.deltaMotes ?? "0").startsWith("-")}
               />
             ))}
-            {changes.assets.map((a, i) => (
+            {changes.tokens.map((t, i) => (
               <DeltaRow
-                key={`asset-${i}`}
-                label={a.assetCode || shortAddr(a.asset)}
-                value={a.delta}
-                negative={a.delta.startsWith("-")}
-              />
-            ))}
-            {changes.trustlines.map((t, i) => (
-              <DeltaRow
-                key={`trust-${i}`}
-                label={`Trustline ${t.direction} → ${shortAddr(t.asset)}`}
-                value={t.newLimit}
-                tone="warn"
+                key={`token-${i}`}
+                label={t.symbol || shortAddr(t.tokenPackage)}
+                value={t.delta}
+                negative={t.delta.startsWith("-")}
               />
             ))}
             {changes.allowances.map((al, i) => (
               <DeltaRow
                 key={`allow-${i}`}
-                label={`Allowance → ${shortAddr(al.spender)}`}
-                value={al.amount}
+                label={`CEP-18 approval → ${shortAddr(al.spender)}`}
+                value={al.unlimited ? "unlimited" : al.amount}
+                tone="warn"
+              />
+            ))}
+            {changes.accountControl.map((ac, i) => (
+              <DeltaRow
+                key={`acctctrl-${i}`}
+                label={ac.change.replace(/_/g, " ")}
+                value={shortAddr(ac.account)}
                 tone="warn"
               />
             ))}
@@ -301,16 +299,16 @@ function shortAddr(s: string): string {
   return `${s.slice(0, 4)}…${s.slice(-4)}`;
 }
 
-function formatStroopsAsXlm(stroopsStr: string): string {
-  const negative = stroopsStr.startsWith("-");
-  const abs = negative ? stroopsStr.slice(1) : stroopsStr;
+function formatMotesAsCspr(motesStr: string): string {
+  const negative = motesStr.startsWith("-");
+  const abs = negative ? motesStr.slice(1) : motesStr;
   try {
     const v = BigInt(abs);
-    const whole = v / STROOPS_PER_XLM;
-    const frac = (v % STROOPS_PER_XLM).toString().padStart(7, "0");
-    return `${negative ? "-" : "+"}${whole.toString()}.${frac.slice(0, 6)} XLM`;
+    const whole = v / MOTES_PER_CSPR;
+    const frac = (v % MOTES_PER_CSPR).toString().padStart(9, "0");
+    return `${negative ? "-" : "+"}${whole.toString()}.${frac.slice(0, 4)} CSPR`;
   } catch {
-    return `${negative ? "-" : "+"}${abs} stroops`;
+    return `${negative ? "-" : "+"}${abs} motes`;
   }
 }
 

@@ -1,13 +1,11 @@
 /**
- * PaymentGuard provisioning (Casper build) — STUBBED no-op.
+ * PaymentGuard provisioning — STUBBED no-op.
  *
- * The Stellar build deployed a Passkey-kit smart-wallet contract per user.
- * On Casper the spending-cap vault is the deployed PaymentGuard contract
- * (see contracts/), which is optional for the demo. We treat the user's own
- * account as the "smart wallet" so flows that consume `smartWalletAddress`
- * resolve consistently, and record it in the keystore.
+ * The spending-cap vault is the deployed PaymentGuard contract (see contracts/).
+ * Until it's wired, the user's own account acts as the "smart wallet" so flows
+ * that consume `smartWalletAddress` resolve consistently.
  *
- * TODO(casper): wire actual PaymentGuard vault provisioning (deploy + init).
+ * TODO: wire actual PaymentGuard vault provisioning (deploy + init).
  *
  * Idempotent — if a smart-wallet address already lives in the keystore row,
  * returns it without doing anything.

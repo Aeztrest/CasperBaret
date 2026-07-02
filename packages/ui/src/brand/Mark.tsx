@@ -3,7 +3,7 @@
  *
  * Authoritative SVG; never replaced by a raster. Stylized hard hat — orange
  * dome with a white center rib, resting on an orange brim. "The hard hat for
- * your Stellar wallet." Lockup spec lives in docs/brand.md §2.
+ * your Casper wallet." Lockup spec lives in docs/brand.md §2.
  *
  * Renders in brand colors by default; pass `mono` to inherit `currentColor`
  * (for contexts that tint the mark, e.g. muted sidebars).

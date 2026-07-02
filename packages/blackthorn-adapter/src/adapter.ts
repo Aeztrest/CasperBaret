@@ -29,7 +29,7 @@ export interface BlackthornAdapterOptions {
 }
 
 export interface ConnectedAccount {
-  /** Smart-wallet address — assets live here. Use as `source` in Stellar ops. */
+  /** Smart-wallet address — assets live here. */
   walletAddress: string;
   /** Authority `G…` key — signs auth entries via Passkey / sub-key. */
   authorityAddress: string;
@@ -43,17 +43,13 @@ const DEFAULT_FEATURES = "popup=yes,width=440,height=720,top=80,left=80";
 type Listener = (msg: PopupOutgoing) => void;
 
 /**
- * dApp-side adapter for the Blackthorn wallet (Stellar build). Opens popups
- * to the wallet's /connect and /sign routes; handshakes via postMessage;
- * returns signed `TransactionEnvelope` XDRs.
+ * dApp-side adapter for the Blackthorn wallet. Opens popups to the wallet's
+ * /connect and /sign routes; handshakes via postMessage; returns signed
+ * transaction XDRs.
  *
  * Every signature is gated by the wallet's policy. The wallet runs the
  * Blackthorn analysis and shows it to the user before allowing the sign —
  * this adapter cannot bypass that, by design.
- *
- * The transport is XDR strings (base64). Callers serialize / deserialize via
- * `tx.toXDR()` / `TransactionBuilder.fromXDR(xdr, passphrase)` so this
- * package itself does not need to depend on the Stellar SDK at runtime.
  */
 export class BlackthornAdapter {
   private account: ConnectedAccount | null = null;
@@ -131,8 +127,8 @@ export class BlackthornAdapter {
   }
 
   /**
-   * Same as signTransaction, but also asks the wallet to broadcast via
-   * Horizon. Returns the Horizon tx hash.
+   * Same as signTransaction, but also asks the wallet to broadcast the
+   * transaction. Returns the deploy hash.
    */
   async signAndSendTransaction(
     transactionXdr: string,

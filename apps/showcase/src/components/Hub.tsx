@@ -39,10 +39,10 @@ const SHOWCASE: SiteSpec[] = [
     description: "A clean DEX aggregator clone. Toggle danger mode and a hidden instruction redirects your output token to a fresh wallet.",
     catches: [
       "Output transfer to unknown wallet",
-      "Compute-price abuse vs simulated baseline",
-      "Program unverified by reputation index",
+      "Gas-price abuse vs simulated baseline",
+      "Contract unverified by reputation index",
     ],
-    threat: "Fund drain · Unknown program",
+    threat: "Fund drain · Unknown contract",
     icon: ArrowLeftRight,
     bucket: "drainer",
   },
@@ -52,13 +52,13 @@ const SHOWCASE: SiteSpec[] = [
     name: "PixelDrop",
     category: "NFT",
     tagline: "Generative NFT mint",
-    description: "A Cyber Phantoms mint page. Behind the artwork sits a SetAuthority instruction that drains every token in your wallet.",
+    description: "A Cyber Phantoms mint page. Behind the artwork sits a hidden CEP-18 transfer that drains every token in your wallet.",
     catches: [
-      "SetAuthority on unrelated token accounts",
-      "Wallet-drainer pattern signature",
-      "Mint authority leaves the buyer",
+      "Hidden CEP-18 transfer to unknown wallet",
+      "Wallet-drainer deploy pattern",
+      "Mint proceeds never reach the contract",
     ],
-    threat: "Wallet drainer · Authority theft",
+    threat: "Wallet drainer · Token theft",
     icon: ImageIcon,
     bucket: "drainer",
   },
@@ -136,9 +136,9 @@ const FILTERS: { label: string; bucket: Bucket | "all"; helper: string }[] = [
 ];
 
 const DETECTOR_TAGS = [
-  "Wallet drainer", "Unauthorized approval", "Hidden CPI", "Mint authority swap",
-  "Compute-price abuse", "Look-alike mint", "Memo omission", "Rug-pull pattern",
-  "Drift detected", "Allowance overflow", "Facilitator impostor", "Unknown program",
+  "Wallet drainer", "Unauthorized approval", "Hidden contract call", "Mint authority swap",
+  "Gas-price abuse", "Look-alike contract", "Memo omission", "Rug-pull pattern",
+  "Drift detected", "Allowance overflow", "Facilitator impostor", "Unknown contract",
   "LP unlock", "Token freeze", "Phishing payload", "Silent re-sign",
 ];
 
@@ -239,8 +239,8 @@ function ThreatTicker() {
     "unlimited approvals",
     "rug-pull patterns",
     "silent agent drift",
-    "look-alike mints",
-    "hidden CPI calls",
+    "look-alike contracts",
+    "hidden contract calls",
   ];
   const [i, setI] = useState(0);
   useEffect(() => {

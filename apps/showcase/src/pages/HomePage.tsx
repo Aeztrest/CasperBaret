@@ -25,9 +25,9 @@ const SHOWCASE_SITES = [
 ];
 
 const DETECTOR_TICKER = [
-  "Wallet drainer", "Unauthorized approval", "Hidden CPI", "Mint authority swap",
-  "Compute-price abuse", "Look-alike mint", "Memo omission", "Rug-pull pattern",
-  "Drift detected", "Allowance overflow", "Facilitator impostor", "Unknown program",
+  "Wallet drainer", "Unauthorized approval", "Hidden contract call", "Mint authority swap",
+  "Gas-price abuse", "Look-alike contract", "Memo omission", "Rug-pull pattern",
+  "Drift detected", "Allowance overflow", "Facilitator impostor", "Unknown contract",
   "LP unlock", "Token freeze", "Phishing payload", "Silent re-sign",
 ];
 

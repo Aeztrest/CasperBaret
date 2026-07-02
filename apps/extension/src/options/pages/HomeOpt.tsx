@@ -1,5 +1,5 @@
 /**
- * Options home dashboard (Stellar build).
+ * Options home dashboard.
  *
  * Live-polls authority + smart-wallet balances every 8 seconds. Until the
  * smart-wallet contract is provisioned, the authority key IS the wallet — we
