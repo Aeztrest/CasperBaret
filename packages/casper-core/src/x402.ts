@@ -260,18 +260,33 @@ export function verifyX402Signature(
 
   // Determine what bytes were actually signed.
   // "raw": Baret signs the 32-byte digest directly via signAndAddAlgorithmBytes.
-  // "casperMessage": external wallets sign via signMessage(hex(digest)), which means
-  //   ed25519.sign(key, ascii_bytes_of_hex_string). Since hex chars are all ASCII,
-  //   the signed bytes are the 64-byte ASCII encoding of the digest hex.
+  // "casperMessage": external wallets (e.g. official Casper Wallet) call signMessage(hex(digest)).
+  //   Different wallet implementations may sign different byte sequences from the same hex string:
+  //   (a) raw 32-byte digest — wallet parses digestHex as bytes before signing (on-chain compatible)
+  //   (b) 64 ASCII bytes of the hex string — wallet signs the string as UTF-8
+  //   We try both, preferring (a) which matches the on-chain contract expectation.
   const sigScheme = payload.payload.sigScheme ?? "raw";
-  const messageToVerify: Uint8Array =
-    sigScheme === "casperMessage"
-      ? Buffer.from(Buffer.from(digest).toString("hex"), "ascii")
-      : digest;
+  const pubKey = PublicKey.fromHex(payload.payload.publicKey);
+
+  if (sigScheme === "casperMessage") {
+    const digestHex = Buffer.from(digest).toString("hex");
+    const candidates: Uint8Array[] = [
+      digest,                                            // (a) raw 32-byte digest
+      Buffer.from(digestHex, "ascii"),                   // (b) 64 ASCII bytes of hex string
+    ];
+    for (const candidate of candidates) {
+      try {
+        const valid = pubKey.verifySignature(candidate, sigBytes);
+        if (valid) return { isValid: true, payer: auth.from };
+      } catch {
+        /* try next candidate */
+      }
+    }
+    return { isValid: false, invalidReason: "invalid_signature" };
+  }
 
   try {
-    const pubKey = PublicKey.fromHex(payload.payload.publicKey);
-    const valid = pubKey.verifySignature(messageToVerify, sigBytes);
+    const valid = pubKey.verifySignature(digest, sigBytes);
     if (!valid) {
       return { isValid: false, invalidReason: "invalid_signature" };
     }
