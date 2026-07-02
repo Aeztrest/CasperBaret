@@ -150,6 +150,9 @@ importers:
       '@casper-baret/wallet-adapter':
         specifier: workspace:*
         version: link:../../packages/blackthorn-adapter
+      '@casper-ecosystem/casper-eip-712':
+        specifier: ^1.2.1
+        version: 1.2.1
       casper-js-sdk:
         specifier: ^5.0.12
         version: 5.0.12

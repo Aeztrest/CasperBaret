@@ -10,19 +10,60 @@
  * header value.
  *
  * For wallets without native payX402 (e.g. official Casper Wallet), we
- * implement x402 signing client-side using signMessage("sigScheme=casperMessage"):
+ * implement x402 signing client-side using sigScheme "casperMessage":
  * the EIP-712 digest is hex-encoded and signed as a string; the server's
  * verifyX402Signature handles this via the sigScheme field.
+ *
+ * Imports are intentionally from casper-js-sdk and @casper-ecosystem/casper-eip-712
+ * directly (NOT via @casper-baret/casper-core dist) to avoid bundling keys.ts
+ * which uses Node.js Buffer in a way that breaks vite-plugin-node-polyfills
+ * for workspace packages outside the Vite root.
  */
 
-import {
-  buildTransferAuthorization,
-  encodePaymentHeader,
-  toX402Address,
-  PublicKey,
-  type ExactCasperPayload,
-  type CasperPaymentRequirements,
-} from "@casper-baret/casper-core";
+import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
+import { PublicKey } from "casper-js-sdk";
+import type { CasperPaymentRequirements, ExactCasperPayload } from "@casper-baret/casper-core";
+
+// ── Inline x402 helpers ────────────────────────────────────────────────────
+// Kept local to avoid importing casper-core dist files that use Node.js Buffer
+// as a global — that import chain breaks vite-plugin-node-polyfills for
+// workspace packages outside the Vite root.
+
+const X402_VERSION = 2;
+
+const TRANSFER_WITH_AUTHORIZATION_TYPES = {
+  TransferWithAuthorization: [
+    { name: "from",         type: "address"  },
+    { name: "to",           type: "address"  },
+    { name: "value",        type: "uint256"  },
+    { name: "validAfter",   type: "uint256"  },
+    { name: "validBefore",  type: "uint256"  },
+    { name: "nonce",        type: "bytes32"  },
+  ],
+};
+
+function toX402Addr(ref: string): string {
+  const h = ref.replace(/^0x/i, "").replace(/^account-hash-/i, "").replace(/^hash-/i, "");
+  if (/^[0-9a-fA-F]{66}$/.test(h) && h.slice(0, 2) === "00") return h.toLowerCase();
+  if (/^[0-9a-fA-F]{64}$/.test(h)) return ("00" + h).toLowerCase();
+  throw new Error(`cannot convert to x402 address: ${ref}`);
+}
+
+function randomNonceHex(): string {
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return Array.from(b, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function uint8ArrayToHex(arr: Uint8Array): string {
+  return Array.from(arr, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function encodeX402Header(payload: ExactCasperPayload, accepted: CasperPaymentRequirements): string {
+  return btoa(JSON.stringify({ x402Version: X402_VERSION, payload, accepted }));
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 
 export class WalletStandardBridgeError extends Error {
   constructor(
@@ -292,14 +333,41 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       // Derive account hash from the algo-prefixed public key
       const sdkPubKey = PublicKey.fromHex(pubKeyStr);
       const accountHashHex = sdkPubKey.accountHash().toHex();
-      const fromX402 = toX402Address(accountHashHex);
+      const fromX402 = toX402Addr(accountHashHex);
+      const toX402 = toX402Addr(req.payTo);
 
-      // Build EIP-712 TransferWithAuthorization typed data
-      const { digest, authorization } = buildTransferAuthorization(req, fromX402);
+      const name = (req.extra.name ?? req.extra.assetName) as string | undefined;
+      const version = (req.extra.version as string | undefined) ?? "1";
+      if (!name) throw new Error("payment requirements missing extra.name for EIP-712 domain");
 
-      // Sign via wallet.signMessage — signs the ASCII bytes of the 64-char hex
-      // string (sigScheme "casperMessage"; server verifies with the same encoding)
-      const digestHex = Buffer.from(digest).toString("hex");
+      const assetHex = req.asset.replace(/^0x/i, "").toLowerCase();
+      const now = Math.floor(Date.now() / 1000);
+      const validAfter = now - 600;
+      const validBefore = now + req.maxTimeoutSeconds;
+      const nonceHex = randomNonceHex();
+
+      const domain = buildDomain(name, version, req.network, "0x" + assetHex);
+      const message = {
+        from: "0x" + fromX402,
+        to: "0x" + toX402,
+        value: BigInt(req.amount),
+        validAfter: BigInt(validAfter),
+        validBefore: BigInt(validBefore),
+        nonce: "0x" + nonceHex,
+      };
+
+      const digest = hashTypedData(
+        domain,
+        TRANSFER_WITH_AUTHORIZATION_TYPES,
+        "TransferWithAuthorization",
+        message,
+        { domainTypes: CASPER_DOMAIN_TYPES },
+      );
+
+      // Sign the hex-encoded digest via signMessage — wallet signs ASCII bytes
+      // of the 64-char hex string (sigScheme "casperMessage"; server verifies
+      // against the same encoding, not the raw 32-byte digest).
+      const digestHex = uint8ArrayToHex(digest);
       const sigResult = await get().signMessage(digestHex, pubKeyStr);
       let sigHex = sigResult.signatureHex.replace(/^0x/, "");
 
@@ -313,12 +381,18 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       const payload: ExactCasperPayload = {
         signature: sigHex,
         publicKey: pubKeyStr,
-        authorization,
+        authorization: {
+          from: fromX402,
+          to: toX402,
+          value: req.amount,
+          validAfter: String(validAfter),
+          validBefore: String(validBefore),
+          nonce: nonceHex,
+        },
         sigScheme: "casperMessage",
       };
 
-      const headerValue = encodePaymentHeader(payload, req);
-      return { headerValue };
+      return { headerValue: encodeX402Header(payload, req) };
     },
   };
 }
