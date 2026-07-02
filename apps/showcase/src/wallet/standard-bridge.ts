@@ -8,7 +8,21 @@
  * `signAndSendTransaction`, `signMessage`, and a `payX402(requirements)`
  * passthrough that runs the wallet's x402 firewall and returns an X-PAYMENT
  * header value.
+ *
+ * For wallets without native payX402 (e.g. official Casper Wallet), we
+ * implement x402 signing client-side using signMessage("sigScheme=casperMessage"):
+ * the EIP-712 digest is hex-encoded and signed as a string; the server's
+ * verifyX402Signature handles this via the sigScheme field.
  */
+
+import {
+  buildTransferAuthorization,
+  encodePaymentHeader,
+  toX402Address,
+  PublicKey,
+  type ExactCasperPayload,
+  type CasperPaymentRequirements,
+} from "@casper-baret/casper-core";
 
 export class WalletStandardBridgeError extends Error {
   constructor(
@@ -271,10 +285,40 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       return res?.deployJson ?? deployJson;
     },
 
-    payX402: async () => {
-      throw new Error(
-        "x402 micropayments require Baret Wallet. Connect Baret to use Scrybe.",
-      );
+    payX402: async (requirements: unknown) => {
+      const req = requirements as CasperPaymentRequirements;
+      const pubKeyStr = await get().getActivePublicKey();
+
+      // Derive account hash from the algo-prefixed public key
+      const sdkPubKey = PublicKey.fromHex(pubKeyStr);
+      const accountHashHex = sdkPubKey.accountHash().toHex();
+      const fromX402 = toX402Address(accountHashHex);
+
+      // Build EIP-712 TransferWithAuthorization typed data
+      const { digest, authorization } = buildTransferAuthorization(req, fromX402);
+
+      // Sign via wallet.signMessage — signs the ASCII bytes of the 64-char hex
+      // string (sigScheme "casperMessage"; server verifies with the same encoding)
+      const digestHex = Buffer.from(digest).toString("hex");
+      const sigResult = await get().signMessage(digestHex, pubKeyStr);
+      let sigHex = sigResult.signatureHex.replace(/^0x/, "");
+
+      // Normalize to 65 bytes (algo byte + 64 raw): some wallet builds return
+      // 64-byte raw signatures without the algo prefix.
+      if (sigHex.length === 128) {
+        const algoByte = pubKeyStr.startsWith("02") ? "02" : "01";
+        sigHex = algoByte + sigHex;
+      }
+
+      const payload: ExactCasperPayload = {
+        signature: sigHex,
+        publicKey: pubKeyStr,
+        authorization,
+        sigScheme: "casperMessage",
+      };
+
+      const headerValue = encodePaymentHeader(payload, req);
+      return { headerValue };
     },
   };
 }

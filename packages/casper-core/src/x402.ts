@@ -71,6 +71,12 @@ export interface ExactCasperPayload {
   signature: string;
   publicKey: string;
   authorization: ExactCasperAuthorization;
+  /**
+   * How the signature was produced:
+   * - "raw" (default/omitted): signAndAddAlgorithmBytes(digest_bytes) — Baret native, on-chain compatible
+   * - "casperMessage": wallet.signMessage(hex(digest)) → signs ASCII bytes of the 64-char hex string
+   */
+  sigScheme?: "raw" | "casperMessage";
 }
 
 export interface X402PaymentPayload {
@@ -252,9 +258,20 @@ export function verifyX402Signature(
     return { isValid: false, invalidReason: `signature must be 65 bytes, got ${sigBytes.length}` };
   }
 
+  // Determine what bytes were actually signed.
+  // "raw": Baret signs the 32-byte digest directly via signAndAddAlgorithmBytes.
+  // "casperMessage": external wallets sign via signMessage(hex(digest)), which means
+  //   ed25519.sign(key, ascii_bytes_of_hex_string). Since hex chars are all ASCII,
+  //   the signed bytes are the 64-byte ASCII encoding of the digest hex.
+  const sigScheme = payload.payload.sigScheme ?? "raw";
+  const messageToVerify: Uint8Array =
+    sigScheme === "casperMessage"
+      ? Buffer.from(Buffer.from(digest).toString("hex"), "ascii")
+      : digest;
+
   try {
     const pubKey = PublicKey.fromHex(payload.payload.publicKey);
-    const valid = pubKey.verifySignature(digest, sigBytes);
+    const valid = pubKey.verifySignature(messageToVerify, sigBytes);
     if (!valid) {
       return { isValid: false, invalidReason: "invalid_signature" };
     }
