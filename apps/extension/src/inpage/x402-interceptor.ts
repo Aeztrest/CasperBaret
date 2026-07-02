@@ -95,7 +95,7 @@ async function parseRequirements(
   res: Response,
 ): Promise<PaymentRequirements | null> {
   const headerValue =
-    res.headers.get("PAYMENT-REQUIRED") ?? res.headers.get("payment-required");
+    res.headers.get("x-payment-required") ?? res.headers.get("PAYMENT-REQUIRED");
   if (headerValue) {
     const parsed = tryParseJson(safeAtob(headerValue) ?? headerValue);
     const reqs = extractRequirements(parsed);

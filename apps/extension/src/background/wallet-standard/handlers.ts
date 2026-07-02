@@ -164,7 +164,7 @@ export const wsGetAddress: WsHandler = async (_raw) => {
 export const wsGetNetwork: WsHandler = async (_raw) => {
   const s = getState();
   return {
-    network: s.network === "mainnet" ? "MAINNET" : "TESTNET",
+    network: s.network,
     caip2: getCaip2(s.network),
   };
 };

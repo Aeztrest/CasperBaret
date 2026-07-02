@@ -99,6 +99,10 @@ export default function Scrybe() {
       setHistory((prev) => prev.map((e) => e.id === entryId ? { ...e, ...patch } : e));
 
     try {
+      // Tell the Baret extension interceptor to stand down — this page manages
+      // its own x402 flow so the user sees the payment progress steps.
+      (window as unknown as { __baretX402Managed?: boolean }).__baretX402Managed = true;
+
       // 1. First request — expect 402
       const initial = await fetch(
         `${SCRYBE_API_BASE}/demo/scrybe?q=${encodeURIComponent(q)}`,
