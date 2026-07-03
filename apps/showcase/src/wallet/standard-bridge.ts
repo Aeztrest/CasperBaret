@@ -364,12 +364,19 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
         { domainTypes: CASPER_DOMAIN_TYPES },
       );
 
-      // Sign the hex-encoded digest via signMessage — wallet signs ASCII bytes
-      // of the 64-char hex string (sigScheme "casperMessage"; server verifies
-      // against the same encoding, not the raw 32-byte digest).
       const digestHex = uint8ArrayToHex(digest);
+
+      // Debug: log the exact values so we can identify what the wallet signs.
+      // Open browser DevTools → Console to see these values.
+      console.info("[casper-wallet-x402] signing", { pubKeyStr, digestHex });
+
       const sigResult = await get().signMessage(digestHex, pubKeyStr);
-      let sigHex = sigResult.signatureHex.replace(/^0x/, "");
+      const rawSigHex = sigResult?.signatureHex ?? sigResult as unknown as string ?? "";
+      console.info("[casper-wallet-x402] signature returned", {
+        rawSigHex,
+        cancelled: (sigResult as { cancelled?: boolean })?.cancelled,
+      });
+      let sigHex = rawSigHex.replace(/^0x/, "");
 
       // Normalize to 65 bytes (algo byte + 64 raw): some wallet builds return
       // 64-byte raw signatures without the algo prefix.

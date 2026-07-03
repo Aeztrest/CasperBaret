@@ -14,6 +14,7 @@
 
 import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
 import { blake2b } from "@noble/hashes/blake2b";
+import { sha256 } from "@noble/hashes/sha256";
 import type { CasperKeypair } from "./keys.js";
 import { signEip712Digest } from "./keys.js";
 import { toX402Address, stripPrefix } from "./address.js";
@@ -271,18 +272,26 @@ export function verifyX402Signature(
 
   if (sigScheme === "casperMessage") {
     const digestHex = Buffer.from(digest).toString("hex");
-    const asciiBytes = Buffer.from(digestHex, "ascii");  // 64 ASCII bytes of hex string
-    // Different wallet implementations sign different byte sequences from the same hex digest.
-    // We try four candidates in order (most to least likely):
-    // (a) raw 32-byte digest — wallet parses hex as bytes before signing
-    // (b) 64 ASCII bytes of hex string — wallet signs the string as UTF-8
-    // (c) blake2b-256 of ASCII bytes — wallet pre-hashes the string (common in Casper ecosystem)
-    // (d) blake2b-256 of raw digest — wallet pre-hashes raw bytes
+    const asciiBytes = Buffer.from(digestHex, "ascii");
+
+    // Build the "Casper Message:\n" prefix (used by many Casper wallet implementations
+    // to domain-separate signed messages, similar to Ethereum's personal_sign prefix).
+    const PREFIX = Buffer.from("Casper Message:\n", "utf8");
+    const prefixedAscii   = Buffer.concat([PREFIX, asciiBytes]);
+    const prefixedDigest  = Buffer.concat([PREFIX, digest]);
+
+    // Try every plausible encoding the Casper Wallet might use when signing digestHex.
     const candidates: [string, Uint8Array][] = [
-      ["raw-digest",       digest],
-      ["ascii-hex",        asciiBytes],
-      ["blake2b-ascii",    blake2b(asciiBytes, { dkLen: 32 })],
-      ["blake2b-digest",   blake2b(digest,     { dkLen: 32 })],
+      ["raw-digest",              digest],
+      ["ascii-hex",               asciiBytes],
+      ["blake2b-digest",          blake2b(digest,        { dkLen: 32 })],
+      ["blake2b-ascii",           blake2b(asciiBytes,    { dkLen: 32 })],
+      ["sha256-digest",           sha256(digest)],
+      ["sha256-ascii",            sha256(asciiBytes)],
+      ["prefixed-ascii",          prefixedAscii],
+      ["prefixed-digest",         prefixedDigest],
+      ["blake2b-prefixed-ascii",  blake2b(prefixedAscii,  { dkLen: 32 })],
+      ["blake2b-prefixed-digest", blake2b(prefixedDigest, { dkLen: 32 })],
     ];
     for (const [label, candidate] of candidates) {
       try {
@@ -295,12 +304,16 @@ export function verifyX402Signature(
         /* try next candidate */
       }
     }
-    console.error("[x402] casperMessage sig verification failed — tried all candidates", {
-      pubKey: payload.payload.publicKey,
-      sig: payload.payload.signature,
-      digestHex,
-    });
-    return { isValid: false, invalidReason: "invalid_signature" };
+    // None matched — log everything so we can recover the signing bytes from logs.
+    const debugInfo = { pubKey: payload.payload.publicKey, sig: payload.payload.signature, digestHex };
+    console.error("[x402] casperMessage: all candidates failed", debugInfo);
+    return {
+      isValid: false,
+      invalidReason: `invalid_signature`,
+      // Include truncated debug hints in the response so they surface in the UI without
+      // exposing a full key/sig — full values are in server logs.
+      debug: `sig=${payload.payload.signature.slice(0, 16)}… digest=${digestHex.slice(0, 16)}…`,
+    } as { isValid: false; invalidReason: string };
   }
 
   try {
