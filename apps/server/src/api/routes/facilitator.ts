@@ -28,7 +28,7 @@ import {
   CLTypeUInt8,
   NamedArg,
   ContractCallBuilder,
-  AccountHash,
+  PublicKey,
   Casper,
 } from "@casper-baret/casper-core";
 import type { Transaction } from "casper-js-sdk";
@@ -120,20 +120,21 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       const kp = await keypairFromHex(config.faucet.privateKeyHex, config.faucet.algo);
       const rpc = makeRpcClient(config.casper.rpcUrl);
 
-      // Demo mode: submit a real CSPR transfer from the treasury to the
-      // configured merchant (payTo) so the returned hash is genuinely on-chain
-      // — NOT a real x402 charge (the payer's own tokens never move; this
-      // just proves *a* transaction settled). 2,500,000,000 motes = 2.5 CSPR,
-      // Casper testnet's minimum transfer amount.
+      // Demo mode: submit a real CSPR transfer from the treasury to the payer
+      // so the returned hash is genuinely on-chain — NOT a real x402 charge
+      // (the payer's own CEP-18 tokens never move; this just proves *a*
+      // transaction settled). 2,500,000,000 motes = 2.5 CSPR, Casper
+      // testnet's minimum transfer amount.
       //
       // Source and target must differ: Casper's mint contract rejects a
-      // transfer where they're the same purse (this previously targeted the
-      // treasury's own key, which put/quietly failed on-chain with
-      // "Invalid purse" even though /settle reported success).
+      // transfer where they're the same purse ("Invalid purse"). Targeting
+      // the payer (rather than config.x402.payTo) keeps this true regardless
+      // of how payTo is configured — including the common case where payTo
+      // is the same treasury account also used to pay demo settlement gas.
       if (config.x402.demoMode) {
         const demoTxn = new Casper.NativeTransferBuilder()
           .from(kp.privateKey.publicKey)
-          .targetAccountHash(AccountHash.fromString(config.x402.payTo))
+          .target(PublicKey.fromHex(paymentPayload.payload.publicKey))
           .chainName(config.casper.chainName)
           .payment(100_000_000)
           .amount("2500000000")
