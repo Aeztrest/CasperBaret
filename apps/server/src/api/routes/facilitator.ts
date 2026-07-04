@@ -28,9 +28,32 @@ import {
   CLTypeUInt8,
   NamedArg,
   ContractCallBuilder,
+  AccountHash,
   Casper,
 } from "@casper-baret/casper-core";
+import type { Transaction } from "casper-js-sdk";
 import type { AppConfig } from "../../config/index.js";
+
+/**
+ * Submitting a transaction only proves the node accepted it for inclusion —
+ * NOT that it executed successfully. Wait for the block execution result and
+ * surface its error (if any) instead of reporting `success: true` for a
+ * deploy that actually failed on-chain (e.g. testnet.cspr.live showing
+ * "Invalid purse" while the API had already told the payer they'd paid).
+ */
+async function waitForExecutionError(
+  rpc: ReturnType<typeof makeRpcClient>,
+  txn: Transaction,
+): Promise<string | null> {
+  try {
+    const confirmed = await rpc.waitForTransaction(txn, 60_000);
+    return confirmed.executionInfo?.executionResult?.errorMessage ?? null;
+  } catch (err) {
+    // Timed out or the node lost track of it — we genuinely don't know the
+    // outcome; treat as unconfirmed rather than silently claiming success.
+    return `could not confirm execution: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
 
 interface VerifyBody {
   x402Version?: number;
@@ -97,13 +120,20 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       const kp = await keypairFromHex(config.faucet.privateKeyHex, config.faucet.algo);
       const rpc = makeRpcClient(config.casper.rpcUrl);
 
-      // Demo mode: submit a real CSPR self-transfer (treasury→treasury) so the
-      // returned hash is genuinely on-chain and shows as succeeded in the explorer.
-      // 2,500,000,000 motes = 2.5 CSPR — Casper testnet minimum transfer amount.
+      // Demo mode: submit a real CSPR transfer from the treasury to the
+      // configured merchant (payTo) so the returned hash is genuinely on-chain
+      // — NOT a real x402 charge (the payer's own tokens never move; this
+      // just proves *a* transaction settled). 2,500,000,000 motes = 2.5 CSPR,
+      // Casper testnet's minimum transfer amount.
+      //
+      // Source and target must differ: Casper's mint contract rejects a
+      // transfer where they're the same purse (this previously targeted the
+      // treasury's own key, which put/quietly failed on-chain with
+      // "Invalid purse" even though /settle reported success).
       if (config.x402.demoMode) {
         const demoTxn = new Casper.NativeTransferBuilder()
           .from(kp.privateKey.publicKey)
-          .target(kp.privateKey.publicKey)
+          .targetAccountHash(AccountHash.fromString(config.x402.payTo))
           .chainName(config.casper.chainName)
           .payment(100_000_000)
           .amount("2500000000")
@@ -111,6 +141,18 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
         demoTxn.sign(kp.privateKey);
         const demoRes = await rpc.putTransaction(demoTxn);
         const txHash = demoRes.transactionHash?.toHex?.() ?? demoTxn.hash.toHex();
+
+        const execError = await waitForExecutionError(rpc, demoTxn);
+        if (execError) {
+          req.log.error({ txHash, execError }, "x402 demo settlement failed on-chain");
+          return reply.code(502).send({
+            success: false,
+            errorReason: `on-chain execution failed: ${execError}`,
+            transaction: txHash,
+            explorerUrl: explorerTxUrl(config.casper, txHash),
+          });
+        }
+
         req.log.info({ txHash, payer: auth.from }, "x402 demo settlement (CSPR self-transfer)");
         return reply.send({
           success: true,
@@ -156,6 +198,17 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       txn.sign(kp.privateKey);
       const res = await rpc.putTransaction(txn);
       const txHash = res.transactionHash?.toHex?.() ?? txn.hash.toHex();
+
+      const execError = await waitForExecutionError(rpc, txn);
+      if (execError) {
+        req.log.error({ txHash, execError }, "x402 CEP-18 settlement failed on-chain");
+        return reply.code(502).send({
+          success: false,
+          errorReason: `on-chain execution failed: ${execError}`,
+          transaction: txHash,
+          explorerUrl: explorerTxUrl(config.casper, txHash),
+        });
+      }
 
       req.log.info({ txHash, payer: auth.from }, "x402 CEP-18 settled on-chain");
 
