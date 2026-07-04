@@ -188,6 +188,8 @@ export interface ExtRpc {
   "wallet.exportSecret": { req: { passphrase: string; format: "mnemonic" | "base58" | "hex" }; rsp: { secret: string } };
   /** Request testnet CSPR from the Casper faucet (best-effort; may be a no-op stub). */
   "wallet.airdrop":    { req: void;                                       rsp: { transactionHash: string; amountCspr: number } };
+  /** Request a fixed amount of the x402 CEP-18 test token (e.g. test USDC) from the treasury faucet. */
+  "wallet.airdropToken": { req: { packageHash: string };                  rsp: { transactionHash: string; amount: number; symbol: string } };
   /** PaymentGuard provisioning — stubbed to a no-op returning the user's account. */
   "wallet.provisionSmartWallet": { req: void;                             rsp: { smartWalletAddress: string; walletAddress: string; alreadyOnChain: boolean } };
   /** Account balance. `motes` = native CSPR atomic units; `token` = CEP-18 the wallet spends on x402. */

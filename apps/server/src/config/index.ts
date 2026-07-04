@@ -46,6 +46,8 @@ const envSchema = z.object({
   X402_PRICE_ATOMIC: z.string().default("10000"),
   X402_TOKEN_NAME: z.string().default("Cep18x402"),
   X402_TOKEN_VERSION: z.string().default("1"),
+  /** CEP-18 decimals for CEP18_X402_PACKAGE (6, matching the deployed test USDC). */
+  X402_TOKEN_DECIMALS: z.coerce.number().int().nonnegative().default(6),
 
   /** Treasury-backed CSPR faucet (POST /demo/faucet). */
   FAUCET_ENABLED: z.string().optional(),
@@ -56,6 +58,8 @@ const envSchema = z.object({
   FAUCET_AMOUNT_CSPR: z.coerce.number().positive().default(1000),
   /** Per-address (and per-IP) cooldown between claims. */
   FAUCET_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(120),
+  /** CEP18_X402_PACKAGE (whole-unit) sent per successful test-token claim. */
+  FAUCET_TOKEN_AMOUNT: z.coerce.number().positive().default(1000),
 
   /** csv of contract package hashes treated as risky. */
   RISKY_CONTRACT_PACKAGES: z.string().optional(),
@@ -90,6 +94,7 @@ export type X402Config = {
   priceAtomic: string;
   tokenName: string;
   tokenVersion: string;
+  tokenDecimals: number;
 };
 
 export type FaucetConfig = {
@@ -99,6 +104,8 @@ export type FaucetConfig = {
   algo: "ed25519" | "secp256k1";
   amountCspr: number;
   cooldownSeconds: number;
+  /** Whole-unit CEP18_X402_PACKAGE amount sent per test-token faucet claim. */
+  tokenAmount: number;
 };
 
 export type AppConfig = {
@@ -197,6 +204,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     priceAtomic: e.X402_PRICE_ATOMIC,
     tokenName: e.X402_TOKEN_NAME,
     tokenVersion: e.X402_TOKEN_VERSION,
+    tokenDecimals: e.X402_TOKEN_DECIMALS,
   };
 
   const faucetEnabled = boolish(e.FAUCET_ENABLED);
@@ -213,6 +221,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     algo: e.FAUCET_PRIVATE_KEY_ALGO,
     amountCspr: e.FAUCET_AMOUNT_CSPR,
     cooldownSeconds: e.FAUCET_COOLDOWN_SECONDS,
+    tokenAmount: e.FAUCET_TOKEN_AMOUNT,
   };
 
   const corsOrigins = e.CORS_ORIGINS

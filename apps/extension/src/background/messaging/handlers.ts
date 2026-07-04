@@ -77,6 +77,9 @@ const POLICY_STORAGE_KEY = "baret.policy.v1";
 // account. Hosted on Render (host_permissions covers it); for local dev point
 // this at http://localhost:8080/demo/faucet.
 const FAUCET_ENDPOINT = "https://baret-server.onrender.com/demo/faucet";
+// Same treasury faucet, but dispensing the x402 CEP-18 test token (test USDC)
+// instead of native CSPR.
+const FAUCET_TOKEN_ENDPOINT = "https://baret-server.onrender.com/demo/faucet-token";
 
 type Handler<M extends ExtRpcMethod> = (
   req: ExtRpcRequest<M>,
@@ -266,6 +269,42 @@ const airdropHandler: Handler<"wallet.airdrop"> = async () => {
   return {
     transactionHash: data.transactionHash ?? "",
     amountCspr: data.amountCspr ?? 0,
+  };
+};
+
+const airdropTokenHandler: Handler<"wallet.airdropToken"> = async ({ packageHash }) => {
+  if (!isUnlocked()) throw new Error("Unlock the wallet first.");
+  const snap = getSnapshot();
+  if (snap.network !== "testnet") {
+    throw new Error("The faucet is only available on testnet.");
+  }
+  const address = snap.authorityAddress;
+  if (!address) throw new Error("No address available — wallet not initialized.");
+
+  let res: Response;
+  try {
+    res = await fetch(FAUCET_TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, packageHash }),
+    });
+  } catch {
+    throw new Error("Couldn't reach the faucet server. Is it running?");
+  }
+
+  const data = (await res.json().catch(() => ({}))) as {
+    transactionHash?: string;
+    amount?: number;
+    symbol?: string;
+    error?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.error || `Faucet error (HTTP ${res.status}).`);
+  }
+  return {
+    transactionHash: data.transactionHash ?? "",
+    amount: data.amount ?? 0,
+    symbol: data.symbol ?? "",
   };
 };
 
@@ -715,6 +754,7 @@ export const handlers: { [M in ExtRpcMethod]: Handler<M> } = {
   "wallet.reset": resetHandler,
   "wallet.exportSecret": exportSecretHandler,
   "wallet.airdrop": airdropHandler,
+  "wallet.airdropToken": airdropTokenHandler,
   "wallet.provisionSmartWallet": provisionSmartWalletHandler,
   "wallet.balance": balanceHandler,
   "wallet.tokenBalance": tokenBalanceHandler,

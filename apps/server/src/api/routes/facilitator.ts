@@ -23,6 +23,7 @@ import {
   keypairFromHex,
   makeRpcClient,
   explorerTxUrl,
+  waitForExecutionError,
   Args,
   CLValue,
   CLTypeUInt8,
@@ -31,29 +32,7 @@ import {
   PublicKey,
   Casper,
 } from "@casper-baret/casper-core";
-import type { Transaction } from "casper-js-sdk";
 import type { AppConfig } from "../../config/index.js";
-
-/**
- * Submitting a transaction only proves the node accepted it for inclusion —
- * NOT that it executed successfully. Wait for the block execution result and
- * surface its error (if any) instead of reporting `success: true` for a
- * deploy that actually failed on-chain (e.g. testnet.cspr.live showing
- * "Invalid purse" while the API had already told the payer they'd paid).
- */
-async function waitForExecutionError(
-  rpc: ReturnType<typeof makeRpcClient>,
-  txn: Transaction,
-): Promise<string | null> {
-  try {
-    const confirmed = await rpc.waitForTransaction(txn, 60_000);
-    return confirmed.executionInfo?.executionResult?.errorMessage ?? null;
-  } catch (err) {
-    // Timed out or the node lost track of it — we genuinely don't know the
-    // outcome; treat as unconfirmed rather than silently claiming success.
-    return `could not confirm execution: ${err instanceof Error ? err.message : String(err)}`;
-  }
-}
 
 interface VerifyBody {
   x402Version?: number;

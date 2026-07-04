@@ -3,7 +3,11 @@
  */
 
 import { HttpHandler, RpcClient, SpeculativeClient } from "./sdk.js";
-import type { RpcClient as RpcClientT, SpeculativeClient as SpeculativeClientT } from "casper-js-sdk";
+import type {
+  RpcClient as RpcClientT,
+  SpeculativeClient as SpeculativeClientT,
+  Transaction,
+} from "casper-js-sdk";
 
 export type CasperNetworkId = "testnet" | "mainnet";
 
@@ -62,4 +66,25 @@ export function explorerTxUrl(cfg: CasperNetworkConfig, deployOrTxHash: string):
 
 export function explorerAccountUrl(cfg: CasperNetworkConfig, publicKeyHex: string): string {
   return `${cfg.explorerBase}/account/${publicKeyHex}`;
+}
+
+/**
+ * Submitting a transaction only proves the node accepted it for inclusion —
+ * NOT that it executed successfully. Wait for the block execution result and
+ * return its error (if any) instead of trusting a successful `putTransaction`
+ * call. Returns `null` when execution succeeded.
+ */
+export async function waitForExecutionError(
+  rpc: RpcClientT,
+  txn: Transaction,
+  timeoutMs = 60_000,
+): Promise<string | null> {
+  try {
+    const confirmed = await rpc.waitForTransaction(txn, timeoutMs);
+    return confirmed.executionInfo?.executionResult?.errorMessage ?? null;
+  } catch (err) {
+    // Timed out or the node lost track of it — we genuinely don't know the
+    // outcome; treat as unconfirmed rather than silently claiming success.
+    return `could not confirm execution: ${err instanceof Error ? err.message : String(err)}`;
+  }
 }
