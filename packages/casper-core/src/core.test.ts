@@ -15,7 +15,7 @@ import {
   isPublicKeyHex,
   shortAddress,
 } from "./address.js";
-import { generateKeypair, keypairFromHex, signEip712Digest, privateKeyHex } from "./keys.js";
+import { generateKeypair, keypairFromHex, signEip712Digest, signRaw, privateKeyHex } from "./keys.js";
 import {
   buildTransferAuthorization,
   createX402Payment,
@@ -197,14 +197,22 @@ describe("x402 signature verification", () => {
     if (!result.isValid) expect(result.invalidReason).toMatch(/does not match/);
   });
 
-  it("accepts sigScheme casperMessage when the wallet signs the raw digest", async () => {
-    // The on-chain-compatible candidate: some wallets that only expose
-    // signMessage(string) still end up signing the raw digest bytes (e.g. if
-    // they parse the hex string back to bytes before signing). This is the
-    // one candidate that also verifies on-chain via transfer_with_authorization.
+  it("accepts sigScheme casperMessage using the confirmed Casper Wallet format", async () => {
+    // Confirmed against two live payments from the official Casper Wallet
+    // (secp256k1, 2026-07-05): it signs `"Casper Message:\n" + hex(digest)`
+    // as ASCII bytes — the same domain-separation convention as Ethereum's
+    // personal_sign. This does NOT verify on-chain (transfer_with_authorization
+    // only accepts the "raw" scheme); it only supports the off-chain/demo path.
     const kp = await generateKeypair("ed25519");
     const { digest, authorization } = buildTransferAuthorization(req, kp.x402Address);
-    const signature = await signEip712Digest(kp, digest);
+    const digestHex = Buffer.from(digest).toString("hex");
+    const message = Buffer.concat([
+      Buffer.from("Casper Message:\n", "utf8"),
+      Buffer.from(digestHex, "ascii"),
+    ]);
+    const rawSig = await signRaw(kp, message); // 64 bytes, no algo tag
+    const signature = Buffer.concat([Buffer.from([0x01]), rawSig]).toString("hex"); // ed25519 tag
+
     const wire: X402PaymentPayload = {
       x402Version: 2,
       payload: { signature, publicKey: kp.publicKeyHex, authorization, sigScheme: "casperMessage" },

@@ -86,10 +86,11 @@ EIP-712-typed message (domain: `name`, `version`, `chain_name`,
 
 **Settlement** (`/facilitate/settle`) has two modes:
 
-- **Demo mode** (`X402_DEMO_MODE=true`): submits a real CSPR self-transfer
-  from the server's treasury key so the response has a genuine, explorer-
-  visible transaction hash — but no tokens actually move from payer to
-  payee. This is what the showcase demo runs against out of the box.
+- **Demo mode** (`X402_DEMO_MODE=true`): submits a real CSPR transfer from
+  the server's treasury key to the payer (not to `payTo`, which may itself be
+  the treasury) so the response has a genuine, explorer-visible transaction
+  hash — but no CEP-18 tokens actually move from payer to payee. This is what
+  the showcase demo runs against out of the box.
 - **Real settlement**: calls `transfer_with_authorization` on the deployed
   `Cep18x402` contract, passing the payer's public key, the full signature,
   and the authorization fields. The contract independently re-derives the
@@ -100,12 +101,12 @@ EIP-712-typed message (domain: `name`, `version`, `chain_name`,
 
 A payload can carry `sigScheme: "raw"` (Baret's own extension, which signs
 the 32-byte digest directly) or `sigScheme: "casperMessage"` (any wallet that
-only exposes `signMessage(string)`, like the official Casper Wallet). Only
-`"raw"`-scheme signatures verify on-chain; `"casperMessage"` is matched
-against several candidate byte encodings off-chain (see the `TODO` in
-`x402.ts`) because the exact bytes a given wallet's `signMessage` signs
-aren't yet nailed down — this path currently only supports the demo/off-chain
-verify flow, not real settlement.
+only exposes `signMessage(string)`, like the official Casper Wallet — which
+signs `"Casper Message:\n" + hex(digest)` as ASCII bytes, confirmed against
+two live payments on 2026-07-05). Only `"raw"`-scheme signatures verify
+on-chain; `"casperMessage"` verifies off-chain only — the prefix isn't part
+of the EIP-712 digest the contract re-derives, so this path supports the
+demo/off-chain verify flow but not real on-chain settlement.
 
 ---
 

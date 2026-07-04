@@ -13,8 +13,6 @@
  */
 
 import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
-import { blake2b } from "@noble/hashes/blake2b";
-import { sha256 } from "@noble/hashes/sha256";
 import type { CasperKeypair } from "./keys.js";
 import { signEip712Digest } from "./keys.js";
 import { toX402Address, toAccountHashHex, stripPrefix } from "./address.js";
@@ -291,63 +289,36 @@ export function verifyX402Signature(
   //   prefix. A payment settled via the built-in facilitator's real (non-demo)
   //   on-chain path must be signed this way.
   // "casperMessage": external wallets (e.g. official Casper Wallet) don't expose
-  //   raw-digest signing — only signMessage(string). We don't know which byte
-  //   sequence a given wallet actually signs from that string, so we try every
-  //   plausible candidate below and accept whichever verifies (still bound to
-  //   auth.from via the publicKey check above, so trying multiple candidates
-  //   doesn't weaken who is proven to have signed — it only widens which byte
-  //   layout we accept as "the digest they signed"). This only supports the
-  //   off-chain / demo verify path; it CANNOT settle through the real
-  //   on-chain contract, which only accepts the "raw" scheme.
-  //   TODO: once the real Casper Wallet's signMessage byte format is confirmed
-  //   (see `[x402] casperMessage verified via candidate: <label>` logs),
-  //   delete the candidates that never match.
+  //   raw-digest signing — only signMessage(string). Confirmed against two live
+  //   payments from the official Casper Wallet (secp256k1): it signs
+  //   `"Casper Message:\n" + hex(digest)` as ASCII bytes — the same
+  //   domain-separation convention as Ethereum's personal_sign. This only
+  //   supports the off-chain/demo verify path; it CANNOT settle through the
+  //   real on-chain contract, which only accepts the "raw" scheme (the prefix
+  //   isn't part of the EIP-712 digest the contract re-derives).
   const sigScheme = payload.payload.sigScheme ?? "raw";
 
   if (sigScheme === "casperMessage") {
     const digestHex = Buffer.from(digest).toString("hex");
     const asciiBytes = Buffer.from(digestHex, "ascii");
-
-    // Build the "Casper Message:\n" prefix (used by many Casper wallet implementations
-    // to domain-separate signed messages, similar to Ethereum's personal_sign prefix).
     const PREFIX = Buffer.from("Casper Message:\n", "utf8");
-    const prefixedAscii   = Buffer.concat([PREFIX, asciiBytes]);
-    const prefixedDigest  = Buffer.concat([PREFIX, digest]);
+    const prefixedAscii = Buffer.concat([PREFIX, asciiBytes]);
 
-    // Try every plausible encoding the Casper Wallet might use when signing digestHex.
-    const candidates: [string, Uint8Array][] = [
-      ["raw-digest",              digest],
-      ["ascii-hex",               asciiBytes],
-      ["blake2b-digest",          blake2b(digest,        { dkLen: 32 })],
-      ["blake2b-ascii",           blake2b(asciiBytes,    { dkLen: 32 })],
-      ["sha256-digest",           sha256(digest)],
-      ["sha256-ascii",            sha256(asciiBytes)],
-      ["prefixed-ascii",          prefixedAscii],
-      ["prefixed-digest",         prefixedDigest],
-      ["blake2b-prefixed-ascii",  blake2b(prefixedAscii,  { dkLen: 32 })],
-      ["blake2b-prefixed-digest", blake2b(prefixedDigest, { dkLen: 32 })],
-    ];
-    for (const [label, candidate] of candidates) {
-      try {
-        const valid = pubKey.verifySignature(candidate, sigBytes);
-        if (valid) {
-          console.info(`[x402] casperMessage verified via candidate: ${label}`);
-          return { isValid: true, payer: auth.from };
-        }
-      } catch {
-        /* try next candidate */
+    try {
+      if (pubKey.verifySignature(prefixedAscii, sigBytes)) {
+        return { isValid: true, payer: auth.from };
       }
+    } catch (err) {
+      return {
+        isValid: false,
+        invalidReason: `signature verification failed: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
-    // None matched — log everything so we can recover the signing bytes from logs.
-    const debugInfo = { pubKey: payload.payload.publicKey, sig: payload.payload.signature, digestHex };
-    console.error("[x402] casperMessage: all candidates failed", debugInfo);
-    return {
-      isValid: false,
-      invalidReason: `invalid_signature`,
-      // Include truncated debug hints in the response so they surface in the UI without
-      // exposing a full key/sig — full values are in server logs.
-      debug: `sig=${payload.payload.signature.slice(0, 16)}… digest=${digestHex.slice(0, 16)}…`,
-    } as { isValid: false; invalidReason: string };
+    console.error("[x402] casperMessage: signature did not verify", {
+      pubKey: payload.payload.publicKey,
+      digestHex,
+    });
+    return { isValid: false, invalidReason: "invalid_signature" };
   }
 
   try {
