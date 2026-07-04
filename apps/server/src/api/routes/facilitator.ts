@@ -25,6 +25,7 @@ import {
   explorerTxUrl,
   Args,
   CLValue,
+  CLTypeUInt8,
   NamedArg,
   ContractCallBuilder,
   Casper,
@@ -41,6 +42,11 @@ interface SettleBody {
   x402Version?: number;
   paymentPayload?: X402PaymentPayload;
   paymentRequirements?: CasperPaymentRequirements;
+}
+
+/** Encode a byte buffer as a Casper `List<U8>` CLValue (matches Rust `Bytes`/`Vec<u8>` args). */
+function bytesToU8List(bytes: Buffer) {
+  return CLValue.newCLList(CLTypeUInt8, Array.from(bytes).map((b) => CLValue.newCLUint8(b)));
 }
 
 export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfig): void {
@@ -120,8 +126,12 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
       const fromBytes = Buffer.from(auth.from.slice(2), "hex"); // 32 bytes
       const toBytes = Buffer.from(auth.to.slice(2), "hex");     // 32 bytes
       const nonceBytes = Buffer.from(auth.nonce, "hex");         // 32 bytes
-      // The contract's ed25519_verify expects raw 64-byte sig (no algo-byte prefix)
-      const rawSig = Buffer.from(paymentPayload.payload.signature, "hex").slice(1); // 64 bytes
+      // The contract independently derives the signer's account hash from
+      // `public_key` and requires it match `from` — so the full tagged
+      // public key and the full tagged (algo-byte-prefixed) signature are
+      // passed through as-is, matching `PublicKey`/`Signature` bytesrepr.
+      const publicKeyBytes = Buffer.from(paymentPayload.payload.publicKey, "hex");
+      const sigBytes = Buffer.from(paymentPayload.payload.signature, "hex"); // 65 bytes
 
       const callBuilder = new ContractCallBuilder()
         .from(kp.privateKey.publicKey)
@@ -135,7 +145,8 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
             new NamedArg("valid_after",  CLValue.newCLUInt256(BigInt(auth.validAfter))),
             new NamedArg("valid_before", CLValue.newCLUInt256(BigInt(auth.validBefore))),
             new NamedArg("nonce",        CLValue.newCLByteArray(nonceBytes)),
-            new NamedArg("signature",    CLValue.newCLByteArray(rawSig)),
+            new NamedArg("public_key",   bytesToU8List(publicKeyBytes)),
+            new NamedArg("signature",    bytesToU8List(sigBytes)),
           ]),
         )
         .chainName(config.casper.chainName)

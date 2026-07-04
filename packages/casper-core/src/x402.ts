@@ -17,7 +17,7 @@ import { blake2b } from "@noble/hashes/blake2b";
 import { sha256 } from "@noble/hashes/sha256";
 import type { CasperKeypair } from "./keys.js";
 import { signEip712Digest } from "./keys.js";
-import { toX402Address, stripPrefix } from "./address.js";
+import { toX402Address, toAccountHashHex, stripPrefix } from "./address.js";
 import { PublicKey } from "./sdk.js";
 
 export const X402_VERSION = 2;
@@ -227,6 +227,29 @@ export function verifyX402Signature(
     };
   }
 
+  // Bind the declared public key to the claimed payer address. Without this,
+  // a signature that verifies correctly against the *attacker's own* keypair
+  // would still be accepted for any `from` the attacker chooses to write into
+  // the authorization — a valid signature alone proves nothing about who
+  // controls `auth.from` unless we also check that this publicKey hashes to it.
+  let pubKey: ReturnType<typeof PublicKey.fromHex>;
+  try {
+    pubKey = PublicKey.fromHex(payload.payload.publicKey);
+  } catch (err) {
+    return {
+      isValid: false,
+      invalidReason: `invalid publicKey: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  const derivedAccountHash = pubKey.accountHash().toHex().toLowerCase();
+  const claimedAccountHash = toAccountHashHex(auth.from);
+  if (derivedAccountHash !== claimedAccountHash) {
+    return {
+      isValid: false,
+      invalidReason: `publicKey does not match authorization.from (derived account-hash ${derivedAccountHash}, claimed ${claimedAccountHash})`,
+    };
+  }
+
   // Rebuild the EIP-712 digest from the exact authorization values
   const name = requirements.extra.name ?? (requirements.extra.assetName as string | undefined);
   const version = requirements.extra.version ?? "1";
@@ -262,13 +285,24 @@ export function verifyX402Signature(
 
   // Determine what bytes were actually signed.
   // "raw": Baret signs the 32-byte digest directly via signAndAddAlgorithmBytes.
-  // "casperMessage": external wallets (e.g. official Casper Wallet) call signMessage(hex(digest)).
-  //   Different wallet implementations may sign different byte sequences from the same hex string:
-  //   (a) raw 32-byte digest — wallet parses digestHex as bytes before signing (on-chain compatible)
-  //   (b) 64 ASCII bytes of the hex string — wallet signs the string as UTF-8
-  //   We try both, preferring (a) which matches the on-chain contract expectation.
+  //   This is the ONLY scheme the on-chain `transfer_with_authorization` entry
+  //   point (contracts/src/token.rs) can verify — it re-derives the same
+  //   EIP-712 digest and checks it directly, with no notion of a message
+  //   prefix. A payment settled via the built-in facilitator's real (non-demo)
+  //   on-chain path must be signed this way.
+  // "casperMessage": external wallets (e.g. official Casper Wallet) don't expose
+  //   raw-digest signing — only signMessage(string). We don't know which byte
+  //   sequence a given wallet actually signs from that string, so we try every
+  //   plausible candidate below and accept whichever verifies (still bound to
+  //   auth.from via the publicKey check above, so trying multiple candidates
+  //   doesn't weaken who is proven to have signed — it only widens which byte
+  //   layout we accept as "the digest they signed"). This only supports the
+  //   off-chain / demo verify path; it CANNOT settle through the real
+  //   on-chain contract, which only accepts the "raw" scheme.
+  //   TODO: once the real Casper Wallet's signMessage byte format is confirmed
+  //   (see `[x402] casperMessage verified via candidate: <label>` logs),
+  //   delete the candidates that never match.
   const sigScheme = payload.payload.sigScheme ?? "raw";
-  const pubKey = PublicKey.fromHex(payload.payload.publicKey);
 
   if (sigScheme === "casperMessage") {
     const digestHex = Buffer.from(digest).toString("hex");

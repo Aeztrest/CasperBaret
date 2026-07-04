@@ -21,7 +21,9 @@ import {
   createX402Payment,
   encodePaymentHeader,
   decodePaymentHeader,
+  verifyX402Signature,
   type CasperPaymentRequirements,
+  type X402PaymentPayload,
 } from "./x402.js";
 
 describe("units", () => {
@@ -150,5 +152,83 @@ describe("x402 EIP-712", () => {
     expect(() =>
       buildTransferAuthorization({ ...req, extra: {} }, fromAccount, fixed),
     ).toThrow(/name/);
+  });
+});
+
+describe("x402 signature verification", () => {
+  const req: CasperPaymentRequirements = {
+    scheme: "exact",
+    network: "casper:casper-test",
+    asset: "f".repeat(64),
+    amount: "10000",
+    payTo: "00" + "b".repeat(64),
+    maxTimeoutSeconds: 60,
+    extra: { name: "Cep18x402", version: "1" },
+  };
+
+  it("accepts a correctly signed payment", async () => {
+    const kp = await generateKeypair("ed25519");
+    const payload = await createX402Payment(kp, req);
+    const wire: X402PaymentPayload = { x402Version: 2, payload, accepted: req };
+
+    const result = verifyX402Signature(wire, req);
+
+    expect(result.isValid).toBe(true);
+    if (result.isValid) expect(result.payer).toBe(kp.x402Address);
+  });
+
+  it("rejects a forged payload where the signer's key does not own the claimed from-address", async () => {
+    // Attacker signs a real digest with their own key, but writes a victim's
+    // account into `from` — a valid signature alone does not prove control
+    // of `from` unless the verifier also checks publicKey -> account-hash(from).
+    const attacker = await generateKeypair("ed25519");
+    const victimFrom = "00" + "d".repeat(64);
+    const { digest, authorization } = buildTransferAuthorization(req, victimFrom);
+    const signature = await signEip712Digest(attacker, digest);
+    const forged: X402PaymentPayload = {
+      x402Version: 2,
+      payload: { signature, publicKey: attacker.publicKeyHex, authorization },
+      accepted: req,
+    };
+
+    const result = verifyX402Signature(forged, req);
+
+    expect(result.isValid).toBe(false);
+    if (!result.isValid) expect(result.invalidReason).toMatch(/does not match/);
+  });
+
+  it("accepts sigScheme casperMessage when the wallet signs the raw digest", async () => {
+    // The on-chain-compatible candidate: some wallets that only expose
+    // signMessage(string) still end up signing the raw digest bytes (e.g. if
+    // they parse the hex string back to bytes before signing). This is the
+    // one candidate that also verifies on-chain via transfer_with_authorization.
+    const kp = await generateKeypair("ed25519");
+    const { digest, authorization } = buildTransferAuthorization(req, kp.x402Address);
+    const signature = await signEip712Digest(kp, digest);
+    const wire: X402PaymentPayload = {
+      x402Version: 2,
+      payload: { signature, publicKey: kp.publicKeyHex, authorization, sigScheme: "casperMessage" },
+      accepted: req,
+    };
+
+    const result = verifyX402Signature(wire, req);
+
+    expect(result.isValid).toBe(true);
+    if (result.isValid) expect(result.payer).toBe(kp.x402Address);
+  });
+
+  it("rejects when authorization.from is tampered with after signing", async () => {
+    const kp = await generateKeypair("ed25519");
+    const payload = await createX402Payment(kp, req);
+    const victimFrom = "00" + "e".repeat(64);
+    const tampered: X402PaymentPayload = {
+      x402Version: 2,
+      payload: { ...payload, authorization: { ...payload.authorization, from: victimFrom } },
+      accepted: req,
+    };
+
+    const result = verifyX402Signature(tampered, req);
+
+    expect(result.isValid).toBe(false);
   });
 });

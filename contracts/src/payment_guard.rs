@@ -45,6 +45,9 @@ pub enum Error {
     ExceedsPerTx = 5,
     ExceedsDailyCap = 6,
     InvalidAmount = 7,
+    /// `pay` was called by an account that is neither the owner nor the
+    /// designated agent.
+    NotAuthorizedAgent = 8,
 }
 
 #[odra::event]
@@ -66,6 +69,12 @@ pub struct PaymentGuard {
     token: Var<Address>,
     initialized: Var<bool>,
     allowances: Mapping<Address, Allowance>,
+    /// The agent wallet the owner has delegated day-to-day `pay` calls to.
+    /// Unset until `set_agent` is called — until then only the owner may
+    /// call `pay`. Without this, any third party could force the vault to
+    /// pay an already-approved merchant ahead of schedule, e.g. to grief the
+    /// rolling daily cap before the real agent needs it.
+    agent: Var<Address>,
 }
 
 #[odra::module]
@@ -114,6 +123,18 @@ impl PaymentGuard {
         self.set_status(merchant, Status::Revoked);
     }
 
+    /// Delegate day-to-day `pay` calls to `agent` (typically the agent's own
+    /// hot wallet). Owner-only. Pass the owner's own address to revoke
+    /// delegation and restrict `pay` back to the owner alone.
+    pub fn set_agent(&mut self, agent: Address) {
+        self.require_owner();
+        self.agent.set(agent);
+    }
+
+    pub fn get_agent(&self) -> Option<Address> {
+        self.agent.get()
+    }
+
     /// Fund the vault. The caller must have `approve`d this contract for
     /// `amount` on the CEP-18 token first; this pulls the tokens in.
     pub fn deposit(&mut self, amount: U256) {
@@ -125,10 +146,16 @@ impl PaymentGuard {
         self.token_ref().transfer_from(&caller, &me, &amount);
     }
 
-    /// Agentic spend. **No owner signature required** — the per-tx and rolling
-    /// daily caps the owner set are the firewall. Reverts if the merchant is
-    /// unregistered, paused/revoked, or the payment would breach a cap.
+    /// Agentic spend. **No owner signature required for each payment** — the
+    /// per-tx and rolling daily caps the owner set are the firewall. Only the
+    /// owner or the owner-designated agent (`set_agent`) may call this;
+    /// otherwise any third party could force the vault to pay an
+    /// already-approved merchant ahead of schedule, exhausting the daily cap
+    /// before the real agent needs it. Reverts if the caller isn't
+    /// authorized, the merchant is unregistered, paused/revoked, or the
+    /// payment would breach a cap.
     pub fn pay(&mut self, merchant: Address, amount: U256) {
+        self.require_owner_or_agent();
         if amount.is_zero() {
             self.env().revert(Error::InvalidAmount);
         }
@@ -221,6 +248,18 @@ impl PaymentGuard {
         owner
     }
 
+    fn require_owner_or_agent(&self) {
+        let owner = self
+            .owner
+            .get()
+            .unwrap_or_revert_with(&self.env(), Error::NotOwner);
+        let caller = self.env().caller();
+        let is_agent = self.agent.get().map(|a| a == caller).unwrap_or(false);
+        if caller != owner && !is_agent {
+            self.env().revert(Error::NotAuthorizedAgent);
+        }
+    }
+
     fn set_status(&mut self, merchant: Address, status: Status) {
         self.require_owner();
         let mut a = self
@@ -264,6 +303,8 @@ mod tests {
                 name: "x402 USD".to_string(),
                 decimals: 9,
                 initial_supply: U256::from(1_000_000u128 * DEC),
+                chain_name: "casper-net-1".to_string(),
+                eip712_version: "1".to_string(),
             },
         );
         let guard = PaymentGuard::deploy(
@@ -309,8 +350,9 @@ mod tests {
 
         env.set_caller(env.get_account(0));
         guard.set_allowance(merchant, tokens(100), tokens(250));
+        guard.set_agent(env.get_account(2));
 
-        // An agent (not the owner) settles a payment.
+        // The designated agent (not the owner) settles a payment.
         env.set_caller(env.get_account(2));
         guard.pay(merchant, tokens(40));
 
@@ -398,6 +440,51 @@ mod tests {
         let merchant = env.get_account(1);
         env.set_caller(env.get_account(5));
         let res = guard.try_set_allowance(merchant, tokens(100), tokens(250));
+        assert_eq!(res, Err(Error::NotOwner.into()));
+    }
+
+    #[test]
+    fn pay_rejects_unauthorized_caller() {
+        // A third party — not the owner, and no agent has been designated —
+        // must not be able to force the vault to pay an approved merchant.
+        let (env, mut token, mut guard) = setup();
+        let merchant = env.get_account(1);
+        fund(&env, &mut token, &mut guard, 1_000);
+        env.set_caller(env.get_account(0));
+        guard.set_allowance(merchant, tokens(100), tokens(250));
+
+        env.set_caller(env.get_account(5));
+        let res = guard.try_pay(merchant, tokens(10));
+        assert_eq!(res, Err(Error::NotAuthorizedAgent.into()));
+        assert_eq!(token.balance_of(&merchant), U256::zero());
+    }
+
+    #[test]
+    fn pay_rejects_stale_agent_after_reassignment() {
+        let (env, mut token, mut guard) = setup();
+        let merchant = env.get_account(1);
+        fund(&env, &mut token, &mut guard, 1_000);
+        env.set_caller(env.get_account(0));
+        guard.set_allowance(merchant, tokens(100), tokens(250));
+        guard.set_agent(env.get_account(2));
+        guard.set_agent(env.get_account(3));
+
+        // The previously-designated agent is no longer authorized.
+        env.set_caller(env.get_account(2));
+        let res = guard.try_pay(merchant, tokens(10));
+        assert_eq!(res, Err(Error::NotAuthorizedAgent.into()));
+
+        // The newly-designated agent is.
+        env.set_caller(env.get_account(3));
+        guard.pay(merchant, tokens(10));
+        assert_eq!(token.balance_of(&merchant), tokens(10));
+    }
+
+    #[test]
+    fn only_owner_can_set_agent() {
+        let (env, _token, mut guard) = setup();
+        env.set_caller(env.get_account(5));
+        let res = guard.try_set_agent(env.get_account(5));
         assert_eq!(res, Err(Error::NotOwner.into()));
     }
 

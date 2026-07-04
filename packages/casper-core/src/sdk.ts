@@ -21,6 +21,7 @@ export const {
   Args,
   NamedArg,
   CLValue,
+  CLTypeUInt8,
   CLValueUInt256,
   CLValueUInt512,
   CLValueString,

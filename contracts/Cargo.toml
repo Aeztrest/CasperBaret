@@ -6,6 +6,7 @@ version = "0.1.0"
 [dependencies]
 odra = { version = "2.7.0", features = [], default-features = false }
 odra-modules = { version = "2.7.0", features = [], default-features = false }
+sha3 = { version = "0.10", default-features = false }
 
 [dev-dependencies]
 odra-test = { version = "2.7.0", features = [], default-features = false }

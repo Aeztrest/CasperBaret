@@ -186,7 +186,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const x402: X402Config = {
     enabled: x402Enabled,
     demoMode: boolish(e.X402_DEMO_MODE),
-    facilitatorUrl: e.X402_FACILITATOR_URL?.trim() || "http://localhost:8080/facilitate",
+    // Defaults to this server's own built-in facilitator (self-referential
+    // loopback call). Must track the actual configured PORT — a hardcoded
+    // "8080" here would silently break payments the moment someone sets
+    // PORT to anything else without also setting X402_FACILITATOR_URL.
+    facilitatorUrl: e.X402_FACILITATOR_URL?.trim() || `http://localhost:${e.PORT}/facilitate`,
     payTo,
     asset,
     network: casper.caip2,
