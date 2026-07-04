@@ -1,35 +1,84 @@
-# DeltaG server limitations
+# Baret (Casper) — Limitations
 
-This document describes what the HTTP API does **not** guarantee and how to interpret results.
+What this system does **not** guarantee, and how to interpret its results.
+This describes the current Casper implementation only — see
+`ARCHITECTURE.md` for how the pieces fit together.
 
-## Simulation vs on-chain execution
+## Pre-sign analysis
 
-- The service uses Solana RPC **`simulateTransaction`** (with `sigVerify: false` and post-simulation account data where configured). Results reflect **simulated** state, not guaranteed final execution outcomes.
-- Network conditions, blockhash expiry, priority fees, and runtime differences can cause real execution to diverge from simulation.
+- `/v1/analyze` decodes and risk-scores a transaction **before** it's signed
+  or broadcast. It does not simulate execution against live network state the
+  way an RPC `speculative_exec`/dry-run would; the analysis is based on
+  decoded intent (programs touched, balances implied) rather than a guaranteed
+  post-state. Treat a "safe" verdict as "nothing we check for was found," not
+  as a formal execution guarantee.
+- Detectors only catch what they're built to catch. A genuinely novel
+  contract-level attack that doesn't match any existing heuristic will not be
+  flagged.
 
-## Transaction format
+## x402 signature verification
 
-- Only **VersionedTransaction** payloads are supported, provided as **base64** (`transactionBase64`). Legacy transactions are not accepted unless they are encoded as versioned wire format by the client.
-
-## Account and instruction coverage
-
-- The simulator passes a **bounded list** of account addresses to the RPC `accounts` field (see `MAX_SIMULATION_ACCOUNTS`, default 64). Accounts beyond that cap are **not** included in returned post-state; analysis may mark truncation and adjust confidence.
-- Heuristics and policy rules operate on **observed** program IDs, token flows, and simulation logs. Unknown or novel program behavior may be under-detected.
+- The built-in facilitator's `/facilitate/verify` independently reconstructs
+  the EIP-712 digest and requires the declared `publicKey` to hash to the
+  claimed `authorization.from` — a bare "signature verifies" is not treated
+  as proof of payer identity by itself.
+- `sigScheme: "casperMessage"` (used by wallets that only expose
+  `signMessage(string)`, e.g. the official Casper Wallet) is verified by
+  trying several plausible byte encodings of the digest and accepting
+  whichever one matches. This is provisional: the exact bytes a given
+  wallet's `signMessage` actually signs haven't been confirmed against a
+  live wallet in this environment. It's still bound to the same
+  `publicKey → from` check, so a match under any candidate still proves the
+  claimed payer signed *something* derived from this exact digest — it does
+  not, however, verify on-chain (see below).
 
 ## x402 settlement
 
-- When x402 is enabled, payment is verified in a **pre-handler** before analysis runs. The server **validates the JSON response shape (Zod) before settlement**: if validation fails, the client receives an error and **settlement is not executed** (no payment finalization for that request).
-- **Settlement** runs only after analyze completes and response schema validation succeeds, immediately before sending `200` with the validated body.
-- If analysis throws, validation fails, or settlement fails, behavior differs: verified-but-not-settled payment state is possible on failures after verify; clients should treat facilitator/settlement errors (`FACILITATOR_ERROR`, HTTP 502) as distinct from policy outcomes (`safe` / `reasons`).
+- **Demo mode** (`X402_DEMO_MODE=true`, the showcase's default): `/facilitate/settle`
+  submits a real on-chain CSPR self-transfer from the server's own treasury
+  key so the response carries a genuine, explorer-visible transaction hash —
+  but no tokens move from payer to payee. This is a demo affordance, not a
+  real settlement, and isn't currently surfaced as such in the API response.
+- **Real settlement** calls `transfer_with_authorization` on the deployed
+  `Cep18x402` contract. This only accepts `sigScheme: "raw"` payloads — a
+  `"casperMessage"`-scheme payment that passes the off-chain `/verify` check
+  cannot currently be settled for real on-chain, because the contract has no
+  notion of a message prefix; it verifies the raw EIP-712 digest directly.
+- On-chain replay protection is per `(from, nonce)`; the caller (whoever pays
+  gas to submit `transfer_with_authorization`) is unrestricted by the
+  contract — anyone can relay a validly-signed authorization. This is
+  intentional (meta-transaction pattern: only a genuine signature from
+  `from` authorizes the transfer, not who submits it) but means the payer's
+  chosen `validBefore` is the only thing preventing indefinite delay before
+  someone eventually relays it.
 
-## Rate limiting
+## PaymentGuard (on-chain spending-cap vault)
 
-- The server may enforce per-IP rate limits (`DELTAG_RATE_LIMIT_MAX`, `DELTAG_RATE_LIMIT_WINDOW_MS`). Health endpoints are typically excluded. For multi-instance deployments, use a shared store or enforce limits at the edge (API gateway / CDN).
+- `pay(merchant, amount)` may be called by the owner or the single
+  owner-designated agent (`set_agent`) — not by arbitrary third parties.
+  There is exactly one agent slot; delegating to a second agent overwrites
+  the first (no multi-agent support yet).
+- Caps are per-merchant, not per-(merchant, asset) or per-origin. A merchant
+  address is trusted as a single unit once approved.
+- The rolling 24h window resets are based on Casper block time
+  (`get_block_time`), not wall-clock time as observed by any particular
+  client — expect drift consistent with the network's own clock.
 
-## RPC reliability
+## Contracts generally
 
-- Transient **timeouts** may trigger **one automatic retry** per RPC read/simulate/ping call. Repeated failures surface as `RPC_ERROR` / `RPC_TIMEOUT` (HTTP 502 / 504).
+- `contracts/wasm/*.wasm` are committed binary build artifacts, not built
+  from source at deploy time by any CI in this repo. If you change contract
+  source, you must `cargo odra build` and re-commit the resulting `.wasm`
+  files yourself, or a stale binary will be deployed.
+- Contracts are tested against Odra's MockVM (`cargo odra test` /
+  `cargo test` from `contracts/`), not a real Casper node — MockVM semantics
+  (e.g. default block time, gas accounting) may not perfectly match testnet
+  or mainnet.
 
-## Auth modes
+## Wallet extension
 
-- **API key**, **x402**, or **both** may be configured. In **x402** or **both** modes, `/v1/analyze` may skip API key when x402 verification is used; exact rules follow server `DELTAG_AUTH_MODE` and `X402_*` environment variables.
+- Chrome MV3 only; no Firefox/Safari build.
+- Pre-sign analysis calls out to `apps/server`; if that server is
+  unreachable, behavior depends on the extension's configured fail-open/
+  fail-closed setting — check the extension's settings page rather than
+  assuming either default.

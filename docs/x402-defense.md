@@ -1,4 +1,12 @@
-# BLACKTHORN — x402 Defense Spec
+# BLACKTHORN — x402 Defense Spec (Solana-era design doc — not current)
+
+> **Stale:** this entire document describes the pre-Casper-port "BLACKTHORN"
+> wallet on Solana (VersionedTransaction, SPL/Token-2022, PayAI/Coinbase
+> facilitators, Swig sub-keys). None of it matches this repo's actual Casper
+> implementation. For the real, current x402 flow — EIP-712
+> `TransferWithAuthorization`, the built-in facilitator, on-chain settlement
+> via `Cep18x402` — see `ARCHITECTURE.md` §4 and `LIMITATIONS.md`. Kept here
+> for historical reference only; do not implement against it.
 
 > The byte-level technical reference for intercepting, parsing, validating, and policing every x402 payment that flows through the wallet. Each section pairs the *protocol mechanic* with the *BLACKTHORN response* — what we do at each layer that nothing else does.
 

@@ -1,4 +1,11 @@
-# BLACKTHORN — Wallet Feature & Flow Specification
+# BLACKTHORN — Wallet Feature & Flow Specification (Solana-era design doc — not current)
+
+> **Stale:** this document specs the pre-Casper-port "BLACKTHORN" wallet UI
+> (Solana/devnet, Swig smart-wallet sub-keys, Jupiter/Phantom/Solflare
+> references). It does not describe `apps/extension`'s actual current screens
+> or flows. Kept for historical reference only — see `apps/extension/src`
+> for what's actually implemented, and `ARCHITECTURE.md` §6 for the current
+> high-level shape.
 
 > Every surface, every state, every flow. The implementation contract for the
 > extension popup, options page, sign-request view, and onboarding wizard.
