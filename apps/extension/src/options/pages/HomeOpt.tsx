@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { useRpc, useWalletState } from "../../shared/state-context";
 import type { GuardPolicy } from "@casper-baret/casper-guard";
-import { tokensFor, formatTokenAmount, type TokenDef } from "../../shared/tokens";
+import { tokensFor, formatTokenAmount, CSPR_LOGO, type TokenDef } from "../../shared/tokens";
+import { TokenIcon } from "../../shared/TokenIcon";
 import {
   OptionsSendModal,
   OptionsReceiveModal,
@@ -187,12 +188,13 @@ export function HomeOpt() {
           <span className="text-[10px] text-text-faint">{state.network}</span>
         </div>
         <div className="flex flex-col divide-y" style={{ borderColor: "var(--line)" }}>
-          <TokenRow symbol="CSPR" name="Casper" amount={heroBalance === null ? null : heroBalance.toFixed(4)} />
+          <TokenRow symbol="CSPR" name="Casper" logo={CSPR_LOGO} amount={heroBalance === null ? null : heroBalance.toFixed(4)} />
           {tokens.map((t) => (
             <TokenRow
               key={t.packageHash}
               symbol={t.symbol}
               name={t.name}
+              logo={t.logo}
               badge={t.kind === "stablecoin" ? "stable" : undefined}
               amount={amountFor(tokenBalances[t.packageHash], t)}
             />
@@ -329,21 +331,18 @@ function TokenRow({
   name,
   amount,
   badge,
+  logo,
 }: {
   symbol: string;
   name: string;
   amount: string | null;
   badge?: string;
+  logo?: string;
 }) {
   return (
     <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3 min-w-0">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-          style={{ background: "var(--accent-dim)", color: "var(--accent-soft)" }}
-        >
-          {symbol.slice(0, 3)}
-        </div>
+        <TokenIcon symbol={symbol} logo={logo} size={36} />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-bold leading-none">{symbol}</span>

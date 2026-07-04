@@ -11,6 +11,9 @@
 
 import type { CasperNetwork } from "@casper-baret/ext-protocol";
 
+/** Native CSPR logo, bundled under public/. */
+export const CSPR_LOGO = "/tokens/cspr.png";
+
 export interface TokenDef {
   /** Ticker shown in the token list, e.g. "USDC". */
   symbol: string;
@@ -18,9 +21,11 @@ export interface TokenDef {
   name: string;
   /** 64-hex CEP-18 contract package hash. */
   packageHash: string;
-  /** Atomic→display divisor exponent (Cep18x402 mints with 9 decimals). */
+  /** Atomic→display divisor exponent. */
   decimals: number;
   kind: "stablecoin" | "token";
+  /** Root-relative path to a logo bundled under public/, e.g. "/tokens/usdc.webp". */
+  logo?: string;
 }
 
 /**
@@ -31,11 +36,13 @@ export const CEP18_TOKENS: Record<CasperNetwork, TokenDef[]> = {
   testnet: [
     {
       symbol: "USDC",
-      name: "USD Coin",
+      name: "USD Coin (test)",
+      // Deployed 2026-07-05 on casper-test — mirrors CEP18_X402_PACKAGE.
       packageHash:
-        "89ae0441d3ae2b1e619fbbb6cb14a58c7ad2004131e3f14b5d384007435a6231",
-      decimals: 9,
+        "ce78329749fe52382fe42061fd7afd358fb622fb46b367f5f28d13f40e0744f3",
+      decimals: 6,
       kind: "stablecoin",
+      logo: "/tokens/usdc.webp",
     },
   ],
   mainnet: [],

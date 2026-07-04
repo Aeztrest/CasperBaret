@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, Download, Plus } from "lucide-react";
 import { useRpc, useWalletState } from "../shared/state-context";
-import { tokensFor, formatTokenAmount, type TokenDef } from "../shared/tokens";
+import { tokensFor, formatTokenAmount, CSPR_LOGO, type TokenDef } from "../shared/tokens";
+import { TokenIcon } from "../shared/TokenIcon";
 import { ReceiveScreen } from "./ReceiveScreen";
 import { SendScreen } from "./SendScreen";
 import { AcquireSheet } from "./AcquireSheet";
@@ -17,16 +18,6 @@ const POST_AIRDROP_DURATION_MS = 30_000;
 interface TokenBalance {
   raw: string;
   available: boolean;
-}
-
-// Token icon colors — index falls back to accent red.
-const TOKEN_COLORS: Record<string, { bg: string; fg: string }> = {
-  CSPR: { bg: "#1f1b0e", fg: "#f5a623" },
-  USDC: { bg: "#0d1a2e", fg: "#2775ca" },
-};
-
-function tokenColor(symbol: string) {
-  return TOKEN_COLORS[symbol] ?? { bg: "var(--accent-dim)", fg: "var(--accent-soft)" };
 }
 
 export function Home() {
@@ -126,6 +117,7 @@ export function Home() {
           <TokenRow
             symbol="CSPR"
             name="Casper"
+            logo={CSPR_LOGO}
             amount={balance === null ? null : balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
             onClick={() => setOverlay("acquire")}
           />
@@ -136,6 +128,7 @@ export function Home() {
               key={t.packageHash}
               symbol={t.symbol}
               name={t.name}
+              logo={t.logo}
               badge={t.kind === "stablecoin" ? "stable" : undefined}
               amount={amountFor(tokenBalances[t.packageHash], t)}
               onClick={() => setOverlay("acquire")}
@@ -181,15 +174,15 @@ function amountFor(bal: TokenBalance | undefined, token: TokenDef): string | nul
 }
 
 function TokenRow({
-  symbol, name, amount, badge, onClick,
+  symbol, name, amount, badge, logo, onClick,
 }: {
   symbol: string;
   name: string;
   amount: string | null;
   badge?: string;
+  logo?: string;
   onClick?: () => void;
 }) {
-  const { bg, fg } = tokenColor(symbol);
   return (
     <button
       type="button"
@@ -197,13 +190,7 @@ function TokenRow({
       className="w-full flex items-center gap-3 px-4 py-3 text-left border-t transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
       style={{ borderColor: "var(--line)" }}
     >
-      {/* Icon */}
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-        style={{ background: bg, color: fg, border: `1px solid ${fg}22` }}
-      >
-        {symbol.slice(0, 3)}
-      </div>
+      <TokenIcon symbol={symbol} logo={logo} size={36} />
 
       {/* Name + badge */}
       <div className="flex-1 min-w-0">
