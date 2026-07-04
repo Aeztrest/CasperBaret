@@ -30,6 +30,11 @@ export function openDb(): Promise<IDBDatabase> {
     req.onerror = () => reject(req.error ?? new Error("IndexedDB open failed"));
     req.onblocked = () => reject(new Error("IndexedDB open blocked by another connection"));
   });
+  // A failed open (e.g. transient `onblocked` from a stale connection in
+  // another tab) must not permanently wedge every future call behind this
+  // one rejected promise for the rest of the service worker's lifetime —
+  // clear the cache so the next caller gets a fresh attempt.
+  dbPromise.catch(() => { dbPromise = null; });
   return dbPromise;
 }
 

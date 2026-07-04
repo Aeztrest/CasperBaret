@@ -11,6 +11,7 @@ import { startRouter } from "./messaging/router";
 import { dispatch, rehydrate, subscribe } from "./state/store";
 import { INITIAL_STATE } from "./state/machine";
 import { hasKeystore, readKeystore, activeAccount } from "./db/keystore";
+import { restoreFromSessionStorage } from "./crypto/session";
 import { startMonitorLifecycle } from "./rpc/monitor";
 import { countUnread } from "./db/alerts";
 import { openPopupWindow } from "./popup-window";
@@ -46,14 +47,23 @@ async function bootstrap(): Promise<void> {
     /* IndexedDB might not be open yet */
   }
 
+  // The service worker was very likely just restarted by Chrome (MV3 kills
+  // an idle worker after ~30s) rather than the user actually locking the
+  // wallet — recover any still-valid unlocked session before defaulting to
+  // "locked", or every restart looks like a fresh lock to the user.
+  const restoredActive = await restoreFromSessionStorage();
+  const restoredIndex = restoredActive
+    ? row.accounts.findIndex((a) => a.kind === restoredActive.kind && a.index === restoredActive.index)
+    : -1;
+
   rehydrate({
     ...INITIAL_STATE,
-    phase: "locked",
+    phase: restoredActive && restoredIndex >= 0 ? "ready" : "locked",
     walletAddress,
     authorityAddress: acct.authorityPubkey,
     alertsUnread,
     accounts,
-    activeIndex: row.activeIndex,
+    activeIndex: restoredIndex >= 0 ? restoredIndex : row.activeIndex,
   });
   void dispatch;
 }

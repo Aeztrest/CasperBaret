@@ -93,11 +93,21 @@ function normalize(raw: KeystoreRow | KeystoreRowV1): KeystoreRow {
 }
 
 export async function readKeystore(): Promise<KeystoreRow | null> {
-  const fromIdb = await tx("keystore", "readonly", async (t) => {
-    const store = t.objectStore("keystore");
-    const row = await asPromise(store.get("primary"));
-    return (row ?? null) as (KeystoreRow | KeystoreRowV1) | null;
-  });
+  // IDB can fail transiently (e.g. `onblocked` from a stale connection in
+  // another tab, or a service-worker cold-start race) — that must fall
+  // through to the storage.local mirror just like a clean miss would,
+  // otherwise a transient IDB error looks exactly like "no wallet exists"
+  // and the UI sends an already-set-up user back through onboarding.
+  let fromIdb: (KeystoreRow | KeystoreRowV1) | null = null;
+  try {
+    fromIdb = await tx("keystore", "readonly", async (t) => {
+      const store = t.objectStore("keystore");
+      const row = await asPromise(store.get("primary"));
+      return (row ?? null) as (KeystoreRow | KeystoreRowV1) | null;
+    });
+  } catch (err) {
+    console.warn("[BLACKTHORN] IndexedDB keystore read failed, falling back to storage.local:", err);
+  }
   if (fromIdb) {
     const normalized = normalize(fromIdb);
     // Persist the migration so the durable copy is upgraded too.
@@ -105,20 +115,26 @@ export async function readKeystore(): Promise<KeystoreRow | null> {
     return normalized;
   }
 
-  // IDB miss — fall back to the storage.local mirror. If we find one,
-  // hydrate IDB so subsequent reads are fast and consistent.
+  // IDB miss (or failure above) — fall back to the storage.local mirror.
+  let backupRow: KeystoreRow | null = null;
   try {
     const all = await browser.storage.local.get(BACKUP_KEY);
     const backup = all[BACKUP_KEY] as (KeystoreRow | KeystoreRowV1) | undefined;
-    if (backup && backup.id === "primary") {
-      const normalized = normalize(backup);
-      await writeKeystore(normalized);
-      return normalized;
-    }
+    if (backup && backup.id === "primary") backupRow = normalize(backup);
   } catch (err) {
     console.warn("[BLACKTHORN] storage.local keystore read failed:", err);
   }
-  return null;
+  if (!backupRow) return null;
+
+  // Found a valid backup — hydrate IDB so subsequent reads are fast and
+  // consistent, but a failed hydrate must not discard the backup we found:
+  // it's a durable, valid row either way.
+  try {
+    await writeKeystore(backupRow);
+  } catch (err) {
+    console.warn("[BLACKTHORN] failed to hydrate IndexedDB from storage.local backup:", err);
+  }
+  return backupRow;
 }
 
 export async function writeKeystore(row: KeystoreRow): Promise<void> {

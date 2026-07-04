@@ -25,6 +25,7 @@ import { appendHistory, listHistory } from "../db/history";
 import { readSitePermission, writeSitePermission } from "../db/site-permissions";
 import { getSubKeypair } from "../crypto/sub-key-cache";
 import { x402Review } from "../x402/handlers";
+import { openPopupWindow } from "../popup-window";
 
 export interface WsConnectReq {
   origin: string;
@@ -53,11 +54,16 @@ export const wsConnect: WsHandler = async (raw) => {
   if (!origin) throw new Error("Origin required");
   const s = getState();
   if (s.phase === "uninitialized") {
+    void openPopupWindow();
     throw new Error(
       "Baret wallet not initialized — open the wallet to set it up first.",
     );
   }
   if (s.phase === "locked") {
+    // Surface the wallet so the user can unlock it, instead of failing with
+    // an error the page may never show — a click "to pay/connect" should
+    // always visibly do *something*, even if that something is "unlock me".
+    void openPopupWindow();
     throw new Error(
       "Baret wallet is locked — open the wallet to unlock it first.",
     );
@@ -188,6 +194,9 @@ function queueAndWait(
   payloadBase64: string,
 ): Promise<SignSuccess> {
   if (!isUnlocked()) {
+    // Same rationale as wsConnect: surface the wallet so the user can unlock
+    // it rather than silently failing a click on the page.
+    void openPopupWindow();
     return Promise.reject(new Error("Baret wallet is locked."));
   }
   return new Promise<SignSuccess>((resolve, reject) => {
