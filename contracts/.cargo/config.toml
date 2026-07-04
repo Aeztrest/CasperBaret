@@ -1,0 +1,12 @@
+# Casper's execution engine only accepts a WebAssembly MVP-baseline module —
+# no bulk-memory, reference-types, or other post-MVP proposals. Recent
+# rustc/LLVM versions emit bulk-memory instructions by default for
+# wasm32-unknown-unknown even without an explicit target-feature request
+# (see rust-lang/rust#141048), which the node then rejects at deploy time
+# with "Wasm preprocessing error: Deserialization error: Bulk memory
+# operations are not supported". Pin codegen back to the MVP baseline.
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "target-cpu=mvp",
+    "-C", "target-feature=-bulk-memory,-bulk-memory-opt,-reference-types,-sign-ext,-mutable-globals,-nontrapping-fptoint,-extended-const",
+]
