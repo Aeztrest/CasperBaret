@@ -282,20 +282,17 @@ export function verifyX402Signature(
   }
 
   // Determine what bytes were actually signed.
-  // "raw": Baret signs the 32-byte digest directly via signAndAddAlgorithmBytes.
-  //   This is the ONLY scheme the on-chain `transfer_with_authorization` entry
-  //   point (contracts/src/token.rs) can verify — it re-derives the same
-  //   EIP-712 digest and checks it directly, with no notion of a message
-  //   prefix. A payment settled via the built-in facilitator's real (non-demo)
-  //   on-chain path must be signed this way.
+  // "raw": wallets that sign the 32-byte EIP-712 digest directly (e.g. via
+  //   signAndAddAlgorithmBytes). The contract's `transfer_with_authorization`
+  //   (contracts/src/token.rs) re-derives the same digest and checks it as-is.
   // "casperMessage": external wallets (e.g. official Casper Wallet) don't expose
   //   raw-digest signing — only signMessage(string). Confirmed against two live
   //   payments from the official Casper Wallet (secp256k1): it signs
   //   `"Casper Message:\n" + hex(digest)` as ASCII bytes — the same
-  //   domain-separation convention as Ethereum's personal_sign. This only
-  //   supports the off-chain/demo verify path; it CANNOT settle through the
-  //   real on-chain contract, which only accepts the "raw" scheme (the prefix
-  //   isn't part of the EIP-712 digest the contract re-derives).
+  //   domain-separation convention as Ethereum's personal_sign. The contract
+  //   accepts this too via an explicit `sig_scheme` argument that tells it
+  //   which bytes to reconstruct before verifying — both schemes settle for
+  //   real on-chain, not just through the off-chain/demo verify path.
   const sigScheme = payload.payload.sigScheme ?? "raw";
 
   if (sigScheme === "casperMessage") {
