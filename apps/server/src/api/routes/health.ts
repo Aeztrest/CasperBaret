@@ -25,6 +25,9 @@ export function registerHealthRoutes(app: FastifyInstance, config: AppConfig) {
           : undefined,
         asset: config.x402.enabled ? config.x402.asset : undefined,
         priceAtomic: config.x402.enabled ? config.x402.priceAtomic : undefined,
+        feeAtomic: config.x402.enabled ? config.x402.feeAtomic : undefined,
+        gasSurchargeAtomic: config.x402.enabled ? config.x402.gasSurchargeAtomic : undefined,
+        tokenDecimals: config.x402.enabled ? config.x402.tokenDecimals : undefined,
         tokenName: config.x402.enabled ? config.x402.tokenName : undefined,
       },
       reputation: {

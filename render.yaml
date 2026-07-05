@@ -57,6 +57,11 @@ services:
         value: c3453692a0fbd86240fcf777ecd62838c16de2824343c9b06a7eabb6f87b8710
       - key: X402_PRICE_ATOMIC
         value: "10000"
+      # Folded into the same signed USDC amount as the fee — covers the
+      # facilitator's CSPR gas cost so the payer never needs CSPR and still
+      # only signs once.
+      - key: X402_GAS_SURCHARGE_ATOMIC
+        value: "10000"
       - key: X402_TOKEN_NAME
         value: USD Coin (test)
       - key: X402_TOKEN_VERSION

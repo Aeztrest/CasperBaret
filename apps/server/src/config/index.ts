@@ -42,8 +42,19 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().optional(),
   /** x402 wire addr ("00"+64hex) or bare 64hex account hash — normalized to x402. */
   X402_PAY_TO: z.string().optional(),
-  /** Atomic token amount per paywalled request. */
+  /** Atomic token amount per paywalled request (service fee only). */
   X402_PRICE_ATOMIC: z.string().default("10000"),
+  /**
+   * Atomic token amount added on top of X402_PRICE_ATOMIC to cover the
+   * facilitator's CSPR gas cost for settling on-chain. The payer signs one
+   * EIP-712 authorization for (fee + surcharge) as a single USDC amount —
+   * Casper has no way for a contract to pull native CSPR out of an
+   * arbitrary account's own purse, so covering gas in the payer's own CSPR
+   * would require them to submit a separate on-chain transaction. Folding
+   * it into the USDC amount keeps the flow at one signature, no CSPR
+   * needed in the payer's wallet.
+   */
+  X402_GAS_SURCHARGE_ATOMIC: z.string().default("10000"),
   X402_TOKEN_NAME: z.string().default("Cep18x402"),
   X402_TOKEN_VERSION: z.string().default("1"),
   /** CEP-18 decimals for CEP18_X402_PACKAGE (6, matching the deployed test USDC). */
@@ -91,6 +102,11 @@ export type X402Config = {
   asset: string;
   /** CAIP-2 network id, e.g. "casper:casper-test". */
   network: string;
+  /** Service fee only (no gas surcharge) — informational/display use. */
+  feeAtomic: string;
+  /** CSPR-gas-covering surcharge folded into the signed amount — informational/display use. */
+  gasSurchargeAtomic: string;
+  /** feeAtomic + gasSurchargeAtomic — the actual amount signed and charged per request. */
   priceAtomic: string;
   tokenName: string;
   tokenVersion: string;
@@ -201,7 +217,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     payTo,
     asset,
     network: casper.caip2,
-    priceAtomic: e.X402_PRICE_ATOMIC,
+    feeAtomic: e.X402_PRICE_ATOMIC,
+    gasSurchargeAtomic: e.X402_GAS_SURCHARGE_ATOMIC,
+    priceAtomic: (BigInt(e.X402_PRICE_ATOMIC) + BigInt(e.X402_GAS_SURCHARGE_ATOMIC)).toString(),
     tokenName: e.X402_TOKEN_NAME,
     tokenVersion: e.X402_TOKEN_VERSION,
     tokenDecimals: e.X402_TOKEN_DECIMALS,

@@ -9,7 +9,9 @@
  * facilitator, and the answer comes back with the on-chain proof.
  *
  * The page hides the protocol details behind a "How it works" disclosure so
- * non-technical visitors see one clean CTA: "Pay $0.001 → Ask".
+ * non-technical visitors see one clean CTA: "Pay $X.XX → Ask" (fetched live
+ * from /health — the price includes a CSPR-gas surcharge folded into the
+ * single signed USDC amount, so there's still only one signature).
  */
 
 import { useState, useEffect, type FormEvent } from "react";
@@ -60,12 +62,38 @@ const SUGGESTIONS = [
   "Explain x402 payments on Casper",
 ];
 
+/** Formats an atomic amount as a "$X.XX" label; falls back while loading. */
+function formatUsdLabel(atomic: string, decimals: number): string {
+  const base = 10n ** BigInt(decimals);
+  const value = BigInt(atomic);
+  const whole = value / base;
+  const frac = value % base;
+  const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "") || "0";
+  return `$${whole}.${fracStr.padEnd(2, "0")}`;
+}
+
 export default function Scrybe() {
   const { connected, walletAddress, shortAddress, openWalletModal, adapter, disconnect } = useWallet();
   const [question, setQuestion] = useState("");
   const [history, setHistory] = useState<AnswerEntry[]>([]);
   const [pending, setPending] = useState(false);
   const [pendingQ, setPendingQ] = useState<string | null>(null);
+  // The real price (service fee + CSPR-gas surcharge, folded into one USDC
+  // amount so payment stays a single signature). Fetched from /health so this
+  // page never hardcodes a number that can drift from the server's config.
+  const [priceLabel, setPriceLabel] = useState("$0.02");
+
+  useEffect(() => {
+    fetch(`${SCRYBE_API_BASE}/health`)
+      .then((r) => r.json())
+      .then((body) => {
+        const { priceAtomic, tokenDecimals } = body?.x402 ?? {};
+        if (typeof priceAtomic === "string" && typeof tokenDecimals === "number") {
+          setPriceLabel(formatUsdLabel(priceAtomic, tokenDecimals));
+        }
+      })
+      .catch(() => { /* keep the fallback label */ });
+  }, []);
 
   // If the user submitted a question without being connected, run it once
   // they finish picking a wallet.
@@ -227,7 +255,7 @@ export default function Scrybe() {
               </button>
             )}
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">
-              $0.001/q
+              {priceLabel}/q
             </span>
           </div>
         </div>
@@ -238,12 +266,12 @@ export default function Scrybe() {
           <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-7">
             <div>
               <h2 className="font-display text-4xl sm:text-5xl font-black tracking-tight leading-[1.05]">
-                Pay $0.001.<br />
+                Pay {priceLabel}.<br />
                 <span className="text-brand-500">Get an answer.</span>
               </h2>
               <p className="text-ink-50/55 mt-3 leading-relaxed max-w-xl">
                 Pay-per-question oracle running the HTTP&nbsp;402 protocol on Casper testnet.
-                Your wallet pays in USDC (demo) — under your caps — and answers settle on-chain.
+                Your wallet pays in USDC (demo, gas included) — under your caps — and answers settle on-chain.
               </p>
             </div>
 
@@ -275,6 +303,7 @@ export default function Scrybe() {
               >
                 <ConversationEntry
                   entry={entry}
+                  priceLabel={priceLabel}
                   onRetry={() => retry(entry.id)}
                 />
               </motion.div>
@@ -301,7 +330,7 @@ export default function Scrybe() {
             className="px-4 py-3 rounded-xl text-sm font-semibold disabled:opacity-30 transition-all flex items-center gap-2 text-white bg-ink-900 hover:bg-ink-800"
           >
             {connected
-              ? <><Zap size={13} className="text-brand-500" /> Pay $0.001 · Ask</>
+              ? <><Zap size={13} className="text-brand-500" /> Pay {priceLabel} · Ask</>
               : <><Lock size={13} /> Connect · Ask</>}
           </button>
         </div>
@@ -312,8 +341,9 @@ export default function Scrybe() {
 
 /* ───────── pieces ───────── */
 
-function ConversationEntry({ entry, onRetry }: {
+function ConversationEntry({ entry, priceLabel, onRetry }: {
   entry: AnswerEntry;
+  priceLabel: string;
   onRetry: () => void;
 }) {
   return (
@@ -324,7 +354,7 @@ function ConversationEntry({ entry, onRetry }: {
       </div>
 
       {entry.phase !== "answered" && entry.phase !== "error" && (
-        <ProgressStep entry={entry} />
+        <ProgressStep entry={entry} priceLabel={priceLabel} />
       )}
 
       {entry.answer && (
@@ -363,10 +393,10 @@ function ConversationEntry({ entry, onRetry }: {
   );
 }
 
-function ProgressStep({ entry }: { entry: AnswerEntry }) {
+function ProgressStep({ entry, priceLabel }: { entry: AnswerEntry; priceLabel: string }) {
   const PHASES: Array<{ key: Phase; label: string }> = [
     { key: "asking",    label: "Asking the oracle" },
-    { key: "paywalled", label: "Building $0.001 USDC payment" },
+    { key: "paywalled", label: `Building ${priceLabel} USDC payment` },
     { key: "signing",   label: "Wallet signing EIP-712 payment" },
     { key: "settling",  label: "Settling on Casper" },
   ];
