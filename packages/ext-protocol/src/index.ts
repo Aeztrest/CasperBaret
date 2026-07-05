@@ -184,6 +184,8 @@ export interface ExtRpc {
   "wallet.unlock":     { req: { passphrase: string };                     rsp: { ok: true } };
   "wallet.lock":       { req: void;                                       rsp: { ok: true } };
   "wallet.create":     { req: { passphrase: string; network: CasperNetwork };   rsp: { walletAddress: string; authorityAddress: string } };
+  /** Recover a wallet from a previously-exported secret (mnemonic/base58/hex) — e.g. after removing and reinstalling the extension. */
+  "wallet.restore":    { req: { secret: string; format: "mnemonic" | "base58" | "hex"; passphrase: string; network: CasperNetwork }; rsp: { walletAddress: string; authorityAddress: string } };
   "wallet.reset":      { req: { confirmation: "I-UNDERSTAND" };           rsp: { ok: true } };
   "wallet.exportSecret": { req: { passphrase: string; format: "mnemonic" | "base58" | "hex" }; rsp: { secret: string } };
   /** Request testnet CSPR from the Casper faucet (best-effort; may be a no-op stub). */

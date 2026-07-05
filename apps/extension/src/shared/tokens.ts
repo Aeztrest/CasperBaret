@@ -36,7 +36,7 @@ export const CEP18_TOKENS: Record<CasperNetwork, TokenDef[]> = {
   testnet: [
     {
       symbol: "USDC",
-      name: "USD Coin (test)",
+      name: "USD Coin",
       // Deployed 2026-07-05 on casper-test — mirrors CEP18_X402_PACKAGE.
       packageHash:
         "ce78329749fe52382fe42061fd7afd358fb622fb46b367f5f28d13f40e0744f3",
@@ -63,8 +63,10 @@ export function formatTokenAmount(raw: string, decimals: number, maxFractionDigi
   const base = 10n ** BigInt(decimals);
   const whole = big / base;
   const frac = big % base;
-  if (frac === 0n) return whole.toString();
+  // Thousands separators (browser locale) to match how CSPR amounts are rendered elsewhere.
+  const wholeStr = whole.toLocaleString();
+  if (frac === 0n) return wholeStr;
   // Right-pad the fractional part, then trim to maxFractionDigits and strip zeros.
   const fracStr = frac.toString().padStart(decimals, "0").slice(0, maxFractionDigits).replace(/0+$/, "");
-  return fracStr ? `${whole}.${fracStr}` : whole.toString();
+  return fracStr ? `${wholeStr}.${fracStr}` : wholeStr;
 }

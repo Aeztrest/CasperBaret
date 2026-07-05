@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, Eye, EyeOff, KeyRound, ShieldCheck, Sparkles, Copy, Check,
-  AlertTriangle, Loader2, Droplet, Globe,
+  AlertTriangle, Loader2, Droplet, Globe, Undo2,
 } from "lucide-react";
 import { POLICY_TEMPLATES, type PolicyTemplateId } from "@casper-baret/casper-guard";
 
@@ -21,12 +21,14 @@ import { Mark } from "@casper-baret/ui";
 import { useRpc, useWalletContext } from "../../shared/state-context";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type Mode = "create" | "restore";
 
 export function Onboarding() {
   const nav = useNavigate();
   const { state, refresh } = useWalletContext();
   const rpc = useRpc();
 
+  const [mode, setMode] = useState<Mode>("create");
   const [step, setStep] = useState<Step>(1);
   const [passphrase, setPassphrase] = useState("");
   const [passphraseConfirm, setPassphraseConfirm] = useState("");
@@ -44,6 +46,21 @@ export function Onboarding() {
   useEffect(() => {
     if (state && state.phase !== "uninitialized" && step === 1) nav("/", { replace: true });
   }, [state, step, nav]);
+
+  const onRestoreWallet = async (input: {
+    secret: string;
+    format: "mnemonic" | "base58" | "hex";
+    passphrase: string;
+  }) => {
+    setError(null);
+    try {
+      await rpc.call("wallet.restore", { ...input, network: "testnet" });
+      await refresh();
+      nav("/", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const next = () => setStep((s) => (s < 8 ? ((s + 1) as Step) : s));
 
@@ -144,15 +161,20 @@ export function Onboarding() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
+            key={mode === "restore" ? "restore" : step}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22 }}
             className="w-full max-w-xl"
           >
-            {step === 1 && <StepWelcome onNext={next} />}
-            {step === 2 && (
+            {mode === "restore" && (
+              <StepRestore onRestore={onRestoreWallet} onBack={() => setMode("create")} />
+            )}
+            {mode === "create" && step === 1 && (
+              <StepWelcome onNext={next} onRestore={() => setMode("restore")} />
+            )}
+            {mode === "create" && step === 2 && (
               <StepPassphrase
                 passphrase={passphrase}
                 passphraseConfirm={passphraseConfirm}
@@ -209,7 +231,7 @@ export function Onboarding() {
 
 /* ─── Step components ──────────────────────────────────────────────────── */
 
-function StepWelcome({ onNext }: { onNext: () => void }) {
+function StepWelcome({ onNext, onRestore }: { onNext: () => void; onRestore: () => void }) {
   return (
     <div className="text-center space-y-7">
       <div className="space-y-3">
@@ -242,7 +264,123 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       <button onClick={onNext} className="btn-primary px-6 py-3">
         Get started <ArrowRight size={13} />
       </button>
+      <div>
+        <button onClick={onRestore} className="text-xs text-accent-soft hover:text-text inline-flex items-center gap-1.5">
+          <Undo2 size={12} /> Already have a wallet? Restore it
+        </button>
+      </div>
       <p className="text-[10px] text-text-faint">Testnet only · Self-custody · Open source</p>
+    </div>
+  );
+}
+
+function StepRestore({
+  onRestore, onBack,
+}: {
+  onRestore: (input: { secret: string; format: "mnemonic" | "base58" | "hex"; passphrase: string }) => Promise<void>;
+  onBack: () => void;
+}) {
+  const [format, setFormat] = useState<"base58" | "mnemonic" | "hex">("base58");
+  const [secret, setSecret] = useState("");
+  const [passphrase, setPassphrase] = useState("");
+  const [passphraseConfirm, setPassphraseConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
+
+  const matches = passphrase.length >= 8 && passphrase === passphraseConfirm;
+  const canSubmit = secret.trim().length > 0 && matches && !busy;
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await onRestore({ secret: secret.trim(), format, passphrase });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <Undo2 size={26} className="mx-auto text-accent-soft" />
+        <h2 className="text-2xl font-extrabold tracking-tight">Restore your wallet</h2>
+        <p className="text-text-muted max-w-md mx-auto text-sm">
+          Paste the secret key or recovery phrase you backed up when you first created this wallet.
+        </p>
+      </div>
+
+      <div className="flex gap-1.5 justify-center">
+        {(["base58", "mnemonic", "hex"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFormat(f)}
+            className="px-3 py-1.5 rounded-pill text-xs font-semibold transition-colors"
+            style={{
+              background: format === f ? "rgba(61,109,255,0.15)" : "transparent",
+              border: format === f ? "1px solid rgba(61,109,255,0.5)" : "1px solid var(--line)",
+              color: format === f ? "var(--accent-soft)" : "var(--text-muted)",
+            }}
+          >
+            {f === "base58" ? "Secret key (base58)" : f === "mnemonic" ? "Recovery phrase" : "Hex"}
+          </button>
+        ))}
+      </div>
+
+      {format === "mnemonic" ? (
+        <textarea
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          placeholder="24-word recovery phrase, separated by spaces"
+          rows={3}
+          className="input font-mono text-xs resize-none"
+          autoFocus
+        />
+      ) : (
+        <input
+          type="text"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          placeholder={format === "base58" ? "Secret key (base58)" : "Secret key (hex)"}
+          className="input font-mono text-xs"
+          autoFocus
+        />
+      )}
+
+      <div className="space-y-3">
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+            placeholder="New passphrase for this device (8+ characters)"
+            className="input pr-10 font-sans"
+          />
+          <button type="button" onClick={() => setShow((s) => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-faint hover:text-text-muted">
+            {show ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </div>
+        <input
+          type={show ? "text" : "password"}
+          value={passphraseConfirm}
+          onChange={(e) => setPassphraseConfirm(e.target.value)}
+          placeholder="Confirm passphrase"
+          className="input font-sans"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <button onClick={onBack} className="btn-ghost">
+          Back
+        </button>
+        <button onClick={submit} disabled={!canSubmit} className="btn-primary flex-1 disabled:opacity-50">
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
+          {busy ? "Restoring…" : "Restore wallet"}
+        </button>
+      </div>
+      {passphrase && passphraseConfirm && passphrase !== passphraseConfirm && (
+        <p className="text-bad text-xs text-center">Passphrases don't match.</p>
+      )}
     </div>
   );
 }

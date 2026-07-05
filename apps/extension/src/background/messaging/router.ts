@@ -20,6 +20,7 @@ import {
 import { handlers as rpcHandlers } from "./handlers";
 import { wallet_standard_handlers, type WsHandler } from "../wallet-standard/handlers";
 import { subscribe } from "../state/store";
+import { bootstrapReady } from "../ready";
 
 type HandlerMap = Record<string, WsHandler>;
 
@@ -54,6 +55,11 @@ export function startRouter(): void {
 
     port.onMessage.addListener(async (raw: unknown) => {
       if (!isEnvelope(raw) || raw.kind !== "req") return;
+
+      // Never answer from the pre-rehydrate default state — a request
+      // racing the service worker's cold start would otherwise see
+      // "uninitialized" even though a wallet exists on disk.
+      await bootstrapReady;
 
       const handler = map[raw.method as ExtRpcMethod];
       if (!handler) {

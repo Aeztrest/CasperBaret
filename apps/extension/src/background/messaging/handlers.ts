@@ -161,6 +161,82 @@ const createHandler: Handler<"wallet.create"> = async ({
   };
 };
 
+const restoreHandler: Handler<"wallet.restore"> = async ({
+  secret,
+  format,
+  passphrase,
+  network,
+}) => {
+  if (await hasKeystore()) {
+    throw new Error(
+      "A wallet already exists. Reset it before restoring another.",
+    );
+  }
+  if (typeof passphrase !== "string" || passphrase.length < 8) {
+    throw new Error("Passphrase must be at least 8 characters.");
+  }
+
+  let entropyHex: string;
+  if (format === "mnemonic") {
+    const { mnemonicToEntropy } = await import("bip39");
+    try {
+      entropyHex = mnemonicToEntropy(secret.trim().toLowerCase());
+    } catch {
+      throw new Error("Invalid recovery phrase — check the word order and spelling.");
+    }
+  } else if (format === "base58") {
+    try {
+      entropyHex = bytesToHex(base58ToBytes(secret.trim()));
+    } catch {
+      throw new Error("Invalid base58 secret key.");
+    }
+  } else {
+    entropyHex = secret.trim().replace(/^0x/i, "").toLowerCase();
+  }
+
+  if (!/^[0-9a-f]{64}$/i.test(entropyHex)) {
+    throw new Error("That doesn't decode to a 32-byte Casper secret key.");
+  }
+
+  const authority = await keypairFromHex(entropyHex, "ed25519");
+  const entropy = new Uint8Array(Buffer.from(entropyHex, "hex"));
+
+  const blob = await encryptWithPassphrase(entropy, passphrase);
+  const account0: AccountMeta = {
+    index: 0,
+    name: "Account 1",
+    kind: "root",
+    authorityPubkey: authority.publicKeyHex,
+    smartWalletAddress: null,
+  };
+  const row: KeystoreRow = {
+    id: "primary",
+    version: 2,
+    blob,
+    accounts: [account0],
+    activeIndex: 0,
+    createdAt: Date.now(),
+  };
+  await writeKeystore(row);
+
+  unlockWith(entropy, { kind: "root", index: 0 });
+  entropy.fill(0);
+
+  dispatch({ type: "network.set", network });
+  dispatch({
+    type: "wallet.unlocked",
+    walletAddress: authority.publicKeyHex,
+    authorityAddress: authority.publicKeyHex,
+    accounts: toAccountInfos(row),
+    activeIndex: 0,
+  });
+
+  return {
+    walletAddress: authority.publicKeyHex,
+    authorityAddress: authority.publicKeyHex,
+  };
+};
+
 /** Project the keystore's account metadata into the UI-facing AccountInfo[]. */
 function toAccountInfos(row: KeystoreRow): AccountInfo[] {
   return row.accounts.map((a) => ({
@@ -796,6 +872,7 @@ function kindLabel(kind: string): string {
 export const handlers: { [M in ExtRpcMethod]: Handler<M> } = {
   "wallet.getState": getStateHandler,
   "wallet.create": createHandler,
+  "wallet.restore": restoreHandler,
   "wallet.unlock": unlockHandler,
   "wallet.lock": lockHandler,
   "wallet.reset": resetHandler,
@@ -866,4 +943,24 @@ function bytesToBase58(b: Uint8Array): string {
     else break;
   }
   return out;
+}
+
+function base58ToBytes(s: string): Uint8Array {
+  let n = 0n;
+  for (const ch of s) {
+    const idx = BASE58_ALPHABET.indexOf(ch);
+    if (idx === -1) throw new Error(`Invalid base58 character: ${ch}`);
+    n = n * 58n + BigInt(idx);
+  }
+  const out: number[] = [];
+  while (n > 0n) {
+    out.unshift(Number(n & 0xffn));
+    n >>= 8n;
+  }
+  let leadingZeros = 0;
+  for (const ch of s) {
+    if (ch === "1") leadingZeros++;
+    else break;
+  }
+  return new Uint8Array([...new Array(leadingZeros).fill(0), ...out]);
 }

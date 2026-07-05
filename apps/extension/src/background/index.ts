@@ -15,6 +15,7 @@ import { restoreFromSessionStorage } from "./crypto/session";
 import { startMonitorLifecycle } from "./rpc/monitor";
 import { countUnread } from "./db/alerts";
 import { openPopupWindow } from "./popup-window";
+import { markBootstrapReady } from "./ready";
 
 async function bootstrap(): Promise<void> {
   const exists = await hasKeystore();
@@ -72,9 +73,11 @@ browser.runtime.onInstalled.addListener(({ reason }) => {
   console.info(`[BLACKTHORN] installed (${reason})`);
 });
 
-void bootstrap().catch((err) => {
-  console.error("[BLACKTHORN] bootstrap failed:", err);
-});
+void bootstrap()
+  .catch((err) => {
+    console.error("[BLACKTHORN] bootstrap failed:", err);
+  })
+  .finally(() => markBootstrapReady());
 
 startRouter();
 startMonitorLifecycle();
