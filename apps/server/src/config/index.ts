@@ -72,6 +72,15 @@ const envSchema = z.object({
   /** CEP18_X402_PACKAGE (whole-unit) sent per successful test-token claim. */
   FAUCET_TOKEN_AMOUNT: z.coerce.number().positive().default(1000),
 
+  /** NovaSwap's real CSPR -> USDC(test) swap (POST /demo/swap/cspr-to-usdc). */
+  SWAP_ENABLED: z.string().optional(),
+  /** Atomic USDC(test) paid out per 1 whole CSPR (1e9 motes). Default 175 USDC/CSPR. */
+  SWAP_RATE_ATOMIC_USDC_PER_CSPR: z.string().default("175000000"),
+  /** Largest single swap the treasury will honor, in whole CSPR. */
+  SWAP_MAX_CSPR: z.coerce.number().positive().default(20),
+  /** Casper's own protocol-level minimum native-transfer amount (2.5 CSPR on testnet) — below this the network itself rejects the transaction before it ever executes. */
+  SWAP_MIN_CSPR: z.coerce.number().positive().default(2.5),
+
   /** csv of contract package hashes treated as risky. */
   RISKY_CONTRACT_PACKAGES: z.string().optional(),
   /** csv of contract package hashes treated as known-safe. */
@@ -124,6 +133,14 @@ export type FaucetConfig = {
   tokenAmount: number;
 };
 
+export type SwapConfig = {
+  /** Requires faucet.enabled too — reuses the treasury key as counterparty. */
+  enabled: boolean;
+  rateAtomicUsdcPerCspr: string;
+  maxCspr: number;
+  minCspr: number;
+};
+
 export type AppConfig = {
   nodeEnv: "development" | "test" | "production";
   port: number;
@@ -132,6 +149,7 @@ export type AppConfig = {
   casper: CasperNetworkConfig;
   x402: X402Config;
   faucet: FaucetConfig;
+  swap: SwapConfig;
   riskyContractPackages: Set<string>;
   knownSafeContractPackages: Set<string>;
   maxBodyBytes: number;
@@ -242,6 +260,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     tokenAmount: e.FAUCET_TOKEN_AMOUNT,
   };
 
+  // Reuses the faucet's treasury key as the swap counterparty — needs both
+  // the treasury (to receive CSPR / pay out USDC) and the x402 asset (the
+  // USDC(test) contract) configured.
+  const swap: SwapConfig = {
+    enabled: boolish(e.SWAP_ENABLED) && faucetEnabled && x402Enabled,
+    rateAtomicUsdcPerCspr: e.SWAP_RATE_ATOMIC_USDC_PER_CSPR,
+    maxCspr: e.SWAP_MAX_CSPR,
+    minCspr: e.SWAP_MIN_CSPR,
+  };
+
   const corsOrigins = e.CORS_ORIGINS
     ? e.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
@@ -254,6 +282,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     casper,
     x402,
     faucet,
+    swap,
     riskyContractPackages: splitCsv(e.RISKY_CONTRACT_PACKAGES),
     knownSafeContractPackages: splitCsv(e.KNOWN_SAFE_CONTRACT_PACKAGES),
     maxBodyBytes: e.MAX_BODY_BYTES,

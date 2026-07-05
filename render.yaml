@@ -84,6 +84,16 @@ services:
       - key: FAUCET_TOKEN_AMOUNT
         value: "1000"
 
+      # --- NovaSwap real CSPR -> USDC(test) swap (POST /demo/swap/cspr-to-usdc) ---
+      - key: SWAP_ENABLED
+        value: "true"
+      - key: SWAP_RATE_ATOMIC_USDC_PER_CSPR
+        value: "175000000"
+      - key: SWAP_MAX_CSPR
+        value: "20"
+      - key: SWAP_MIN_CSPR
+        value: "2.5"
+
       # --- Contract reputation (mirror the showcase scenarios) ---
       - key: RISKY_CONTRACT_PACKAGES
         value: deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeadd

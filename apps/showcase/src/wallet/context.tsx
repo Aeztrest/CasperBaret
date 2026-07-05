@@ -40,6 +40,10 @@ export interface WalletState {
   connected: boolean;
   /** Connected Casper account-hash (64 hex). */
   walletAddress: string | null;
+  /** Algo-prefixed public key hex — needed to build transactions client-side. */
+  publicKey: string | null;
+  /** Connected provider's display name, e.g. "Baret" or "Casper Wallet". */
+  walletName: string | null;
   shortAddress: string | null;
   connecting: boolean;
   openWalletModal: () => void;
@@ -172,11 +176,15 @@ export function WalletProvider({
   );
 
   const walletAddress = bridge?.account_pubkey() ?? null;
+  const publicKey = bridge?.connectedAccount.publicKey ?? null;
+  const walletName = bridge?.name ?? null;
   const value = useMemo<WalletState>(
     () => ({
       available,
       connected: !!bridge,
       walletAddress,
+      publicKey,
+      walletName,
       shortAddress: walletAddress ? shortAccountHash(walletAddress) : null,
       connecting,
       openWalletModal,
@@ -189,6 +197,8 @@ export function WalletProvider({
       available,
       bridge,
       walletAddress,
+      publicKey,
+      walletName,
       connecting,
       openWalletModal,
       connect,

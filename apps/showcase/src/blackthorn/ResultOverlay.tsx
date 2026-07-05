@@ -33,7 +33,9 @@ export function ResultOverlay({ state, signature, message, onClose }: Props) {
             style={{ border: "1px solid rgba(255,255,255,0.10)" }}
           >
             {state === "awaiting" && <Awaiting />}
-            {state === "confirmed" && <Confirmed signature={signature ?? null} onClose={onClose} />}
+            {state === "confirmed" && (
+              <Confirmed signature={signature ?? null} message={message ?? null} onClose={onClose} />
+            )}
             {state === "blocked" && <Blocked message={message ?? null} onClose={onClose} />}
             {state === "error" && <ErrorState message={message ?? null} onClose={onClose} />}
           </motion.div>
@@ -62,7 +64,9 @@ function Awaiting() {
   );
 }
 
-function Confirmed({ signature, onClose }: { signature: string | null; onClose: () => void }) {
+function Confirmed({
+  signature, message, onClose,
+}: { signature: string | null; message: string | null; onClose: () => void }) {
   return (
     <div className="space-y-4">
       <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center"
@@ -73,6 +77,11 @@ function Confirmed({ signature, onClose }: { signature: string | null; onClose: 
         <p className="text-lg font-bold text-emerald-400">Transaction confirmed</p>
         <p className="text-xs text-ink-300 mt-1.5">Baret approved + your wallet signed.</p>
       </div>
+      {message && (
+        <p className="text-[11px] text-ink-300 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }}>
+          {message}
+        </p>
+      )}
       {signature && (
         <a href={`https://testnet.cspr.live/deploy/${signature}`} target="_blank" rel="noreferrer"
           className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-ink-50 transition-colors font-semibold">

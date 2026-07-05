@@ -1,11 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpDown, ChevronDown, Settings, Info } from "lucide-react";
+import { NativeTransferBuilder, PublicKey } from "casper-js-sdk";
 import { SiteShell } from "../../components/SiteShell";
 import { ResultOverlay, type ResultState } from "../../blackthorn/ResultOverlay";
 import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 import { useWallet } from "../../wallet/context";
+
+// In production the showcase is on Vercel but the API server is on Render.
+const SWAP_API_BASE =
+  (import.meta.env.VITE_SCRYBE_API as string | undefined) ??
+  "https://baret-server.onrender.com";
+
+interface SwapConfig {
+  enabled: boolean;
+  treasuryPublicKey: string;
+  rateAtomicUsdcPerCspr: string;
+  minCspr: number;
+  maxCspr: number;
+}
 
 const THEME = {
   primary: "#e11428",
@@ -27,30 +41,133 @@ const TOKENS = [
 ];
 
 export default function NovaSwap() {
-  const { connected, openWalletModal, walletAddress, adapter } = useWallet();
+  const { connected, openWalletModal, walletAddress, publicKey, walletName, adapter } = useWallet();
   const [fromToken, setFromToken] = useState(TOKENS[0]);
   const [toToken, setToToken] = useState(TOKENS[1]);
-  const [amount, setAmount] = useState("0.5");
+  // Default above Casper's own 2.5 CSPR native-transfer minimum, so the real
+  // CSPR->USDC pair works out of the box without the user hitting that wall first.
+  const [amount, setAmount] = useState("3");
   const [dangerous, setDangerous] = useState(false);
   const [resultState, setResultState] = useState<ResultState>("idle");
   const [signature, setSignature] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [previewTx, setPreviewTx] = useState<string | null>(null);
+  const [swapping, setSwapping] = useState(false);
+  const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
+
+  useEffect(() => {
+    fetch(`${SWAP_API_BASE}/health`)
+      .then((r) => r.json())
+      .then((body) => {
+        const s = body?.swap;
+        if (s?.enabled && s?.treasuryPublicKey) {
+          setSwapConfig({
+            enabled: true,
+            treasuryPublicKey: s.treasuryPublicKey,
+            rateAtomicUsdcPerCspr: s.rateAtomicUsdcPerCspr,
+            minCspr: s.minCspr,
+            maxCspr: s.maxCspr,
+          });
+        }
+      })
+      .catch(() => { /* real swap disabled — falls back to the scenario demo */ });
+  }, []);
 
   const outputAmount = fromToken.price * parseFloat(amount || "0") / toToken.price;
   const success = signature !== null;
+  // The only pair with a real settlement path: everything else (CSX, yCSPR
+  // — fictional demo tokens with no real contract) stays the scenario demo.
+  const isRealPair = fromToken.symbol === "CSPR" && toToken.symbol === "USDC";
+  const doingRealSwap = isRealPair && !dangerous && !!swapConfig;
   const scenarioLabel = dangerous
     ? `Swap ${amount} ${fromToken.symbol} → ${toToken.symbol} (danger scenario · drainer pattern)`
     : `Swap ${amount} ${fromToken.symbol} → ${outputAmount.toFixed(4)} ${toToken.symbol}`;
 
   async function handleSwap() {
     if (!connected || !walletAddress) { openWalletModal(); return; }
+    if (doingRealSwap) {
+      await handleRealSwap();
+      return;
+    }
     try {
       const __built = await buildScenario(dangerous ? "novaswap-danger" : "novaswap-safe", walletAddress); const tx = __built.transactionXdr;
       setPreviewTx(tx);   // opens RiskPreview — user decides how to send
     } catch (e) {
       setResultState("error");
       setResultMessage(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /**
+   * The real swap: a plain native CSPR transfer to the treasury, signed by
+   * the connected wallet, relayed through the server (which confirms the
+   * treasury's balance actually moved before paying out USDC(test) at a
+   * fixed rate). Casper's Transaction V1 model has no "attach value to a
+   * contract call" primitive without bespoke session Wasm, so this avoids
+   * that entirely — one real transfer in, one real transfer back.
+   */
+  async function handleRealSwap() {
+    if (!swapConfig || !publicKey) return;
+    if (walletName !== "Baret") {
+      setResultState("error");
+      setResultMessage(
+        "Real swap settlement is currently verified with the Baret wallet only — " +
+        "other wallets sign a legacy Deploy format whose on-chain confirmation this demo " +
+        "can't yet reliably track. Connect Baret to swap for real.",
+      );
+      return;
+    }
+    const csprAmount = parseFloat(amount || "0");
+    if (!(csprAmount >= swapConfig.minCspr)) {
+      setResultState("error");
+      setResultMessage(`Minimum swap is ${swapConfig.minCspr} CSPR — Casper's own native-transfer floor.`);
+      return;
+    }
+    if (csprAmount > swapConfig.maxCspr) {
+      setResultState("error");
+      setResultMessage(`Max ${swapConfig.maxCspr} CSPR per swap on this demo treasury.`);
+      return;
+    }
+
+    setSwapping(true);
+    setResultState("awaiting"); setSignature(null); setResultMessage(null);
+    try {
+      const motes = BigInt(Math.round(csprAmount * 1e9)).toString();
+      const txn = new NativeTransferBuilder()
+        .from(PublicKey.fromHex(publicKey))
+        .target(PublicKey.fromHex(swapConfig.treasuryPublicKey))
+        .chainName("casper-test")
+        .payment(100_000_000)
+        .amount(motes)
+        .build();
+
+      const { signedTransaction } = await adapter.signTransaction(JSON.stringify(txn.toJSON()));
+
+      const res = await fetch(`${SWAP_API_BASE}/demo/swap/cspr-to-usdc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signedTransaction: JSON.parse(signedTransaction) }),
+      }).then((r) => r.json());
+
+      if (!res.success) {
+        throw new Error(res.error ?? "Swap failed at the server.");
+      }
+
+      const usdcOut = Number(res.usdcAtomic) / 1e6;
+      setSignature(res.usdcTransactionHash);
+      setResultMessage(
+        `Received ${usdcOut.toFixed(2)} USDC(test). CSPR transfer: ${res.csprTransactionHash.slice(0, 10)}…${res.note ? ` ${res.note}` : ""}`,
+      );
+      setResultState("confirmed");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
+      } else {
+        setResultState("error"); setResultMessage(msg);
+      }
+    } finally {
+      setSwapping(false);
     }
   }
 
@@ -130,13 +247,13 @@ export default function NovaSwap() {
             <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You pay</span>
-                <span className="text-xs text-ink-400">Balance: 12.45</span>
+                <span className="text-xs text-ink-400">Balance: —</span>
               </div>
               <div className="flex items-center gap-3">
                 <input
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => { setAmount(e.target.value); setSignature(null); setResultState("idle"); }}
                   className="flex-1 bg-transparent text-2xl font-bold text-ink-50 outline-none min-w-0"
                   placeholder="0"
                 />
@@ -164,7 +281,7 @@ export default function NovaSwap() {
             <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You receive</span>
-                <span className="text-xs text-ink-400">Balance: 245.30</span>
+                <span className="text-xs text-ink-400">Balance: —</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="flex-1 text-2xl font-bold text-ink-200">
@@ -181,23 +298,31 @@ export default function NovaSwap() {
 
             {/* Route info */}
             <div className="flex items-center justify-between px-1 text-xs text-ink-400">
-              <span>Route: CasperSwap</span>
-              <span className="flex items-center gap-1">0.3% fee <Info size={11} /></span>
+              <span>{doingRealSwap ? "Route: treasury (fixed rate)" : "Route: CasperSwap"}</span>
+              <span className="flex items-center gap-1">
+                {doingRealSwap ? "Real settlement" : "0.3% fee"} <Info size={11} />
+              </span>
             </div>
 
             {/* Swap button */}
             {success ? (
-              <motion.div
+              <motion.button
+                onClick={() => { setSignature(null); setResultState("idle"); }}
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 className="w-full py-4 rounded-xl text-center font-bold text-emerald-400"
                 style={{ background: "#ecfdf5", border: "1px solid rgba(16,185,129,0.3)" }}
               >
-                ✓ Swap Successful
-              </motion.div>
+                ✓ Swap Successful — swap again
+              </motion.button>
             ) : (
-              <button onClick={handleSwap} className="w-full py-4 rounded-xl font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg,#e11428,#c00f20)" }}>
-                {connected ? "Swap" : "Connect Wallet to Swap"}
+              <button
+                onClick={handleSwap}
+                disabled={swapping}
+                className="w-full py-4 rounded-xl font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-wait"
+                style={{ background: "linear-gradient(135deg,#e11428,#c00f20)" }}
+              >
+                {!connected ? "Connect Wallet to Swap" : swapping ? "Swapping…" : "Swap"}
               </button>
             )}
           </div>
