@@ -349,7 +349,29 @@ const balanceHandler: Handler<"wallet.balance"> = async ({ address }) => {
   }
 };
 
+// packageHash -> live "hash-<contractHash>" key, so we don't re-resolve the
+// package's active contract version on every poll (Home.tsx polls every 6s).
+const contractKeyCache = new Map<string, string>();
+
+async function resolveContractKey(
+  rpc: ReturnType<typeof getRpcClient>,
+  stateRootHash: string,
+  packageHash: string,
+): Promise<string> {
+  const cached = contractKeyCache.get(packageHash);
+  if (cached) return cached;
+
+  const res = await rpc.queryGlobalStateByStateHash(stateRootHash, `hash-${packageHash}`, []);
+  const versions = res.storedValue.contractPackage?.versions ?? [];
+  const version = versions[versions.length - 1];
+  if (!version) throw new Error(`No active contract version for package ${packageHash}`);
+  const key = `hash-${version.contractHash.hash.toHex()}`;
+  contractKeyCache.set(packageHash, key);
+  return key;
+}
+
 const tokenBalanceHandler: Handler<"wallet.tokenBalance"> = async ({
+  packageHash,
   address,
 }) => {
   const snap = getSnapshot();
@@ -357,27 +379,52 @@ const tokenBalanceHandler: Handler<"wallet.tokenBalance"> = async ({
   if (!target)
     throw new Error("No address available — wallet not initialized.");
 
-  // Resolve the owner account hash (CEP-18 `balances` is keyed by account hash).
-  // Doing this here proves the address plumbing is correct end-to-end.
+  // Resolve the owner account hash — Odra's CEP-18 `balances` dictionary is
+  // keyed by the bytesrepr-serialized Address (tag 0x00 + 32-byte account hash).
+  let accountHashHex: string;
   try {
-    if (isPublicKeyHex(target)) {
-      Casper.PublicKey.fromHex(target).accountHash();
-    } else {
-      toAccountHashHex(target);
-    }
+    accountHashHex = isPublicKeyHex(target)
+      ? Casper.PublicKey.fromHex(target).accountHash().toHex()
+      : toAccountHashHex(target);
   } catch {
     return { raw: "0", available: false };
   }
 
-  // Best-effort: reading an Odra CEP-18 `balances` dictionary needs the live
-  // contract hash (not just the package hash) plus Odra's exact item-key
-  // encoding, both of which we can only confirm against the deployed token.
-  // Until verified against the funded contract (Faz 2 acquire), degrade to
-  // unavailable so the UI shows "—" rather than a wrong number.
-  // TODO(faz2): resolve package→contract entity, query the `balances` dict,
-  // and parse the CLValueUInt256 result into a decimal string.
-  return { raw: "0", available: false };
+  const dictionaryItemKey = Buffer.concat([
+    Buffer.from([0x00]),
+    Buffer.from(accountHashHex, "hex"),
+  ]).toString("base64");
+
+  const rpc = getRpcClient();
+  try {
+    const { stateRootHash } = await rpc.getStateRootHashLatest();
+    const contractKey = await resolveContractKey(rpc, stateRootHash.toHex(), packageHash);
+
+    const result = await rpc.getDictionaryItemByIdentifier(
+      stateRootHash.toHex(),
+      new Casper.ParamDictionaryIdentifier(
+        undefined,
+        new Casper.ParamDictionaryIdentifierContractNamedKey(contractKey, "balances", dictionaryItemKey),
+      ),
+    );
+    const raw = result.storedValue.clValue?.ui256?.toString() ?? "0";
+    return { raw, available: true };
+  } catch (err) {
+    // A dictionary miss (account never held this token) means a real zero
+    // balance, not an unavailable read — only degrade to "—" when we
+    // couldn't even resolve the contract/state (a genuine query failure).
+    if (isDictionaryValueNotFound(err)) {
+      return { raw: "0", available: true };
+    }
+    console.warn("[BARET] token balance query failed:", err);
+    return { raw: "0", available: false };
+  }
 };
+
+function isDictionaryValueNotFound(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /not found|ValueNotFound/i.test(message);
+}
 
 const transferCsprHandler: Handler<"wallet.transferCspr"> = async ({
   to,
