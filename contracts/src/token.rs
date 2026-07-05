@@ -38,6 +38,8 @@ pub enum Cep18x402Error {
     Expired = 6,
     /// This `(from, nonce)` authorization has already been settled.
     NonceAlreadyUsed = 7,
+    /// `sig_scheme` was neither `"raw"` nor `"casperMessage"`.
+    UnknownSigScheme = 8,
 }
 
 #[odra::event]
@@ -122,6 +124,12 @@ impl Cep18x402 {
     /// from `from` to `to` — no prior `approve` required. Any caller may
     /// submit this (typically the facilitator paying gas); only a valid
     /// signature from `from`'s own key authorizes the transfer.
+    ///
+    /// `sig_scheme` is `"raw"` (Baret's own extension, signs the EIP-712
+    /// digest directly) or `"casperMessage"` (wallets that only expose
+    /// signMessage(string), e.g. the official Casper Wallet — confirmed to
+    /// sign `"Casper Message:\n" + hex(digest)` as ASCII bytes; see
+    /// `packages/casper-core/src/x402.ts`).
     #[allow(clippy::too_many_arguments)]
     pub fn transfer_with_authorization(
         &mut self,
@@ -133,6 +141,7 @@ impl Cep18x402 {
         nonce: [u8; 32],
         public_key: Bytes,
         signature: Bytes,
+        sig_scheme: String,
     ) {
         let (public_key, _) = <PublicKey as FromBytes>::from_bytes(public_key.as_slice())
             .unwrap_or_revert_with(&self.env(), Cep18x402Error::InvalidPublicKey);
@@ -182,7 +191,13 @@ impl Cep18x402 {
         });
         let digest = eip712::hash_typed_data(&domain, &message_hash);
 
-        if crypto_verify(digest, &signature, &public_key).is_err() {
+        let signed_bytes: Vec<u8> = match sig_scheme.as_str() {
+            "raw" => digest.to_vec(),
+            "casperMessage" => eip712::casper_message_bytes(&digest),
+            _ => self.env().revert(Cep18x402Error::UnknownSigScheme),
+        };
+
+        if crypto_verify(signed_bytes.as_slice(), &signature, &public_key).is_err() {
             self.env().revert(Cep18x402Error::InvalidSignature);
         }
 
@@ -255,7 +270,9 @@ mod tests {
     }
 
     /// Builds a valid `TransferWithAuthorization` signature for `(from, to,
-    /// amount, nonce)` over the deployed token's own EIP-712 domain.
+    /// amount, nonce)` over the deployed token's own EIP-712 domain, using
+    /// the given `sig_scheme` ("raw" or "casperMessage").
+    #[allow(clippy::too_many_arguments)]
     fn sign_authorization(
         token: &Cep18x402HostRef,
         secret_key: &odra::casper_types::SecretKey,
@@ -266,6 +283,7 @@ mod tests {
         valid_after: U256,
         valid_before: U256,
         nonce: [u8; 32],
+        sig_scheme: &str,
     ) -> (odra::casper_types::bytesrepr::Bytes, odra::casper_types::bytesrepr::Bytes) {
         let package_hash = token.address().value();
         let domain = eip712::domain_separator(TOKEN_NAME, "1", CHAIN_NAME, &package_hash);
@@ -284,7 +302,12 @@ mod tests {
             nonce: &nonce,
         });
         let digest = eip712::hash_typed_data(&domain, &message_hash);
-        let signature = sign(digest, secret_key, public_key);
+        let signed_bytes = match sig_scheme {
+            "raw" => digest.to_vec(),
+            "casperMessage" => eip712::casper_message_bytes(&digest),
+            other => panic!("unknown sig_scheme in test helper: {other}"),
+        };
+        let signature = sign(signed_bytes, secret_key, public_key);
 
         (
             public_key.to_bytes().unwrap().into(),
@@ -318,7 +341,7 @@ mod tests {
         let amount = tokens(40);
 
         let (public_key_bytes, signature_bytes) = sign_authorization(
-            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce,
+            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce, "raw",
         );
 
         // Anyone (e.g. the merchant paying gas) may relay a validly-signed authorization.
@@ -332,11 +355,97 @@ mod tests {
             nonce,
             public_key_bytes,
             signature_bytes,
+            "raw".to_string(),
         );
 
         assert_eq!(token.balance_of(&payer), tokens(60));
         assert_eq!(token.balance_of(&merchant), tokens(40));
         assert!(token.authorization_state(from, nonce));
+    }
+
+    #[test]
+    fn transfer_with_authorization_accepts_casper_message_scheme() {
+        let (env, mut token) = setup();
+        env.advance_block_time(120_000);
+        let deployer = env.get_account(0);
+        let merchant = env.get_account(1);
+
+        let (secret_key, public_key) = generate_ed25519_keypair();
+        let payer_hash = public_key.to_account_hash();
+        let payer = Address::from(payer_hash);
+
+        env.set_caller(deployer);
+        token.transfer(&payer, &tokens(100));
+
+        let from = payer_hash.value();
+        let to = merchant.as_account_hash().unwrap().value();
+        let nonce = [11u8; 32];
+        let now = env.block_time_secs();
+        let valid_after = U256::from(now.saturating_sub(60));
+        let valid_before = U256::from(now + 300);
+        let amount = tokens(25);
+
+        let (public_key_bytes, signature_bytes) = sign_authorization(
+            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce,
+            "casperMessage",
+        );
+
+        env.set_caller(merchant);
+        token.transfer_with_authorization(
+            from,
+            to,
+            amount,
+            valid_after,
+            valid_before,
+            nonce,
+            public_key_bytes,
+            signature_bytes,
+            "casperMessage".to_string(),
+        );
+
+        assert_eq!(token.balance_of(&payer), tokens(75));
+        assert_eq!(token.balance_of(&merchant), tokens(25));
+    }
+
+    #[test]
+    fn transfer_with_authorization_rejects_unknown_sig_scheme() {
+        let (env, mut token) = setup();
+        env.advance_block_time(120_000);
+        let deployer = env.get_account(0);
+        let merchant = env.get_account(1);
+
+        let (secret_key, public_key) = generate_ed25519_keypair();
+        let payer_hash = public_key.to_account_hash();
+        let payer = Address::from(payer_hash);
+
+        env.set_caller(deployer);
+        token.transfer(&payer, &tokens(100));
+
+        let from = payer_hash.value();
+        let to = merchant.as_account_hash().unwrap().value();
+        let nonce = [13u8; 32];
+        let now = env.block_time_secs();
+        let valid_after = U256::from(now.saturating_sub(60));
+        let valid_before = U256::from(now + 300);
+        let amount = tokens(10);
+
+        let (public_key_bytes, signature_bytes) = sign_authorization(
+            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce, "raw",
+        );
+
+        env.set_caller(merchant);
+        let res = token.try_transfer_with_authorization(
+            from,
+            to,
+            amount,
+            valid_after,
+            valid_before,
+            nonce,
+            public_key_bytes,
+            signature_bytes,
+            "some-other-scheme".to_string(),
+        );
+        assert_eq!(res, Err(Cep18x402Error::UnknownSigScheme.into()));
     }
 
     #[test]
@@ -362,7 +471,7 @@ mod tests {
         let amount = tokens(10);
 
         let (public_key_bytes, signature_bytes) = sign_authorization(
-            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce,
+            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce, "raw",
         );
 
         env.set_caller(merchant);
@@ -375,6 +484,7 @@ mod tests {
             nonce,
             public_key_bytes.clone(),
             signature_bytes.clone(),
+            "raw".to_string(),
         );
 
         let res = token.try_transfer_with_authorization(
@@ -386,6 +496,7 @@ mod tests {
             nonce,
             public_key_bytes,
             signature_bytes,
+            "raw".to_string(),
         );
         assert_eq!(res, Err(Cep18x402Error::NonceAlreadyUsed.into()));
         assert_eq!(token.balance_of(&payer), tokens(90));
@@ -418,7 +529,7 @@ mod tests {
 
         let (public_key_bytes, signature_bytes) = sign_authorization(
             &token, &attacker_secret, &attacker_public, from, to, amount, valid_after,
-            valid_before, nonce,
+            valid_before, nonce, "raw",
         );
 
         env.set_caller(merchant);
@@ -431,6 +542,7 @@ mod tests {
             nonce,
             public_key_bytes,
             signature_bytes,
+            "raw".to_string(),
         );
         assert_eq!(res, Err(Cep18x402Error::InvalidSigner.into()));
         assert_eq!(token.balance_of(&victim), tokens(100));
@@ -459,7 +571,7 @@ mod tests {
         let amount = tokens(10);
 
         let (public_key_bytes, signature_bytes) = sign_authorization(
-            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce,
+            &token, &secret_key, &public_key, from, to, amount, valid_after, valid_before, nonce, "raw",
         );
 
         env.set_caller(merchant);
@@ -472,6 +584,7 @@ mod tests {
             nonce,
             public_key_bytes,
             signature_bytes,
+            "raw".to_string(),
         );
         assert_eq!(res, Err(Cep18x402Error::NotYetValid.into()));
     }

@@ -26,24 +26,27 @@ This describes the current Casper implementation only — see
   `signMessage(string)`, e.g. the official Casper Wallet) signs
   `"Casper Message:\n" + hex(digest)` as ASCII bytes — confirmed against two
   live payments from the official Casper Wallet (secp256k1) on 2026-07-05.
-  It's still bound to the same `publicKey → from` check as the "raw" scheme.
-  This does not, however, verify on-chain (see below) — the prefix isn't part
-  of the EIP-712 digest the contract re-derives.
+  It's still bound to the same `publicKey → from` check as the "raw" scheme,
+  and — since the v2 contract deploy — verifies on-chain too (see below).
 
 ## x402 settlement
 
-- **Demo mode** (`X402_DEMO_MODE=true`, the showcase's default): `/facilitate/settle`
-  submits a real on-chain CSPR transfer from the server's own treasury key to
-  the payer (not to `payTo`, so it stays valid even when `payTo` is the
-  treasury itself) so the response carries a genuine, explorer-visible
-  transaction hash — but no CEP-18 tokens move from payer to payee. This is a
-  demo affordance, not a real settlement, and isn't currently surfaced as
-  such in the API response.
-- **Real settlement** calls `transfer_with_authorization` on the deployed
-  `Cep18x402` contract. This only accepts `sigScheme: "raw"` payloads — a
-  `"casperMessage"`-scheme payment that passes the off-chain `/verify` check
-  cannot currently be settled for real on-chain, because the contract has no
-  notion of a message prefix; it verifies the raw EIP-712 digest directly.
+- **Demo mode** (`X402_DEMO_MODE=true`): submits a real on-chain CSPR
+  transfer from the server's own treasury key to the payer (not to `payTo`,
+  so it stays valid even when `payTo` is the treasury itself) so the
+  response carries a genuine, explorer-visible transaction hash — but no
+  CEP-18 tokens move from payer to payee, and it settles regardless of the
+  payer's actual USDC balance. This is a demo affordance, not a real
+  settlement, and isn't currently surfaced as such in the API response.
+  Off by default in both deployments now that real settlement supports both
+  sig schemes.
+- **Real settlement** (default) calls `transfer_with_authorization` on the
+  deployed `Cep18x402` v2 contract, passing `sig_scheme` explicitly
+  (`"raw"` or `"casperMessage"`); the contract reconstructs the matching
+  message bytes before verifying, so both wallet types settle for real. A
+  payer with insufficient CEP-18 balance reverts on-chain (`InsufficientBalance`,
+  surfaced as a 502 from `/facilitate/settle`) rather than silently
+  succeeding.
 - On-chain replay protection is per `(from, nonce)`; the caller (whoever pays
   gas to submit `transfer_with_authorization`) is unrestricted by the
   contract — anyone can relay a validly-signed authorization. This is

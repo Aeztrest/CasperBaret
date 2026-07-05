@@ -103,10 +103,10 @@ A payload can carry `sigScheme: "raw"` (Baret's own extension, which signs
 the 32-byte digest directly) or `sigScheme: "casperMessage"` (any wallet that
 only exposes `signMessage(string)`, like the official Casper Wallet — which
 signs `"Casper Message:\n" + hex(digest)` as ASCII bytes, confirmed against
-two live payments on 2026-07-05). Only `"raw"`-scheme signatures verify
-on-chain; `"casperMessage"` verifies off-chain only — the prefix isn't part
-of the EIP-712 digest the contract re-derives, so this path supports the
-demo/off-chain verify flow but not real on-chain settlement.
+two live payments on 2026-07-05). Both schemes verify on-chain: the deployed
+`Cep18x402` v2 contract's `transfer_with_authorization` takes an explicit
+`sig_scheme` argument and reconstructs the same prefixed bytes before
+verifying, rather than assuming the raw digest.
 
 ---
 

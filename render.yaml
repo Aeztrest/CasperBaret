@@ -33,11 +33,12 @@ services:
       # --- x402 paywall (GET /demo/scrybe) ---
       - key: X402_ENABLED
         value: "true"
-      # Demo mode: settle via a CSPR self-transfer so the tx hash is real and
-      # shows "succeeded" on the explorer. Avoids needing the user to hold the
-      # demo CEP-18 token. Flip to false (or remove) for true on-chain CEP-18 settlement.
+      # Real settlement: the contract now accepts both "raw" (Baret's own
+      # extension) and "casperMessage" (official Casper Wallet) sig schemes,
+      # so it no longer needs the CSPR-gift demo shortcut. The payer's own
+      # USDC is actually spent — an account with insufficient balance reverts.
       - key: X402_DEMO_MODE
-        value: "true"
+        value: "false"
       # Built-in facilitator: the server verifies + settles itself.
       # Routes live at /facilitate/{verify,settle,supported}.
       - key: X402_FACILITATOR_URL
@@ -45,10 +46,11 @@ services:
       # Allow the Vercel showcase to call this Render server directly.
       - key: CORS_ORIGINS
         value: "https://baret-casper.vercel.app"
-      # USDC (test) — CEP-18, deployed 2026-07-05 on casper-test.
-      # https://testnet.cspr.live/contract-package/ce78329749fe52382fe42061fd7afd358fb622fb46b367f5f28d13f40e0744f3
+      # USDC (test) v2 — CEP-18, deployed 2026-07-05 on casper-test (adds
+      # sig_scheme support for the official Casper Wallet's casperMessage format).
+      # https://testnet.cspr.live/contract-package/d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d
       - key: CEP18_X402_PACKAGE
-        value: ce78329749fe52382fe42061fd7afd358fb622fb46b367f5f28d13f40e0744f3
+        value: d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d
       # Merchant — set to the demo user's own wallet so a real settlement is
       # visible as a balance increase there.
       - key: X402_PAY_TO

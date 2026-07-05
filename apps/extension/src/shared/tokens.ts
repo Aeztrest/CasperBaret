@@ -37,9 +37,11 @@ export const CEP18_TOKENS: Record<CasperNetwork, TokenDef[]> = {
     {
       symbol: "USDC",
       name: "USD Coin",
-      // Deployed 2026-07-05 on casper-test — mirrors CEP18_X402_PACKAGE.
+      // v2, deployed 2026-07-05 on casper-test — mirrors CEP18_X402_PACKAGE.
+      // v2 adds sig_scheme support (raw + casperMessage) to
+      // transfer_with_authorization; v1 (ce783297...) is superseded.
       packageHash:
-        "ce78329749fe52382fe42061fd7afd358fb622fb46b367f5f28d13f40e0744f3",
+        "d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d",
       decimals: 6,
       kind: "stablecoin",
       logo: "/tokens/usdc.webp",

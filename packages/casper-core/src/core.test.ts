@@ -201,8 +201,9 @@ describe("x402 signature verification", () => {
     // Confirmed against two live payments from the official Casper Wallet
     // (secp256k1, 2026-07-05): it signs `"Casper Message:\n" + hex(digest)`
     // as ASCII bytes — the same domain-separation convention as Ethereum's
-    // personal_sign. This does NOT verify on-chain (transfer_with_authorization
-    // only accepts the "raw" scheme); it only supports the off-chain/demo path.
+    // personal_sign. The v2 Cep18x402 contract's transfer_with_authorization
+    // takes an explicit sig_scheme and verifies this scheme on-chain too
+    // (see contracts/src/token.rs).
     const kp = await generateKeypair("ed25519");
     const { digest, authorization } = buildTransferAuthorization(req, kp.x402Address);
     const digestHex = Buffer.from(digest).toString("hex");

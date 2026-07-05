@@ -8,7 +8,9 @@
 //! independently re-derive the exact digest the off-chain payer signed,
 //! instead of trusting whatever the caller (facilitator) claims it verified.
 
+use alloc::string::String;
 use alloc::vec::Vec;
+use core::fmt::Write;
 use odra::casper_types::U256;
 use sha3::{Digest, Keccak256};
 
@@ -94,19 +96,29 @@ pub fn hash_typed_data(domain_separator: &[u8; 32], struct_hash: &[u8; 32]) -> [
     keccak256(&buf)
 }
 
+/// Lowercase hex encoding, e.g. for embedding a digest in a signed message.
+pub fn to_hex(bytes: &[u8]) -> String {
+    let mut s = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        write!(s, "{:02x}", b).unwrap();
+    }
+    s
+}
+
+/// The exact bytes the official Casper Wallet signs for `sigScheme:
+/// "casperMessage"` (confirmed against two live payments on 2026-07-05 —
+/// see `packages/casper-core/src/x402.ts`): `"Casper Message:\n"` followed by
+/// the ASCII bytes of the digest's lowercase hex string.
+pub fn casper_message_bytes(digest: &[u8; 32]) -> Vec<u8> {
+    let mut msg = Vec::with_capacity(16 + 64);
+    msg.extend_from_slice(b"Casper Message:\n");
+    msg.extend_from_slice(to_hex(digest).as_bytes());
+    msg
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::string::String;
-    use core::fmt::Write;
-
-    fn to_hex(bytes: &[u8]) -> String {
-        let mut s = String::with_capacity(bytes.len() * 2);
-        for b in bytes {
-            write!(s, "{:02x}", b).unwrap();
-        }
-        s
-    }
 
     /// Golden vector shared with `packages/casper-core/src/core.test.ts`
     /// ("matches the casper-eip-712 Go reference digest") — same domain,

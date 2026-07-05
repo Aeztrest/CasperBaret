@@ -169,6 +169,7 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
             new NamedArg("nonce",        CLValue.newCLByteArray(nonceBytes)),
             new NamedArg("public_key",   bytesToU8List(publicKeyBytes)),
             new NamedArg("signature",    bytesToU8List(sigBytes)),
+            new NamedArg("sig_scheme",   CLValue.newCLString(paymentPayload.payload.sigScheme ?? "raw")),
           ]),
         )
         .chainName(config.casper.chainName)
