@@ -173,7 +173,12 @@ export function registerFacilitatorRoutes(app: FastifyInstance, config: AppConfi
           ]),
         )
         .chainName(config.casper.chainName)
-        .payment(3_000_000_000); // 3 CSPR gas budget
+        // 10 CSPR gas budget — the "casperMessage" scheme does extra on-chain
+        // work (hex-encoding the digest to reconstruct the signed message),
+        // which measurably exceeded the old 3 CSPR budget ("Out of gas").
+        // Casper charges the declared amount regardless of actual usage, so
+        // this headroom just needs to comfortably cover the worst case.
+        .payment(10_000_000_000);
 
       const txn = callBuilder.build();
       txn.sign(kp.privateKey);
