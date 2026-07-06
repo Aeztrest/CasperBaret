@@ -21,14 +21,16 @@
  */
 
 import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
-import { PublicKey, Transaction, RpcClient, HttpHandler } from "casper-js-sdk";
+import { PublicKey } from "casper-js-sdk";
 import type { CasperPaymentRequirements, ExactCasperPayload } from "@casper-baret/casper-core";
 
-// Casper's public testnet RPC node — same endpoint apps/server uses (see
-// packages/casper-core/src/rpc.ts NETWORKS.testnet.rpcUrl). The showcase
-// only ever runs demo transactions on casper-test.
-const TESTNET_RPC_URL = "https://node.testnet.casper.network/rpc";
-const rpcClient = new RpcClient(new HttpHandler(TESTNET_RPC_URL, "fetch"));
+// Casper's public RPC nodes don't send CORS headers, so the browser can't
+// call them directly (preflight fails with no Access-Control-Allow-Origin).
+// The server relays the already-signed transaction instead — see
+// apps/server/src/api/routes/broadcast.ts.
+const API_BASE =
+  (import.meta.env.VITE_SCRYBE_API as string | undefined) ??
+  "https://baret-server.onrender.com";
 
 // ── Inline x402 helpers ────────────────────────────────────────────────────
 // Kept local to avoid importing casper-core dist files that use Node.js Buffer
@@ -198,36 +200,36 @@ export class WalletStandardBridge {
 
   /**
    * Sign a Casper transaction with the connected wallet (Baret's firewall is
-   * the authoritative gatekeeper here), then actually submit it to Casper's
-   * public testnet RPC node and return the real, on-chain transaction hash.
+   * the authoritative gatekeeper here), then relay it through the server to
+   * actually submit it to the network (public Casper RPC nodes don't allow
+   * browser CORS) and return the real, on-chain transaction hash.
    */
   async signAndSendTransaction(
     transactionJson: string,
   ): Promise<{ signature: string; signedTransaction: string }> {
     const signed = await this.signOnly(transactionJson);
 
-    let txn: Transaction;
+    let res: { success?: boolean; transactionHash?: string; error?: string };
     try {
-      txn = Transaction.fromJSON(JSON.parse(signed));
-    } catch (err) {
-      throw new WalletStandardBridgeError(
-        `Signed transaction couldn't be parsed for broadcast: ${err instanceof Error ? err.message : String(err)}`,
-        "MALFORMED_SIGNED_TX",
-      );
-    }
-
-    let hash: string;
-    try {
-      const res = await rpcClient.putTransaction(txn);
-      hash = res.transactionHash?.toHex?.() ?? txn.hash.toHex();
+      res = await fetch(`${API_BASE}/demo/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signedTransaction: JSON.parse(signed) }),
+      }).then((r) => r.json());
     } catch (err) {
       throw new WalletStandardBridgeError(
         `Broadcast failed: ${err instanceof Error ? err.message : String(err)}`,
         "BROADCAST_FAILED",
       );
     }
+    if (!res.success || !res.transactionHash) {
+      throw new WalletStandardBridgeError(
+        res.error ?? "Broadcast failed at the server.",
+        "BROADCAST_FAILED",
+      );
+    }
 
-    return { signature: hash, signedTransaction: signed };
+    return { signature: res.transactionHash, signedTransaction: signed };
   }
 
   /**
