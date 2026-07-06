@@ -46,7 +46,14 @@ const API_BASE =
   (import.meta.env.VITE_SCRYBE_API as string | undefined) ??
   "https://baret-server.onrender.com";
 
-/** The deployed test-USDC CEP-18 package hash, read once from /health. */
+// USDC(test) v2 CEP-18 package hash — same constant deployed in render.yaml /
+// vercel.json's CEP18_X402_PACKAGE. /health normally confirms this, but ad
+// blockers and privacy extensions are known to block onrender.com fetches
+// (ERR_BLOCKED_BY_CLIENT) client-side, so a demo transaction shouldn't hang
+// on that round-trip when the value is already a fixed, public constant.
+const FALLBACK_USDC_ASSET =
+  "d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d";
+
 let cachedUsdcAsset: Promise<string> | null = null;
 function getUsdcAsset(): Promise<string> {
   if (!cachedUsdcAsset) {
@@ -54,15 +61,9 @@ function getUsdcAsset(): Promise<string> {
       .then((r) => r.json())
       .then((body) => {
         const asset = body?.x402?.asset;
-        if (typeof asset !== "string" || !asset) {
-          throw new Error("USDC(test) contract isn't configured on the server.");
-        }
-        return asset as string;
+        return typeof asset === "string" && asset ? asset : FALLBACK_USDC_ASSET;
       })
-      .catch((err) => {
-        cachedUsdcAsset = null;
-        throw err;
-      });
+      .catch(() => FALLBACK_USDC_ASSET);
   }
   return cachedUsdcAsset;
 }
