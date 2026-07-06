@@ -21,8 +21,14 @@
  */
 
 import { hashTypedData, buildDomain, CASPER_DOMAIN_TYPES } from "@casper-ecosystem/casper-eip-712";
-import { PublicKey } from "casper-js-sdk";
+import { PublicKey, Transaction, RpcClient, HttpHandler } from "casper-js-sdk";
 import type { CasperPaymentRequirements, ExactCasperPayload } from "@casper-baret/casper-core";
+
+// Casper's public testnet RPC node — same endpoint apps/server uses (see
+// packages/casper-core/src/rpc.ts NETWORKS.testnet.rpcUrl). The showcase
+// only ever runs demo transactions on casper-test.
+const TESTNET_RPC_URL = "https://node.testnet.casper.network/rpc";
+const rpcClient = new RpcClient(new HttpHandler(TESTNET_RPC_URL, "fetch"));
 
 // ── Inline x402 helpers ────────────────────────────────────────────────────
 // Kept local to avoid importing casper-core dist files that use Node.js Buffer
@@ -171,16 +177,7 @@ export class WalletStandardBridge {
     await this.provider.disconnect().catch(() => {});
   }
 
-  /**
-   * Sign (and notionally submit) a Casper transaction. The connected wallet
-   * runs its own Baret firewall here as the authoritative gatekeeper, then
-   * returns the signed transaction JSON. For the demo we surface a short
-   * "signature" identifier derived from the signed payload so the success
-   * overlay has something to render — this showcase doesn't broadcast.
-   */
-  async signAndSendTransaction(
-    transactionJson: string,
-  ): Promise<{ signature: string; signedTransaction: string }> {
+  private async signOnly(transactionJson: string): Promise<string> {
     let signed: string;
     try {
       signed = await this.provider.signTransaction(transactionJson);
@@ -196,15 +193,52 @@ export class WalletStandardBridge {
         "NO_SIGNED_TX",
       );
     }
-    return { signature: deriveSignatureId(signed), signedTransaction: signed };
+    return signed;
   }
 
-  /** Sign a transaction without broadcasting. */
+  /**
+   * Sign a Casper transaction with the connected wallet (Baret's firewall is
+   * the authoritative gatekeeper here), then actually submit it to Casper's
+   * public testnet RPC node and return the real, on-chain transaction hash.
+   */
+  async signAndSendTransaction(
+    transactionJson: string,
+  ): Promise<{ signature: string; signedTransaction: string }> {
+    const signed = await this.signOnly(transactionJson);
+
+    let txn: Transaction;
+    try {
+      txn = Transaction.fromJSON(JSON.parse(signed));
+    } catch (err) {
+      throw new WalletStandardBridgeError(
+        `Signed transaction couldn't be parsed for broadcast: ${err instanceof Error ? err.message : String(err)}`,
+        "MALFORMED_SIGNED_TX",
+      );
+    }
+
+    let hash: string;
+    try {
+      const res = await rpcClient.putTransaction(txn);
+      hash = res.transactionHash?.toHex?.() ?? txn.hash.toHex();
+    } catch (err) {
+      throw new WalletStandardBridgeError(
+        `Broadcast failed: ${err instanceof Error ? err.message : String(err)}`,
+        "BROADCAST_FAILED",
+      );
+    }
+
+    return { signature: hash, signedTransaction: signed };
+  }
+
+  /**
+   * Sign a transaction without broadcasting — used when a server relay will
+   * submit it instead (e.g. NovaSwap's real swap, which needs the server to
+   * observe the treasury's balance change before paying out).
+   */
   async signTransaction(
     transactionJson: string,
   ): Promise<{ signedTransaction: string }> {
-    const { signedTransaction } =
-      await this.signAndSendTransaction(transactionJson);
+    const signedTransaction = await this.signOnly(transactionJson);
     return { signedTransaction };
   }
 
@@ -446,41 +480,3 @@ export function waitForCasperProvider(timeoutMs = 1500): Promise<CasperWalletPro
   });
 }
 
-/** Derive a short, stable id from a signed transaction payload for the UI. */
-function deriveSignatureId(signed: string): string {
-  // Try to pull an approval/signature hex out of the signed tx JSON; otherwise
-  // hash the payload into a deterministic display id.
-  try {
-    const obj = JSON.parse(signed) as Record<string, unknown>;
-    const hash = deepFindHex(obj);
-    if (hash) return hash;
-  } catch {
-    /* not JSON — fall through */
-  }
-  let h = 0;
-  for (let i = 0; i < signed.length; i++) {
-    h = (Math.imul(31, h) + signed.charCodeAt(i)) | 0;
-  }
-  return (h >>> 0).toString(16).padStart(8, "0").repeat(8).slice(0, 64);
-}
-
-function deepFindHex(value: unknown, depth = 0): string | null {
-  if (depth > 6 || value == null) return null;
-  if (typeof value === "string") {
-    return /^[0-9a-f]{64,130}$/i.test(value) ? value : null;
-  }
-  if (Array.isArray(value)) {
-    for (const v of value) {
-      const r = deepFindHex(v, depth + 1);
-      if (r) return r;
-    }
-    return null;
-  }
-  if (typeof value === "object") {
-    for (const v of Object.values(value as Record<string, unknown>)) {
-      const r = deepFindHex(v, depth + 1);
-      if (r) return r;
-    }
-  }
-  return null;
-}
