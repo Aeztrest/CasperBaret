@@ -4,7 +4,6 @@ import { TrendingUp, Lock, Zap, Info } from "lucide-react";
 import { useWallet } from "../../wallet/context";
 import { SiteShell } from "../../components/SiteShell";
 import { ResultOverlay, type ResultState } from "../../blackthorn/ResultOverlay";
-import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
@@ -26,47 +25,32 @@ const POOLS = [
 ];
 
 export default function OrbitYield() {
-  const { connected, openWalletModal, walletAddress, adapter } = useWallet();
+  const { connected, openWalletModal, walletAddress, publicKey, adapter } = useWallet();
   const [amount, setAmount] = useState("10");
   const [selectedPool, setSelectedPool] = useState(0);
   const [dangerous, setDangerous] = useState(false);
   const [resultState, setResultState] = useState<ResultState>("idle");
   const [signature, setSignature] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [previewTx, setPreviewTx] = useState<string | null>(null);
   const success = signature !== null;
   const pool = POOLS[selectedPool];
-  const scenarioLabel = dangerous
-    ? `Stake ${amount} CSPR in an unverified pool (warn scenario)`
-    : `Stake ${amount} CSPR in ${pool?.name ?? "?"}`;
 
   async function handleStake() {
-    if (!connected || !walletAddress) { openWalletModal(); return; }
-    try {
-      const __built = await buildScenario(dangerous ? "orbityield-warn" : "orbityield-safe", walletAddress); const tx = __built.transactionXdr;
-      setPreviewTx(tx);
-    } catch (e) {
-      setResultState("error");
-      setResultMessage(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function sendViaBlackthorn() {
-    if (!previewTx) return;
-    setPreviewTx(null);
+    if (!connected || !walletAddress || !publicKey) { openWalletModal(); return; }
     setResultState("awaiting"); setSignature(null); setResultMessage(null);
     try {
-      const { signature: sig } = await adapter.signAndSendTransaction(previewTx);
-      setSignature(sig); setResultState("confirmed");
+      const built = await buildScenario(dangerous ? "orbityield-warn" : "orbityield-safe", publicKey);
+      const { signature: sig } = await adapter.signAndSendTransaction(built.transactionXdr);
+      setSignature(sig); setResultState("confirmed"); setResultMessage(built.label);
     } catch (e) {
-      if ((e instanceof Error && /SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(e.message))) {
-        setResultState("blocked"); setResultMessage(e.message);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(e instanceof Error ? e.message : String(e));
+        setResultState("error"); setResultMessage(msg);
       }
     }
   }
-  const sendRaw = sendViaBlackthorn;
   const estimatedYearly = parseFloat(amount || "0") * (parseFloat(pool.apy) / 100);
 
   return (
@@ -210,16 +194,6 @@ export default function OrbitYield() {
           </div>
         </div>
       </div>
-
-      <RiskPreview
-        open={previewTx !== null}
-        transactionXdr={previewTx}
-        userWallet={walletAddress ?? null}
-        scenarioLabel={scenarioLabel}
-        onClose={() => setPreviewTx(null)}
-        onProceedWithBlackthorn={sendViaBlackthorn}
-        onProceedRaw={sendRaw}
-      />
     </SiteShell>
   );
 }

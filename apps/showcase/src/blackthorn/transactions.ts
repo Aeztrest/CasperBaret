@@ -1,26 +1,33 @@
 /**
  * Showcase demo transaction builders (Casper build).
  *
- * Each scenario produces a normalized Casper **intent** envelope the Baret
- * analyze server understands. Safe scenarios are benign contract calls or
- * small self/native transfers; danger scenarios reach for the common Casper
- * attack primitives the firewall flags — unlimited CEP-18 approvals
- * (wallet drainers), large CEP-18 / native transfers redirected to a foreign
- * account, and calls into unverified / risky contract packages.
+ * Each scenario builds a REAL, signable Casper Transaction V1 that calls
+ * `transfer`/`approve` on the actually-deployed test-USDC CEP-18 contract
+ * (the same package Scrybe's x402 flow and NovaSwap's real swap settle
+ * against). Safe scenarios are harmless (zero/self transfers); danger
+ * scenarios reproduce the common CEP-18 attack primitives the firewall
+ * flags — an unlimited approval to a stranger (wallet drainer) or a large
+ * transfer redirected to a foreign account — as genuinely signable/sendable
+ * transactions, so Baret's Sign Request popup has a real transaction to
+ * analyze and the user can actually see the drain blocked (or, without
+ * protection, actually happen on testnet).
  *
- * The intent envelope (see apps/server/src/analyze/intent.ts):
- *   {
- *     kind: "cep18_transfer" | "cep18_approve" | "native_transfer" | "contract_call",
- *     contractPackage?: <64hex>, targetPackage?: <64hex>,
- *     entryPoint?: string,
- *     args?: { recipient?, spender?, amount?, to? },
- *     amountMotes?: <string>
- *   }
- *
- * The returned `transactionXdr` field carries the JSON-stringified intent (the
- * field name is kept for caller compatibility — callers read `.transactionXdr`
- * and forward it to the analyzer + wallet as the `transaction` payload).
+ * Earlier this built a hand-rolled "intent envelope" JSON that only the
+ * risk analyzer understood; wallets (Baret and the official Casper Wallet
+ * alike) rejected it as unparseable when the site tried to actually sign it.
+ * A real Casper Transaction JSON is both analyzable (the server/extension
+ * analyzer best-effort-decodes raw transactions, see
+ * apps/server/src/analyze/intent.ts `extractFromRaw`) and signable.
  */
+
+import {
+  ContractCallBuilder,
+  PublicKey,
+  Key,
+  Args,
+  CLValue,
+  NamedArg,
+} from "casper-js-sdk";
 
 export type ScenarioId =
   | "novaswap-safe"
@@ -34,202 +41,145 @@ export type ScenarioId =
   | "launchpad-safe"
   | "launchpad-danger";
 
-// 1 CSPR = 1e9 motes. CEP-18 demo tokens here also use 9 decimals.
-const MOTES_PER_CSPR = 1_000_000_000n;
-function cspr(n: number | bigint): string {
-  return (BigInt(n) * MOTES_PER_CSPR).toString();
+// In production the showcase is on Vercel but the API server is on Render.
+const API_BASE =
+  (import.meta.env.VITE_SCRYBE_API as string | undefined) ??
+  "https://baret-server.onrender.com";
+
+/** The deployed test-USDC CEP-18 package hash, read once from /health. */
+let cachedUsdcAsset: Promise<string> | null = null;
+function getUsdcAsset(): Promise<string> {
+  if (!cachedUsdcAsset) {
+    cachedUsdcAsset = fetch(`${API_BASE}/health`)
+      .then((r) => r.json())
+      .then((body) => {
+        const asset = body?.x402?.asset;
+        if (typeof asset !== "string" || !asset) {
+          throw new Error("USDC(test) contract isn't configured on the server.");
+        }
+        return asset as string;
+      })
+      .catch((err) => {
+        cachedUsdcAsset = null;
+        throw err;
+      });
+  }
+  return cachedUsdcAsset;
 }
 
 // CEP-18 U256-max "unlimited" sentinel — the wallet-drainer approval amount.
 const U256_MAX =
-  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+  115792089237316195423570985008687907853269984665640564039457584007913129639935n;
 
-/* ───────── Contract package hashes (64-hex placeholders) ─────────
- *
- * `KNOWN_SAFE_*` mirrors a package the server may carry in
- * KNOWN_SAFE_CONTRACT_PACKAGES; `RISKY_DRAINER` mirrors a package in
- * RISKY_CONTRACT_PACKAGES. Danger scenarios stay self-consistent even with an
- * empty server reputation set because they ALSO trip allowance / oversized-
- * transfer detectors that always fire under BALANCED_POLICY.
+/* ───────── Account-hash placeholders (64-hex) ─────────
+ * Stand-ins for counterparties that don't need to be funded/real accounts —
+ * a CEP-18 transfer/approve target just needs a well-shaped account-hash.
  */
-const KNOWN_SAFE_DEX =
-  "1111111111111111111111111111111111111111111111111111111111111111";
-const KNOWN_SAFE_MINT =
-  "2222222222222222222222222222222222222222222222222222222222222222";
-const RISKY_DRAINER =
-  "deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeadd";
+const ATTACKER_ACCOUNT =
+  "abababababababababababababababababababababababababababababababab";
 const UNKNOWN_POOL =
   "3333333333333333333333333333333333333333333333333333333333333333";
 const UNKNOWN_LAUNCH =
   "4444444444444444444444444444444444444444444444444444444444444444";
-const CLAIM_PACKAGE =
-  "5555555555555555555555555555555555555555555555555555555555555555";
-
-// A foreign attacker account-hash (drain destination).
-const ATTACKER_ACCOUNT =
-  "abababababababababababababababababababababababababababababababab";
-// A friendly spender for benign-ish flows.
 const FRIENDLY_SPENDER =
   "6666666666666666666666666666666666666666666666666666666666666666";
 
-interface TxIntentEnvelope {
-  kind: "cep18_transfer" | "cep18_approve" | "native_transfer" | "contract_call";
-  contractPackage?: string;
-  targetPackage?: string;
-  entryPoint?: string;
-  args?: { recipient?: string; spender?: string; amount?: string; to?: string };
-  amountMotes?: string;
-}
-
 export interface BuiltScenario {
-  /** JSON-stringified normalized Casper intent (passed to analyzer + wallet). */
+  /** JSON-stringified real Casper Transaction V1, ready to sign + send. */
   transactionXdr: string;
-  /** Short human description rendered in the RiskPreview hero. */
+  /** Short human description rendered in the result overlay. */
   label: string;
 }
 
+interface ScenarioSpec {
+  entryPoint: "transfer" | "approve";
+  /** "self" resolves to the connected wallet's own account-hash. */
+  target: "self" | string;
+  amount: bigint;
+  label: string;
+}
+
+const SCENARIOS: Record<ScenarioId, ScenarioSpec> = {
+  "novaswap-safe": {
+    entryPoint: "transfer", target: "self", amount: 0n,
+    label: "NovaSwap: zero-value USDC(test) self-transfer (safe demo)",
+  },
+  "novaswap-danger": {
+    entryPoint: "transfer", target: ATTACKER_ACCOUNT, amount: 50_000_000_000n,
+    label: "NovaSwap: 50,000 USDC(test) transfer to a stranger account (drain)",
+  },
+  "pixeldrop-safe": {
+    entryPoint: "transfer", target: "self", amount: 0n,
+    label: "PixelDrop: zero-value USDC(test) self-transfer (mint, safe demo)",
+  },
+  "pixeldrop-danger": {
+    entryPoint: "approve", target: ATTACKER_ACCOUNT, amount: U256_MAX,
+    label: "PixelDrop: unlimited USDC(test) approve to a stranger (wallet drainer)",
+  },
+  "orbityield-safe": {
+    entryPoint: "transfer", target: "self", amount: 1_000_000n,
+    label: "OrbitYield: 1 USDC(test) self-transfer (deposit, safe demo)",
+  },
+  "orbityield-warn": {
+    entryPoint: "transfer", target: UNKNOWN_POOL, amount: 100_000_000n,
+    label: "OrbitYield: 100 USDC(test) transfer into an unverified pool account",
+  },
+  "claimhub-safe": {
+    entryPoint: "transfer", target: "self", amount: 0n,
+    label: "ClaimHub: zero-value USDC(test) self-transfer (claim, safe demo)",
+  },
+  "claimhub-danger": {
+    entryPoint: "approve", target: ATTACKER_ACCOUNT, amount: U256_MAX,
+    label: "ClaimHub: unlimited USDC(test) approval to an attacker (phishing claim)",
+  },
+  "launchpad-safe": {
+    entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 5_000_000n,
+    label: "LaunchPad: 5 USDC(test) contribution to a vetted token launch",
+  },
+  "launchpad-danger": {
+    entryPoint: "approve", target: UNKNOWN_LAUNCH, amount: U256_MAX,
+    label: "LaunchPad: unlimited USDC(test) approve to an unverified launch contract",
+  },
+};
+
 /**
- * Build the candidate intent for a given scenario. `userWallet` is the
- * connected account-hash; it anchors self-transfers and approval owners.
+ * Build the real, signable Casper Transaction for a given scenario, as a
+ * CEP-18 `transfer`/`approve` call against the deployed test-USDC contract.
+ * `userPublicKey` is the connected wallet's algo-prefixed public key hex —
+ * needed both as the transaction's initiator and to resolve "self" targets.
  */
 export async function buildScenario(
   scenario: ScenarioId,
-  userWallet: string,
+  userPublicKey: string,
 ): Promise<BuiltScenario> {
-  switch (scenario) {
-    case "novaswap-safe":
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: KNOWN_SAFE_DEX,
-          targetPackage: KNOWN_SAFE_DEX,
-          entryPoint: "swap_exact_in",
-          args: { recipient: userWallet, amount: cspr(0) },
-        },
-        "NovaSwap: swap via a verified, known-safe router",
-      );
+  const spec = SCENARIOS[scenario];
+  const usdcAsset = await getUsdcAsset();
+  const from = PublicKey.fromHex(userPublicKey);
+  const targetAccountHash =
+    spec.target === "self" ? from.accountHash().toHex() : spec.target;
+  const targetKey = CLValue.newCLKey(
+    Key.newKey(`account-hash-${targetAccountHash}`),
+  );
 
-    case "novaswap-danger":
-      // CEP-18 transfer of a large balance redirected to an attacker account,
-      // through a risky/unknown package → drain pattern (ESTIMATED_LOSS + risky).
-      return finish(
-        {
-          kind: "cep18_transfer",
-          contractPackage: RISKY_DRAINER,
-          targetPackage: RISKY_DRAINER,
-          entryPoint: "transfer",
-          args: { recipient: ATTACKER_ACCOUNT, to: ATTACKER_ACCOUNT, amount: cspr(50_000) },
-        },
-        "NovaSwap: CEP-18 transfer of your balance to a stranger account (drain)",
-      );
+  const namedArgs =
+    spec.entryPoint === "transfer"
+      ? [
+          new NamedArg("recipient", targetKey),
+          new NamedArg("amount", CLValue.newCLUInt256(spec.amount)),
+        ]
+      : [
+          new NamedArg("spender", targetKey),
+          new NamedArg("amount", CLValue.newCLUInt256(spec.amount)),
+        ];
 
-    case "pixeldrop-safe":
-      // A normal mint contract call (benign, known-safe package).
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: KNOWN_SAFE_MINT,
-          targetPackage: KNOWN_SAFE_MINT,
-          entryPoint: "mint",
-          args: { recipient: userWallet },
-        },
-        "PixelDrop: mint call to the verified collection contract",
-      );
+  const txn = new ContractCallBuilder()
+    .from(from)
+    .byPackageHash(usdcAsset)
+    .entryPoint(spec.entryPoint)
+    .runtimeArgs(Args.fromNamedArgs(namedArgs))
+    .chainName("casper-test")
+    .payment(5_000_000_000)
+    .build();
 
-    case "pixeldrop-danger":
-      // Mint flow that smuggles in an UNLIMITED CEP-18 approval → drainer.
-      return finish(
-        {
-          kind: "cep18_approve",
-          contractPackage: RISKY_DRAINER,
-          targetPackage: RISKY_DRAINER,
-          entryPoint: "approve",
-          args: { spender: ATTACKER_ACCOUNT, amount: U256_MAX },
-        },
-        "PixelDrop: unlimited CEP-18 approve to a stranger (wallet drainer)",
-      );
-
-    case "orbityield-safe":
-      // Deposit into a verified staking pool (small, self-anchored).
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: KNOWN_SAFE_DEX,
-          targetPackage: KNOWN_SAFE_DEX,
-          entryPoint: "deposit",
-          args: { recipient: userWallet, amount: cspr(1) },
-        },
-        "OrbitYield: deposit 1 CSPR into a verified pool",
-      );
-
-    case "orbityield-warn":
-      // Deposit into an UNVERIFIED pool package → trust trap (unknown exposure).
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: UNKNOWN_POOL,
-          targetPackage: UNKNOWN_POOL,
-          entryPoint: "deposit",
-          args: { recipient: userWallet, amount: cspr(100) },
-        },
-        "OrbitYield: deposit into an unverified pool contract (trust trap)",
-      );
-
-    case "claimhub-safe":
-      // Benign airdrop claim from a claim contract.
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: CLAIM_PACKAGE,
-          targetPackage: CLAIM_PACKAGE,
-          entryPoint: "claim",
-          args: { recipient: userWallet },
-        },
-        "ClaimHub: claim your airdrop allocation",
-      );
-
-    case "claimhub-danger":
-      // Unlimited CEP-18 approve to a phishing spender — classic claim phish.
-      return finish(
-        {
-          kind: "cep18_approve",
-          contractPackage: RISKY_DRAINER,
-          targetPackage: RISKY_DRAINER,
-          entryPoint: "approve",
-          args: { spender: ATTACKER_ACCOUNT, amount: U256_MAX },
-        },
-        "ClaimHub: unlimited token approval to an attacker (phishing claim)",
-      );
-
-    case "launchpad-safe":
-      // Contribute to a vetted launch — known-safe package, modest CEP-18 spend.
-      return finish(
-        {
-          kind: "contract_call",
-          contractPackage: KNOWN_SAFE_DEX,
-          targetPackage: KNOWN_SAFE_DEX,
-          entryPoint: "contribute",
-          args: { spender: FRIENDLY_SPENDER, amount: cspr(5) },
-        },
-        "LaunchPad: contribute to a vetted, verified token launch",
-      );
-
-    case "launchpad-danger":
-      // Contribute via an unverified launch package that takes an unlimited
-      // approval → rug-pull launchpad.
-      return finish(
-        {
-          kind: "cep18_approve",
-          contractPackage: UNKNOWN_LAUNCH,
-          targetPackage: UNKNOWN_LAUNCH,
-          entryPoint: "approve",
-          args: { spender: UNKNOWN_LAUNCH, amount: U256_MAX },
-        },
-        "LaunchPad: unlimited CEP-18 approve to an unverified launch contract",
-      );
-  }
-}
-
-function finish(intent: TxIntentEnvelope, label: string): BuiltScenario {
-  return { transactionXdr: JSON.stringify(intent), label };
+  return { transactionXdr: JSON.stringify(txn.toJSON()), label: spec.label };
 }

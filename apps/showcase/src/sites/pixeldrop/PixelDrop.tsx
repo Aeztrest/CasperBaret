@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useWallet } from "../../wallet/context";
 import { SiteShell } from "../../components/SiteShell";
 import { ResultOverlay, type ResultState } from "../../blackthorn/ResultOverlay";
-import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
@@ -28,45 +27,30 @@ const NFT_COLLECTION = {
 };
 
 export default function PixelDrop() {
-  const { connected, openWalletModal, walletAddress, adapter } = useWallet();
+  const { connected, openWalletModal, walletAddress, publicKey, adapter } = useWallet();
   const [qty, setQty] = useState(1);
   const [dangerous, setDangerous] = useState(false);
   const [resultState, setResultState] = useState<ResultState>("idle");
   const [signature, setSignature] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [previewTx, setPreviewTx] = useState<string | null>(null);
   const success = signature !== null;
-  const scenarioLabel = dangerous
-    ? `Mint ${qty} Cyber Phantom NFT(s) (danger scenario · drainer pattern)`
-    : `Mint ${qty} Cyber Phantom NFT(s) for ${(qty * 0.1).toFixed(2)} CSPR`;
 
   async function handleMint() {
-    if (!connected || !walletAddress) { openWalletModal(); return; }
-    try {
-      const __built = await buildScenario(dangerous ? "pixeldrop-danger" : "pixeldrop-safe", walletAddress); const tx = __built.transactionXdr;
-      setPreviewTx(tx);
-    } catch (e) {
-      setResultState("error");
-      setResultMessage(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function sendViaBlackthorn() {
-    if (!previewTx) return;
-    setPreviewTx(null);
+    if (!connected || !walletAddress || !publicKey) { openWalletModal(); return; }
     setResultState("awaiting"); setSignature(null); setResultMessage(null);
     try {
-      const { signature: sig } = await adapter.signAndSendTransaction(previewTx);
-      setSignature(sig); setResultState("confirmed");
+      const built = await buildScenario(dangerous ? "pixeldrop-danger" : "pixeldrop-safe", publicKey);
+      const { signature: sig } = await adapter.signAndSendTransaction(built.transactionXdr);
+      setSignature(sig); setResultState("confirmed"); setResultMessage(built.label);
     } catch (e) {
-      if ((e instanceof Error && /SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(e.message))) {
-        setResultState("blocked"); setResultMessage(e.message);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(e instanceof Error ? e.message : String(e));
+        setResultState("error"); setResultMessage(msg);
       }
     }
   }
-  const sendRaw = sendViaBlackthorn;
 
   const pct = (NFT_COLLECTION.minted / NFT_COLLECTION.supply) * 100;
 
@@ -207,16 +191,6 @@ export default function PixelDrop() {
           </div>
         </motion.div>
       </div>
-
-      <RiskPreview
-        open={previewTx !== null}
-        transactionXdr={previewTx}
-        userWallet={walletAddress ?? null}
-        scenarioLabel={scenarioLabel}
-        onClose={() => setPreviewTx(null)}
-        onProceedWithBlackthorn={sendViaBlackthorn}
-        onProceedRaw={sendRaw}
-      />
     </SiteShell>
   );
 }

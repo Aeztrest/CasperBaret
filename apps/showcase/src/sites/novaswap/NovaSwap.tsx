@@ -4,7 +4,6 @@ import { ArrowUpDown, ChevronDown, Settings, Info } from "lucide-react";
 import { NativeTransferBuilder, PublicKey } from "casper-js-sdk";
 import { SiteShell } from "../../components/SiteShell";
 import { ResultOverlay, type ResultState } from "../../blackthorn/ResultOverlay";
-import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 import { useWallet } from "../../wallet/context";
 
@@ -51,7 +50,6 @@ export default function NovaSwap() {
   const [resultState, setResultState] = useState<ResultState>("idle");
   const [signature, setSignature] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
-  const [previewTx, setPreviewTx] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
 
@@ -79,22 +77,25 @@ export default function NovaSwap() {
   // — fictional demo tokens with no real contract) stays the scenario demo.
   const isRealPair = fromToken.symbol === "CSPR" && toToken.symbol === "USDC";
   const doingRealSwap = isRealPair && !dangerous && !!swapConfig;
-  const scenarioLabel = dangerous
-    ? `Swap ${amount} ${fromToken.symbol} → ${toToken.symbol} (danger scenario · drainer pattern)`
-    : `Swap ${amount} ${fromToken.symbol} → ${outputAmount.toFixed(4)} ${toToken.symbol}`;
 
   async function handleSwap() {
-    if (!connected || !walletAddress) { openWalletModal(); return; }
+    if (!connected || !walletAddress || !publicKey) { openWalletModal(); return; }
     if (doingRealSwap) {
       await handleRealSwap();
       return;
     }
+    setResultState("awaiting"); setSignature(null); setResultMessage(null);
     try {
-      const __built = await buildScenario(dangerous ? "novaswap-danger" : "novaswap-safe", walletAddress); const tx = __built.transactionXdr;
-      setPreviewTx(tx);   // opens RiskPreview — user decides how to send
+      const built = await buildScenario(dangerous ? "novaswap-danger" : "novaswap-safe", publicKey);
+      const { signature: sig } = await adapter.signAndSendTransaction(built.transactionXdr);
+      setSignature(sig); setResultState("confirmed"); setResultMessage(built.label);
     } catch (e) {
-      setResultState("error");
-      setResultMessage(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
+      } else {
+        setResultState("error"); setResultMessage(msg);
+      }
     }
   }
 
@@ -169,29 +170,6 @@ export default function NovaSwap() {
     } finally {
       setSwapping(false);
     }
-  }
-
-  async function sendViaBlackthorn() {
-    if (!previewTx) return;
-    setPreviewTx(null);
-    setResultState("awaiting"); setSignature(null); setResultMessage(null);
-    try {
-      const { signature: sig } = await adapter.signAndSendTransaction(previewTx);
-      setSignature(sig); setResultState("confirmed");
-    } catch (e) {
-      if ((e instanceof Error && /SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(e.message))) {
-        setResultState("blocked"); setResultMessage(e.message);
-      } else {
-        setResultState("error"); setResultMessage(e instanceof Error ? e.message : String(e));
-      }
-    }
-  }
-  // "Without protection" = same path through the connected wallet, but no
-  // pre-sign review on the site side. Demo aid only — the wallet still
-  // applies its own policy, since Baret is the wallet itself. To truly
-  // bypass, swap to a different non-Baret wallet from the picker.
-  async function sendRaw() {
-    return sendViaBlackthorn();
   }
 
   function flip() {
@@ -349,16 +327,6 @@ export default function NovaSwap() {
           {dangerous && <span className="text-xs text-[#E8470A] font-medium">⚠ Danger mode</span>}
         </motion.div>
       </div>
-
-      <RiskPreview
-        open={previewTx !== null}
-        transactionXdr={previewTx}
-        userWallet={walletAddress ?? null}
-        scenarioLabel={scenarioLabel}
-        onClose={() => setPreviewTx(null)}
-        onProceedWithBlackthorn={sendViaBlackthorn}
-        onProceedRaw={sendRaw}
-      />
     </SiteShell>
   );
 }

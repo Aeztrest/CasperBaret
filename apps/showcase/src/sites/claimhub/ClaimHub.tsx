@@ -4,7 +4,6 @@ import { Gift, CheckCircle, Users, Clock } from "lucide-react";
 import { useWallet } from "../../wallet/context";
 import { SiteShell } from "../../components/SiteShell";
 import { ResultOverlay, type ResultState } from "../../blackthorn/ResultOverlay";
-import { RiskPreview } from "../../blackthorn/RiskPreview";
 import { buildScenario } from "../../blackthorn/transactions";
 
 const THEME = {
@@ -20,18 +19,14 @@ const THEME = {
 };
 
 export default function ClaimHub() {
-  const { connected, openWalletModal, walletAddress, adapter, shortAddress } = useWallet();
+  const { connected, openWalletModal, walletAddress, publicKey, adapter, shortAddress } = useWallet();
   const [dangerous, setDangerous] = useState(false);
   const [resultState, setResultState] = useState<ResultState>("idle");
   const [signature, setSignature] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
   const [pendingCheck, setPendingCheck] = useState(false);
-  const [previewTx, setPreviewTx] = useState<string | null>(null);
   const success = signature !== null;
-  const scenarioLabel = dangerous
-    ? "Claim airdrop (danger scenario · unlimited token approval to attacker)"
-    : "Claim airdrop · transfers 1,500 BONK to your wallet";
 
   useEffect(() => {
     if (connected && pendingCheck) {
@@ -46,32 +41,21 @@ export default function ClaimHub() {
   }
 
   async function handleClaim() {
-    if (!walletAddress) return;
-    try {
-      const __built = await buildScenario(dangerous ? "claimhub-danger" : "claimhub-safe", walletAddress); const tx = __built.transactionXdr;
-      setPreviewTx(tx);
-    } catch (e) {
-      setResultState("error");
-      setResultMessage(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  async function sendViaBlackthorn() {
-    if (!previewTx) return;
-    setPreviewTx(null);
+    if (!walletAddress || !publicKey) return;
     setResultState("awaiting"); setSignature(null); setResultMessage(null);
     try {
-      const { signature: sig } = await adapter.signAndSendTransaction(previewTx);
-      setSignature(sig); setResultState("confirmed");
+      const built = await buildScenario(dangerous ? "claimhub-danger" : "claimhub-safe", publicKey);
+      const { signature: sig } = await adapter.signAndSendTransaction(built.transactionXdr);
+      setSignature(sig); setResultState("confirmed"); setResultMessage(built.label);
     } catch (e) {
-      if ((e instanceof Error && /SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(e.message))) {
-        setResultState("blocked"); setResultMessage(e.message);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(e instanceof Error ? e.message : String(e));
+        setResultState("error"); setResultMessage(msg);
       }
     }
   }
-  const sendRaw = sendViaBlackthorn;
 
   return (
     <SiteShell
@@ -175,16 +159,6 @@ export default function ClaimHub() {
           </div>
         </div>
       </div>
-
-      <RiskPreview
-        open={previewTx !== null}
-        transactionXdr={previewTx}
-        userWallet={walletAddress ?? null}
-        scenarioLabel={scenarioLabel}
-        onClose={() => setPreviewTx(null)}
-        onProceedWithBlackthorn={sendViaBlackthorn}
-        onProceedRaw={sendRaw}
-      />
     </SiteShell>
   );
 }

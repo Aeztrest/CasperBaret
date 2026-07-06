@@ -123,13 +123,13 @@ function ErrorState({ message, onClose }: { message: string | null; onClose: () 
         style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.18)" }}>
         <ShieldX size={24} className="text-ink-300" />
       </div>
-      <p className="text-lg font-bold text-ink-50">Couldn't reach the wallet</p>
+      <p className="text-lg font-bold text-ink-50">Something went wrong</p>
       {message && (
         <p className="text-[11px] text-ink-300 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }}>
           {message}
         </p>
       )}
-      <p className="text-xs text-ink-400">Make sure the wallet is running at <code>localhost:5180</code> and popups are allowed.</p>
+      <p className="text-xs text-ink-400">Check that your wallet extension is unlocked and try again.</p>
       <button onClick={onClose} className="block mx-auto text-xs text-ink-400 hover:text-ink-50 pt-2">Close</button>
     </div>
   );
