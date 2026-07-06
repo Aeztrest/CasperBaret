@@ -4,13 +4,15 @@
  * Each scenario builds a REAL, signable Casper Transaction V1 that calls
  * `transfer`/`approve` on the actually-deployed test-USDC CEP-18 contract
  * (the same package Scrybe's x402 flow and NovaSwap's real swap settle
- * against). Safe scenarios are harmless (zero/self transfers); danger
- * scenarios reproduce the common CEP-18 attack primitives the firewall
- * flags — an unlimited approval to a stranger (wallet drainer) or a large
- * transfer redirected to a foreign account — as genuinely signable/sendable
- * transactions, so Baret's Sign Request popup has a real transaction to
- * analyze and the user can actually see the drain blocked (or, without
- * protection, actually happen on testnet).
+ * against). Safe scenarios are harmless (zero/small transfers to a fixed
+ * demo counterparty — this contract's own CannotTargetSelfUser rule forbids
+ * targeting the caller, so it's never "self"); danger scenarios reproduce
+ * the common CEP-18 attack primitives the firewall flags — an unlimited
+ * approval to a stranger (wallet drainer) or a large transfer redirected to
+ * a foreign account — as genuinely signable/sendable transactions, so
+ * Baret's Sign Request popup has a real transaction to analyze and the user
+ * can actually see the drain blocked (or, without protection, actually
+ * happen on testnet).
  *
  * Earlier this built a hand-rolled "intent envelope" JSON that only the
  * risk analyzer understood; wallets (Baret and the official Casper Wallet
@@ -82,6 +84,9 @@ const UNKNOWN_POOL =
   "3333333333333333333333333333333333333333333333333333333333333333";
 const UNKNOWN_LAUNCH =
   "4444444444444444444444444444444444444444444444444444444444444444";
+// This CEP-18 contract's own business rule (odra-modules CannotTargetSelfUser,
+// error 60003) rejects any transfer/approve that targets the caller's own
+// account — every "safe" scenario needs a distinct counterparty, never "self".
 const FRIENDLY_SPENDER =
   "6666666666666666666666666666666666666666666666666666666666666666";
 
@@ -94,40 +99,39 @@ export interface BuiltScenario {
 
 interface ScenarioSpec {
   entryPoint: "transfer" | "approve";
-  /** "self" resolves to the connected wallet's own account-hash. */
-  target: "self" | string;
+  target: string;
   amount: bigint;
   label: string;
 }
 
 const SCENARIOS: Record<ScenarioId, ScenarioSpec> = {
   "novaswap-safe": {
-    entryPoint: "transfer", target: "self", amount: 0n,
-    label: "NovaSwap: zero-value USDC(test) self-transfer (safe demo)",
+    entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 0n,
+    label: "NovaSwap: zero-value USDC(test) transfer (safe demo)",
   },
   "novaswap-danger": {
     entryPoint: "transfer", target: ATTACKER_ACCOUNT, amount: 50_000_000_000n,
     label: "NovaSwap: 50,000 USDC(test) transfer to a stranger account (drain)",
   },
   "pixeldrop-safe": {
-    entryPoint: "transfer", target: "self", amount: 0n,
-    label: "PixelDrop: zero-value USDC(test) self-transfer (mint, safe demo)",
+    entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 0n,
+    label: "PixelDrop: zero-value USDC(test) transfer (mint, safe demo)",
   },
   "pixeldrop-danger": {
     entryPoint: "approve", target: ATTACKER_ACCOUNT, amount: U256_MAX,
     label: "PixelDrop: unlimited USDC(test) approve to a stranger (wallet drainer)",
   },
   "orbityield-safe": {
-    entryPoint: "transfer", target: "self", amount: 1_000_000n,
-    label: "OrbitYield: 1 USDC(test) self-transfer (deposit, safe demo)",
+    entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 1_000_000n,
+    label: "OrbitYield: 1 USDC(test) transfer (deposit, safe demo)",
   },
   "orbityield-warn": {
     entryPoint: "transfer", target: UNKNOWN_POOL, amount: 100_000_000n,
     label: "OrbitYield: 100 USDC(test) transfer into an unverified pool account",
   },
   "claimhub-safe": {
-    entryPoint: "transfer", target: "self", amount: 0n,
-    label: "ClaimHub: zero-value USDC(test) self-transfer (claim, safe demo)",
+    entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 0n,
+    label: "ClaimHub: zero-value USDC(test) transfer (claim, safe demo)",
   },
   "claimhub-danger": {
     entryPoint: "approve", target: ATTACKER_ACCOUNT, amount: U256_MAX,
@@ -146,8 +150,8 @@ const SCENARIOS: Record<ScenarioId, ScenarioSpec> = {
 /**
  * Build the real, signable Casper Transaction for a given scenario, as a
  * CEP-18 `transfer`/`approve` call against the deployed test-USDC contract.
- * `userPublicKey` is the connected wallet's algo-prefixed public key hex —
- * needed both as the transaction's initiator and to resolve "self" targets.
+ * `userPublicKey` is the connected wallet's algo-prefixed public key hex,
+ * used as the transaction's initiator.
  */
 export async function buildScenario(
   scenario: ScenarioId,
@@ -156,10 +160,8 @@ export async function buildScenario(
   const spec = SCENARIOS[scenario];
   const usdcAsset = await getUsdcAsset();
   const from = PublicKey.fromHex(userPublicKey);
-  const targetAccountHash =
-    spec.target === "self" ? from.accountHash().toHex() : spec.target;
   const targetKey = CLValue.newCLKey(
-    Key.newKey(`account-hash-${targetAccountHash}`),
+    Key.newKey(`account-hash-${spec.target}`),
   );
 
   const namedArgs =
