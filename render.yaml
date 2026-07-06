@@ -97,5 +97,9 @@ services:
       # --- Contract reputation (mirror the showcase scenarios) ---
       - key: RISKY_CONTRACT_PACKAGES
         value: deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeadd
+      # Includes our own deployed test-USDC package — every showcase scenario
+      # (safe and danger alike) calls transfer/approve against this SAME
+      # contract, so without it every demo interaction spuriously flagged
+      # UNKNOWN_CONTRACT_PACKAGE, even the "safe" ones.
       - key: KNOWN_SAFE_CONTRACT_PACKAGES
-        value: "1111111111111111111111111111111111111111111111111111111111111111,2222222222222222222222222222222222222222222222222222222222222222"
+        value: "1111111111111111111111111111111111111111111111111111111111111111,2222222222222222222222222222222222222222222222222222222222222222,d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d"

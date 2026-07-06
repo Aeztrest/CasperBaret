@@ -112,8 +112,15 @@ function normalizeIntent(o: Record<string, unknown>): TxIntent | null {
 function decodeClValueBytes(bytesHex: string, clType: unknown): string | undefined {
   if (typeof clType !== "string") return undefined;
   const buf = Buffer.from(bytesHex, "hex");
-  if (clType === "PublicKey" || clType === "ByteArray" || clType === "Key") {
+  if (clType === "PublicKey" || clType === "ByteArray") {
     return bytesHex;
+  }
+  if (clType === "Key") {
+    // A CLValue::Key is a 1-byte variant tag (0x00 Account / 0x01 Hash / ...)
+    // followed by the 32-byte address — strip the tag so this is a plain
+    // 64-hex value comparable to other account-hash representations
+    // (reputation lists, hardcoded demo addresses, etc).
+    return buf.length === 33 ? bytesHex.slice(2) : bytesHex;
   }
   if (clType === "U512" || clType === "U256" || clType === "U128") {
     const len = buf[0] ?? 0;
@@ -162,6 +169,59 @@ function flattenNamedArgs(value: unknown, depth = 0): Record<string, string> {
 }
 
 /**
+ * Find the entry-point name in a TransactionV1 or Deploy JSON. A Deploy (and
+ * TransactionV1's native routing tags, e.g. "Transfer") store it as a plain
+ * string; TransactionV1 contract calls wrap it as `{ Custom: "name" }`
+ * instead — `deepString`'s plain-string search never finds that.
+ */
+function findEntryPoint(value: unknown, depth = 0): string | null {
+  if (depth > 8 || !value || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const raw = o.entry_point ?? o.entryPoint ?? o["entry-point"];
+  if (raw !== undefined) {
+    if (typeof raw === "string") return raw;
+    if (raw && typeof raw === "object") {
+      const custom = (raw as Record<string, unknown>).Custom;
+      if (typeof custom === "string") return custom;
+    }
+  }
+  for (const v of Object.values(o)) {
+    if (v && typeof v === "object") {
+      const r = findEntryPoint(v, depth + 1);
+      if (r != null) return r;
+    }
+  }
+  return null;
+}
+
+/**
+ * Find a contract package hash. TransactionV1 contract calls address a
+ * package via `target.Stored.id.ByPackageHash.addr`, not any of the flat
+ * key names (`package_hash`, etc.) the legacy Deploy-oriented `deepString`
+ * search below checks — those still cover Deploy JSON and the intent
+ * envelope's own `contractPackage` field.
+ */
+function findPackageHash(value: unknown, depth = 0): string | null {
+  if (depth > 8 || !value || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const stored = o.Stored as Record<string, unknown> | undefined;
+  const id = stored?.id as Record<string, unknown> | undefined;
+  const byPackageHash = id?.ByPackageHash as Record<string, unknown> | undefined;
+  if (typeof byPackageHash?.addr === "string") return byPackageHash.addr;
+  for (const k of ["package_hash", "contract_package_hash", "contractPackageHash", "package"]) {
+    const v = o[k];
+    if (typeof v === "string") return v;
+  }
+  for (const v of Object.values(o)) {
+    if (v && typeof v === "object") {
+      const r = findPackageHash(v, depth + 1);
+      if (r != null) return r;
+    }
+  }
+  return null;
+}
+
+/**
  * Crude extraction from a raw Casper TransactionV1/Deploy JSON. We pull an
  * entry-point name + a contract package hash + a couple of common args. This
  * is intentionally shallow — the intent envelope is the supported path.
@@ -169,20 +229,13 @@ function flattenNamedArgs(value: unknown, depth = 0): Record<string, string> {
 function extractFromRaw(o: Record<string, unknown>): TxIntent | null {
   const session = findFirst(o, ["session", "StoredContractByHash", "Transaction", "body"]);
   const named = flattenNamedArgs(o);
-  const entryPointRaw =
-    deepString(o, ["entry_point", "entryPoint", "entry-point"]) ?? undefined;
+  const entryPointRaw = findEntryPoint(o) ?? undefined;
   // TransactionV1's native-transfer marker is the capitalized string
   // "Transfer" (a routing tag), distinct from CEP-18's lowercase "transfer"
   // entry point — never treat the two as the same thing.
   const isNativeTransfer = entryPointRaw === "Transfer";
   const entryPoint = isNativeTransfer ? undefined : entryPointRaw;
-  const pkg =
-    deepString(o, [
-      "package_hash",
-      "contract_package_hash",
-      "contractPackageHash",
-      "package",
-    ]) ?? undefined;
+  const pkg = findPackageHash(o) ?? undefined;
   // Native transfer's arg is named "target"; CEP-18 transfer's is "recipient".
   const recipient = deepString(o, ["recipient"]) ?? named.recipient ?? (isNativeTransfer ? named.target : undefined);
   const spender = deepString(o, ["spender"]) ?? named.spender;
