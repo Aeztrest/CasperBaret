@@ -14,6 +14,7 @@ import {
   isPublicKeyHex,
   isAccountHash,
   toAccountHashHex,
+  readCep18Balance,
   Casper,
 } from "@casper-baret/casper-core";
 import { Buffer } from "buffer";
@@ -425,27 +426,6 @@ const balanceHandler: Handler<"wallet.balance"> = async ({ address }) => {
   }
 };
 
-// packageHash -> live "hash-<contractHash>" key, so we don't re-resolve the
-// package's active contract version on every poll (Home.tsx polls every 6s).
-const contractKeyCache = new Map<string, string>();
-
-async function resolveContractKey(
-  rpc: ReturnType<typeof getRpcClient>,
-  stateRootHash: string,
-  packageHash: string,
-): Promise<string> {
-  const cached = contractKeyCache.get(packageHash);
-  if (cached) return cached;
-
-  const res = await rpc.queryGlobalStateByStateHash(stateRootHash, `hash-${packageHash}`, []);
-  const versions = res.storedValue.contractPackage?.versions ?? [];
-  const version = versions[versions.length - 1];
-  if (!version) throw new Error(`No active contract version for package ${packageHash}`);
-  const key = `hash-${version.contractHash.hash.toHex()}`;
-  contractKeyCache.set(packageHash, key);
-  return key;
-}
-
 const tokenBalanceHandler: Handler<"wallet.tokenBalance"> = async ({
   packageHash,
   address,
@@ -466,41 +446,15 @@ const tokenBalanceHandler: Handler<"wallet.tokenBalance"> = async ({
     return { raw: "0", available: false };
   }
 
-  const dictionaryItemKey = Buffer.concat([
-    Buffer.from([0x00]),
-    Buffer.from(accountHashHex, "hex"),
-  ]).toString("base64");
-
   const rpc = getRpcClient();
   try {
-    const { stateRootHash } = await rpc.getStateRootHashLatest();
-    const contractKey = await resolveContractKey(rpc, stateRootHash.toHex(), packageHash);
-
-    const result = await rpc.getDictionaryItemByIdentifier(
-      stateRootHash.toHex(),
-      new Casper.ParamDictionaryIdentifier(
-        undefined,
-        new Casper.ParamDictionaryIdentifierContractNamedKey(contractKey, "balances", dictionaryItemKey),
-      ),
-    );
-    const raw = result.storedValue.clValue?.ui256?.toString() ?? "0";
+    const raw = await readCep18Balance(rpc, packageHash, accountHashHex);
     return { raw, available: true };
   } catch (err) {
-    // A dictionary miss (account never held this token) means a real zero
-    // balance, not an unavailable read — only degrade to "—" when we
-    // couldn't even resolve the contract/state (a genuine query failure).
-    if (isDictionaryValueNotFound(err)) {
-      return { raw: "0", available: true };
-    }
     console.warn("[BARET] token balance query failed:", err);
     return { raw: "0", available: false };
   }
 };
-
-function isDictionaryValueNotFound(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err);
-  return /not found|ValueNotFound/i.test(message);
-}
 
 const transferCsprHandler: Handler<"wallet.transferCspr"> = async ({
   to,

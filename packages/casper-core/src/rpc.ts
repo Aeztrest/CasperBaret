@@ -2,7 +2,7 @@
  * Casper network config + RPC client factories.
  */
 
-import { HttpHandler, RpcClient, SpeculativeClient } from "./sdk.js";
+import Casper, { HttpHandler, RpcClient, SpeculativeClient } from "./sdk.js";
 import type {
   RpcClient as RpcClientT,
   SpeculativeClient as SpeculativeClientT,
@@ -86,5 +86,66 @@ export async function waitForExecutionError(
     // Timed out or the node lost track of it — we genuinely don't know the
     // outcome; treat as unconfirmed rather than silently claiming success.
     return `could not confirm execution: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+// packageHash -> live "hash-<contractHash>" key, so repeated balance reads
+// don't re-resolve the package's active contract version every time.
+const contractKeyCache = new Map<string, string>();
+
+async function resolveContractKey(
+  rpc: RpcClientT,
+  stateRootHash: string,
+  packageHash: string,
+): Promise<string> {
+  const cached = contractKeyCache.get(packageHash);
+  if (cached) return cached;
+
+  const res = await rpc.queryGlobalStateByStateHash(stateRootHash, `hash-${packageHash}`, []);
+  const versions = res.storedValue.contractPackage?.versions ?? [];
+  const version = versions[versions.length - 1];
+  if (!version) throw new Error(`No active contract version for package ${packageHash}`);
+  const key = `hash-${version.contractHash.hash.toHex()}`;
+  contractKeyCache.set(packageHash, key);
+  return key;
+}
+
+function isDictionaryValueNotFound(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /not found|ValueNotFound/i.test(message);
+}
+
+/**
+ * Reads a CEP-18 token balance from its `balances` dictionary. Odra's
+ * base64-encoded dictionary key is `0x00` (the `Address::Account` tag) plus
+ * the 32-byte account hash. A dictionary miss means a real zero balance
+ * (the account never held this token) — only a genuine query failure
+ * (bad package hash, RPC unreachable) throws.
+ */
+export async function readCep18Balance(
+  rpc: RpcClientT,
+  packageHash: string,
+  accountHashHex: string,
+): Promise<string> {
+  const dictionaryItemKey = Buffer.concat([
+    Buffer.from([0x00]),
+    Buffer.from(accountHashHex, "hex"),
+  ]).toString("base64");
+
+  const { stateRootHash } = await rpc.getStateRootHashLatest();
+  const contractKey = await resolveContractKey(rpc, stateRootHash.toHex(), packageHash);
+
+  try {
+    const result = await rpc.getDictionaryItemByIdentifier(
+      stateRootHash.toHex(),
+      new Casper.ParamDictionaryIdentifier(
+        undefined,
+        new Casper.ParamDictionaryIdentifierContractNamedKey(contractKey, "balances", dictionaryItemKey),
+      ),
+    );
+    return result.storedValue.clValue?.ui256?.toString() ?? "0";
+  } catch (err) {
+    if (isDictionaryValueNotFound(err)) return "0";
+    throw err;
   }
 }

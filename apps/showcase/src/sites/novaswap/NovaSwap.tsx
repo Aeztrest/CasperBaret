@@ -15,6 +15,12 @@ const SWAP_API_BASE =
 interface SwapConfig {
   enabled: boolean;
   treasuryPublicKey: string;
+  treasuryAccountHash: string;
+  asset: string;
+  tokenName: string;
+  tokenVersion: string;
+  tokenDecimals: number;
+  network: string;
   rateAtomicUsdcPerCspr: string;
   minCspr: number;
   maxCspr: number;
@@ -39,6 +45,24 @@ const TOKENS = [
   { symbol: "yCSPR", name: "Yield CSPR", price: 0.000028 },
 ];
 
+/** Per-token icon, so it follows the token when "pay"/"receive" flip, not the row. */
+function TokenIcon({ symbol }: { symbol: string }) {
+  const style =
+    symbol === "CSPR"
+      ? { background: "#e11428", glyph: "✦" }
+      : symbol === "USDC"
+        ? { background: "#2775ca", glyph: "$" }
+        : { background: "#6b7280", glyph: symbol.slice(0, 1) };
+  return (
+    <span
+      className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
+      style={{ background: style.background }}
+    >
+      {style.glyph}
+    </span>
+  );
+}
+
 export default function NovaSwap() {
   const { connected, openWalletModal, walletAddress, publicKey, walletName, adapter } = useWallet();
   const [fromToken, setFromToken] = useState(TOKENS[0]);
@@ -52,36 +76,67 @@ export default function NovaSwap() {
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [swapConfig, setSwapConfig] = useState<SwapConfig | null>(null);
+  const [csprBalance, setCsprBalance] = useState<number | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
 
+  // /demo/swap/config, not /health — ad blockers routinely block any URL
+  // containing "health" (a common analytics-endpoint pattern), which
+  // silently left every swap attempt falling back to the placeholder-
+  // contract scenario demo with no visible error at all.
   useEffect(() => {
-    fetch(`${SWAP_API_BASE}/health`)
+    fetch(`${SWAP_API_BASE}/demo/swap/config`)
       .then((r) => r.json())
-      .then((body) => {
-        const s = body?.swap;
-        if (s?.enabled && s?.treasuryPublicKey) {
-          setSwapConfig({
-            enabled: true,
-            treasuryPublicKey: s.treasuryPublicKey,
-            rateAtomicUsdcPerCspr: s.rateAtomicUsdcPerCspr,
-            minCspr: s.minCspr,
-            maxCspr: s.maxCspr,
-          });
-        }
+      .then((s) => {
+        if (!s?.enabled || !s?.treasuryPublicKey) return;
+        setSwapConfig({
+          enabled: true,
+          treasuryPublicKey: s.treasuryPublicKey,
+          treasuryAccountHash: PublicKey.fromHex(s.treasuryPublicKey).accountHash().toHex(),
+          asset: s.asset,
+          tokenName: s.tokenName,
+          tokenVersion: s.tokenVersion,
+          tokenDecimals: s.tokenDecimals,
+          network: s.network,
+          rateAtomicUsdcPerCspr: s.rateAtomicUsdcPerCspr,
+          minCspr: s.minCspr,
+          maxCspr: s.maxCspr,
+        });
       })
       .catch(() => { /* real swap disabled — falls back to the scenario demo */ });
   }, []);
 
+  const refreshBalances = () => {
+    if (!walletAddress) return;
+    fetch(`${SWAP_API_BASE}/demo/swap/balance?address=${encodeURIComponent(walletAddress)}`)
+      .then((r) => r.json())
+      .then((b) => {
+        if (typeof b.csprMotes === "string") setCsprBalance(Number(b.csprMotes) / 1e9);
+        if (typeof b.usdcAtomic === "string" && swapConfig) {
+          setUsdcBalance(Number(b.usdcAtomic) / 10 ** swapConfig.tokenDecimals);
+        }
+      })
+      .catch(() => { /* leave balances unknown */ });
+  };
+
+  useEffect(refreshBalances, [walletAddress, swapConfig?.tokenDecimals]);
+
   const outputAmount = fromToken.price * parseFloat(amount || "0") / toToken.price;
   const success = signature !== null;
-  // The only pair with a real settlement path: everything else (CSX, yCSPR
-  // — fictional demo tokens with no real contract) stays the scenario demo.
-  const isRealPair = fromToken.symbol === "CSPR" && toToken.symbol === "USDC";
+  // Both directions of the CSPR<->USDC pair have a real settlement path;
+  // everything else (CSX, yCSPR — fictional demo tokens with no real
+  // contract) stays the scenario demo.
+  const isCsprToUsdc = fromToken.symbol === "CSPR" && toToken.symbol === "USDC";
+  const isUsdcToCspr = fromToken.symbol === "USDC" && toToken.symbol === "CSPR";
+  const isRealPair = isCsprToUsdc || isUsdcToCspr;
   const doingRealSwap = isRealPair && !dangerous && !!swapConfig;
+  const balanceFor = (symbol: string): number | null =>
+    symbol === "CSPR" ? csprBalance : symbol === "USDC" ? usdcBalance : null;
 
   async function handleSwap() {
     if (!connected || !walletAddress || !publicKey) { openWalletModal(); return; }
     if (doingRealSwap) {
-      await handleRealSwap();
+      if (isCsprToUsdc) await handleCsprToUsdc();
+      else await handleUsdcToCspr();
       return;
     }
     setResultState("awaiting"); setSignature(null); setResultMessage(null);
@@ -100,21 +155,29 @@ export default function NovaSwap() {
   }
 
   /**
-   * The real swap: a plain native CSPR transfer to the treasury, signed by
+   * CSPR -> USDC: a plain native CSPR transfer to the treasury, signed by
    * the connected wallet, relayed through the server (which confirms the
    * treasury's balance actually moved before paying out USDC(test) at a
    * fixed rate). Casper's Transaction V1 model has no "attach value to a
    * contract call" primitive without bespoke session Wasm, so this avoids
    * that entirely — one real transfer in, one real transfer back.
+   *
+   * Limited to the Baret wallet: other wallets sign this as a legacy
+   * Deploy (via a different code path), and casper-js-sdk's
+   * waitForTransaction can't confirm a legacy deploy hash's execution
+   * result — confirmed against a live testnet deploy that executed fine
+   * but couldn't be polled. The reverse direction below isn't affected,
+   * since it settles via a signed message (like x402), not a submitted
+   * transaction.
    */
-  async function handleRealSwap() {
+  async function handleCsprToUsdc() {
     if (!swapConfig || !publicKey) return;
     if (walletName !== "Baret") {
       setResultState("error");
       setResultMessage(
-        "Real swap settlement is currently verified with the Baret wallet only — " +
-        "other wallets sign a legacy Deploy format whose on-chain confirmation this demo " +
-        "can't yet reliably track. Connect Baret to swap for real.",
+        "CSPR→USDC is currently verified with the Baret wallet only — other wallets sign a " +
+        "legacy Deploy format whose on-chain confirmation this demo can't yet reliably track. " +
+        "Connect Baret, or try USDC→CSPR instead (works with any wallet).",
       );
       return;
     }
@@ -137,7 +200,7 @@ export default function NovaSwap() {
       const txn = new NativeTransferBuilder()
         .from(PublicKey.fromHex(publicKey))
         .target(PublicKey.fromHex(swapConfig.treasuryPublicKey))
-        .chainName("casper-test")
+        .chainName(swapConfig.network.includes("test") ? "casper-test" : "casper")
         .payment(100_000_000)
         .amount(motes)
         .build();
@@ -154,15 +217,87 @@ export default function NovaSwap() {
         throw new Error(res.error ?? "Swap failed at the server.");
       }
 
-      const usdcOut = Number(res.usdcAtomic) / 1e6;
+      const usdcOut = Number(res.usdcAtomic) / 10 ** swapConfig.tokenDecimals;
       setSignature(res.usdcTransactionHash);
       setResultMessage(
         `Received ${usdcOut.toFixed(2)} USDC(test). CSPR transfer: ${res.csprTransactionHash.slice(0, 10)}…${res.note ? ` ${res.note}` : ""}`,
       );
       setResultState("confirmed");
+      refreshBalances();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
+        setResultState("blocked"); setResultMessage(msg);
+      } else {
+        setResultState("error"); setResultMessage(msg);
+      }
+    } finally {
+      setSwapping(false);
+    }
+  }
+
+  /**
+   * USDC -> CSPR: settled the same way an x402 payment is — the payer signs
+   * an off-chain EIP-712 TransferWithAuthorization (no gas, no transaction
+   * submitted by the wallet at all) sending USDC to the treasury via
+   * `adapter.payX402`, exactly like Scrybe's paywall. That works with any
+   * wallet that can sign an x402 payment (Baret natively, the official
+   * Casper Wallet via its signMessage), unlike the CSPR->USDC direction.
+   * Once the server settles that authorization for real on-chain, it sends
+   * CSPR back at the inverse of the same fixed rate.
+   */
+  async function handleUsdcToCspr() {
+    if (!swapConfig || !publicKey) return;
+    const usdcAmount = parseFloat(amount || "0");
+    const usdcAtomic = BigInt(Math.round(usdcAmount * 10 ** swapConfig.tokenDecimals));
+    const minUsdc = (swapConfig.minCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 1e9;
+    const maxUsdc = (swapConfig.maxCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 1e9;
+    const minUsdcDisplay = minUsdc / 10 ** swapConfig.tokenDecimals;
+    const maxUsdcDisplay = maxUsdc / 10 ** swapConfig.tokenDecimals;
+    if (usdcAmount < minUsdcDisplay) {
+      setResultState("error");
+      setResultMessage(`Minimum swap is ${minUsdcDisplay.toFixed(2)} USDC(test) (so the CSPR paid back clears Casper's own 2.5 CSPR transfer floor).`);
+      return;
+    }
+    if (usdcAmount > maxUsdcDisplay) {
+      setResultState("error");
+      setResultMessage(`Max ${maxUsdcDisplay.toFixed(2)} USDC(test) per swap on this demo treasury.`);
+      return;
+    }
+
+    setSwapping(true);
+    setResultState("awaiting"); setSignature(null); setResultMessage(null);
+    try {
+      const requirements = {
+        scheme: "exact" as const,
+        network: swapConfig.network,
+        asset: swapConfig.asset,
+        amount: usdcAtomic.toString(),
+        payTo: `00${swapConfig.treasuryAccountHash}`,
+        maxTimeoutSeconds: 3600,
+        extra: { name: swapConfig.tokenName, version: swapConfig.tokenVersion },
+      };
+
+      const { headerValue } = await adapter.payX402(requirements);
+
+      const res = await fetch(`${SWAP_API_BASE}/demo/swap/usdc-to-cspr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ headerValue }),
+      }).then((r) => r.json());
+
+      if (!res.success) {
+        throw new Error(res.error ?? "Swap failed at the server.");
+      }
+
+      const csprOut = Number(res.csprMotes) / 1e9;
+      setSignature(res.csprTransactionHash);
+      setResultMessage(`Received ${csprOut.toFixed(4)} CSPR. USDC payment: ${res.usdcTransactionHash.slice(0, 10)}…`);
+      setResultState("confirmed");
+      refreshBalances();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined|X402_FAILED/.test(msg)) {
         setResultState("blocked"); setResultMessage(msg);
       } else {
         setResultState("error"); setResultMessage(msg);
@@ -225,7 +360,9 @@ export default function NovaSwap() {
             <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You pay</span>
-                <span className="text-xs text-ink-400">Balance: —</span>
+                <span className="text-xs text-ink-400">
+                  Balance: {connected && balanceFor(fromToken.symbol) !== null ? balanceFor(fromToken.symbol)!.toFixed(4) : "—"}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -236,7 +373,7 @@ export default function NovaSwap() {
                   placeholder="0"
                 />
                 <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-50 bg-paper border border-white/10">
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#e11428" }}>✦</span>
+                  <TokenIcon symbol={fromToken.symbol} />
                   {fromToken.symbol}
                   <ChevronDown size={13} className="text-ink-400" />
                 </button>
@@ -259,14 +396,16 @@ export default function NovaSwap() {
             <div className="p-4 rounded-xl" style={{ background: "#16171a", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-ink-400">You receive</span>
-                <span className="text-xs text-ink-400">Balance: —</span>
+                <span className="text-xs text-ink-400">
+                  Balance: {connected && balanceFor(toToken.symbol) !== null ? balanceFor(toToken.symbol)!.toFixed(4) : "—"}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="flex-1 text-2xl font-bold text-ink-200">
                   {isNaN(outputAmount) ? "0" : outputAmount.toFixed(2)}
                 </span>
                 <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-ink-50 bg-paper border border-white/10">
-                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black text-white" style={{ background: "#2775ca" }}>$</span>
+                  <TokenIcon symbol={toToken.symbol} />
                   {toToken.symbol}
                   <ChevronDown size={13} className="text-ink-400" />
                 </button>
