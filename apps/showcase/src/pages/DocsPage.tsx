@@ -8,14 +8,14 @@ import {
 import { BaretMark, Wordmark, LandingFooter } from "../components/LandingChrome";
 
 const DOCS = [
-  { title: "Vision",                 desc: "Why a transaction firewall belongs in the wallet, not the dApp.",      file: "vision.md",                 icon: BookOpen },
-  { title: "Wallet Spec",            desc: "Smart wallet primitives, key handling, session model.",                file: "wallet-spec.md",            icon: Shield },
-  { title: "Extension Architecture", desc: "MV3 background, popup, options, inpage and content-script split.",     file: "extension-architecture.md", icon: Layers },
-  { title: "Policy DSL",             desc: "The TypeScript policy schema and templates enforced at sign-time.",    file: "policy-dsl.md",             icon: FileText },
-  { title: "x402 Defense",           desc: "The attack matrix and Baret's response for the x402 era.",             file: "x402-defense.md",           icon: Zap },
-  { title: "Brand",                  desc: "Tokens, typography, and the way Baret talks to users.",                file: "brand.md",                  icon: Globe },
-  { title: "Showcase Briefs",        desc: "How each fake-but-real demo dApp is wired and what it teaches.",       file: "showcase-briefs.md",        icon: BookOpen },
-  { title: "Demo Script",            desc: "The end-to-end walkthrough used for live demos.",                      file: "demo-script.md",            icon: FileText },
+  { title: "The Story",              desc: "Why this project ended up as five repos, not one, and how each piece fits together.", path: "README.md",                      icon: BookOpen },
+  { title: "How the Protocol Works", desc: "The pre-sign analysis engine and policy rules, explained simply.",      path: "docs/protocol.md",               icon: Shield },
+  { title: "Architecture",           desc: "The full technical picture: every app, package, and contract.",         path: "ARCHITECTURE.md",                icon: Layers },
+  { title: "Limitations",            desc: "What Baret does and doesn't guarantee, and which policy rules are actually enforced today.", path: "LIMITATIONS.md",       icon: FileText },
+  { title: "The Wallet Extension",   desc: "Screens, build steps, and how to load it in Chrome.",                   path: "apps/extension/README.md",       icon: Zap },
+  { title: "Policy Schema",          desc: "The rules a transaction or x402 payment is checked against.",           path: "docs/policy-dsl.md",             icon: FileText },
+  { title: "Brand",                  desc: "Tokens, typography, and the way Baret talks to users.",                 path: "docs/brand.md",                  icon: Globe },
+  { title: "Demo Script",            desc: "The end-to-end walkthrough used for live demos.",                       path: "docs/demo-script.md",            icon: BookOpen },
 ];
 
 export default function DocsPage() {
@@ -49,18 +49,18 @@ export default function DocsPage() {
           </h1>
           <p className="mt-6 text-ink-300 leading-relaxed max-w-2xl">
             Specs, protocols, and design notes that back every claim on the home page.
-            Each entry below maps to a file in the project's <code className="font-mono text-ink-200 bg-ink-900/5 px-1.5 py-0.5 rounded">docs/</code> tree.
+            Each entry below opens the real file in the project's <code className="font-mono text-ink-200 bg-ink-900/5 px-1.5 py-0.5 rounded">GitHub repo</code>.
           </p>
         </motion.div>
 
         <div className="mt-12 grid sm:grid-cols-2 gap-3">
           {DOCS.map((d, i) => (
             <motion.a
-              key={d.file}
+              key={d.path}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              href={`https://github.com/Aeztrest/DeltaProtokol/blob/main/docs/${d.file}`}
+              href={`https://github.com/Aeztrest/CasperBaret/blob/main/${d.path}`}
               target="_blank"
               rel="noreferrer"
               className="group card-hover block p-5"
@@ -72,7 +72,7 @@ export default function DocsPage() {
                   </span>
                   <div>
                     <p className="font-display font-bold">{d.title}</p>
-                    <p className="text-[11px] font-mono text-ink-400 mt-0.5">docs/{d.file}</p>
+                    <p className="text-[11px] font-mono text-ink-400 mt-0.5">{d.path}</p>
                   </div>
                 </div>
                 <ArrowUpRight size={16} className="text-ink-300 group-hover:text-brand-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />

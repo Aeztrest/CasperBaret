@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, Github, Menu, X as XIcon } from "lucide-react";
 
-export const SOCIAL_GITHUB = "https://github.com/Aeztrest/DeltaProtokol";
+export const SOCIAL_GITHUB = "https://github.com/Aeztrest/CasperBaret";
 export const SOCIAL_X      = "https://x.com/blackthornxyz";
 
 const NAV_LINKS = [
@@ -204,19 +204,11 @@ export function LandingFooter() {
             >
               <Github size={14} />
             </a>
-            <a
-              href={SOCIAL_X}
-              target="_blank" rel="noreferrer"
-              aria-label="X (Twitter)"
-              className="w-9 h-9 grid place-items-center rounded-lg border border-white/15 text-white/70 hover:text-white hover:border-brand-500 transition-colors"
-            >
-              <XGlyph />
-            </a>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-2 text-[11px] text-white/40">
-          <p>© {new Date().getFullYear()} Baret. Built for the Colosseum hackathon.</p>
+          <p>© {new Date().getFullYear()} Baret. Built for the Casper Agentic Buildathon.</p>
           <p className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" /> Testnet · MIT licensed
           </p>
