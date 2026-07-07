@@ -276,7 +276,10 @@ export default function NovaSwap() {
         asset: swapConfig.asset,
         amount: usdcAtomic.toString(),
         payTo: `00${swapConfig.treasuryAccountHash}`,
-        maxTimeoutSeconds: 3600,
+        // Baret's own x402 parser caps this at 600s — 3600 was silently
+        // rejected as an invalid PaymentRequirements before the sign
+        // screen even opened.
+        maxTimeoutSeconds: 300,
         extra: { name: swapConfig.tokenName, version: swapConfig.tokenVersion },
       };
 

@@ -320,7 +320,10 @@ export function registerSwapRoute(app: FastifyInstance, config: AppConfig): void
       asset: x402.asset,
       amount: wire.payload.authorization.value,
       payTo: toX402Address(treasuryAccountHash),
-      maxTimeoutSeconds: 3600,
+      // Matches NovaSwap's client-side requirements — Baret's own x402
+      // parser caps maxTimeoutSeconds at 600s, so anything above that
+      // would already have been rejected before the client ever signed.
+      maxTimeoutSeconds: 300,
       extra: { name: x402.tokenName, version: x402.tokenVersion },
     };
 
