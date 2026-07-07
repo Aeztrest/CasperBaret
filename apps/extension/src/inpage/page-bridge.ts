@@ -1,6 +1,5 @@
 /**
  * Inpage ⇄ content-script bridge (page MAIN world side).
- * Spec: docs/extension-architecture.md §6.
  *
  * Communication is over window.postMessage. Every message carries our
  * envelope tag so we can ignore unrelated traffic on the page.

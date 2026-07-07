@@ -1,6 +1,5 @@
 /**
- * IndexedDB schema + open helper for the BLACKTHORN extension.
- * Spec: docs/extension-architecture.md §7.
+ * IndexedDB schema + open helper for the Baret extension.
  *
  * Object stores: keystore, allowances, history, alerts, monitor, prefs.
  * All CRUD lives in sibling files (db/keystore.ts, db/allowances.ts, etc.)

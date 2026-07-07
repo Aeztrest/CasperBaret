@@ -1,7 +1,5 @@
 /**
  * Keystore: stores the encrypted authority secret.
- * Spec: docs/extension-architecture.md §7 (keystore object store)
- *       + §8.1 (encryption).
  *
  * Persistence is double-layered:
  *  1. IndexedDB (`keystore` object store) — primary, fast random read.

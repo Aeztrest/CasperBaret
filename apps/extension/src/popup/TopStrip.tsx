@@ -1,6 +1,5 @@
 /**
  * Compact top strip on the popup home — account label + alert badge + settings shortcut.
- * Spec: docs/wallet-spec.md §3.1.
  */
 
 import { ChevronDown, Settings as SettingsIcon } from "lucide-react";

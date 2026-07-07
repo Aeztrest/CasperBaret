@@ -1,6 +1,5 @@
 /**
  * Options page sidebar.
- * Spec: docs/wallet-spec.md §7.1.
  */
 
 import { NavLink } from "react-router-dom";

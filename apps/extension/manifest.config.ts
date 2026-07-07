@@ -3,7 +3,6 @@ import pkg from "./package.json" with { type: "json" };
 
 /**
  * Single source of truth for the extension manifest.
- * Spec: docs/extension-architecture.md §2.
  *
  * Target switching: env.mode === "firefox" swaps fields where Firefox MV3
  * differs from Chrome MV3 (background.scripts vs service_worker, options_ui

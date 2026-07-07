@@ -1,6 +1,5 @@
 /**
  * Options page root — router + layout shell.
- * Spec: docs/wallet-spec.md §7.
  */
 
 import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";

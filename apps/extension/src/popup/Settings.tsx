@@ -1,7 +1,6 @@
 /**
  * Compact settings tab inside the popup. Each row is a one-line summary
  * with a deep-link to the full options-page version.
- * Spec: docs/wallet-spec.md §6.
  */
 
 import { ChevronRight, Lock, ExternalLink, Trash2 } from "lucide-react";

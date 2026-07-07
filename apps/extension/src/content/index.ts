@@ -8,7 +8,6 @@
  * 2. Bridge messages between the inpage script (via window.postMessage) and
  *    the background service worker (via chrome.runtime.connect).
  *
- * Spec: docs/extension-architecture.md §5.
  */
 
 import browser from "webextension-polyfill";

@@ -1,6 +1,5 @@
 /**
  * Bottom tab bar on the popup. Four tabs.
- * Spec: docs/wallet-spec.md §3.5.
  */
 
 import { Home, Clock, Shield, Settings as SettingsIcon } from "lucide-react";

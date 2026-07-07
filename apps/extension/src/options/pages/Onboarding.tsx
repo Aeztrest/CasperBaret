@@ -1,6 +1,5 @@
 /**
  * First-run onboarding wizard. 8 steps.
- * Spec: docs/wallet-spec.md §9.
  *
  * Production-grade UX — every screen has one purpose, one CTA, plain copy.
  * Generates the wallet, secures it under a passphrase, funds the authority,

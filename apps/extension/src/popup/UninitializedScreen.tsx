@@ -1,6 +1,6 @@
 /**
  * Uninitialized screen — no wallet yet. Send the user to the options page,
- * which hosts the onboarding wizard (per docs/wallet-spec.md §9).
+ * which hosts the onboarding wizard.
  */
 
 import { ArrowRight, ShieldCheck } from "lucide-react";

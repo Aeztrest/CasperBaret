@@ -5,7 +5,6 @@
  * analysis (transaction kind only), renders the AnalysisReport, and resolves
  * the request with the user's verdict.
  *
- * Spec: docs/wallet-spec.md §8 + docs/x402-defense.md.
  */
 
 import { useEffect, useState } from "react";

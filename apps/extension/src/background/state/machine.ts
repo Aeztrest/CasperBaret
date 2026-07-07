@@ -1,6 +1,5 @@
 /**
  * Wallet state machine.
- * Spec: docs/wallet-spec.md §2 + docs/extension-architecture.md §3.1.
  *
  * Single source of truth. Every surface (popup, options, content script)
  * reads from here via the message router.

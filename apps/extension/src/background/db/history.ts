@@ -2,7 +2,6 @@
  * History store — every tx the wallet processed (signed, declined, broadcast).
  * Bounded; the tail is trimmed to MAX_ENTRIES.
  *
- * Spec: docs/extension-architecture.md §7.
  */
 
 import type { HistoryEntry } from "@casper-baret/ext-protocol";

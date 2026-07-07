@@ -5,7 +5,6 @@
  * Wraps chrome.runtime.connect with promise-based call/response correlation
  * and event-stream subscription.
  *
- * Spec: docs/extension-architecture.md §4.
  */
 
 import browser from "webextension-polyfill";

@@ -3,10 +3,7 @@
  *
  * The single source of truth for messages exchanged between the four
  * extension surfaces: background service worker, popup, options page,
- * content script + inpage provider.
- *
- * Spec: docs/extension-architecture.md §4 (popup ↔ background) and §5–6
- * (content script + inpage provider).
+ * content script, and inpage provider.
  */
 
 /* ────────────────────────────────────────────────────────────────────────── */

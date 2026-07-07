@@ -3,7 +3,6 @@
  * Most rows arrive in T27 (post-sign monitor); CRUD lives here so the
  * popup can render the inbox today.
  *
- * Spec: docs/extension-architecture.md §7.
  */
 
 import type { AlertEntry } from "@casper-baret/ext-protocol";

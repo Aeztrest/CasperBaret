@@ -1,7 +1,6 @@
 /**
  * Popup root. Picks which surface to show based on wallet phase, then
  * delegates to the appropriate tab.
- * Spec: docs/wallet-spec.md §3.
  */
 
 import { useEffect, useState } from "react";

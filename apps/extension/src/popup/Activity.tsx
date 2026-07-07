@@ -1,7 +1,6 @@
 /**
  * Popup Activity tab — every dApp signature, message, declined attempt, and
  * alert the wallet processed.
- * Spec: docs/wallet-spec.md §4.
  */
 
 import { useEffect, useState } from "react";

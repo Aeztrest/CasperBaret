@@ -7,7 +7,6 @@
  *   bx-wallet-standard          → Wallet Standard handlers (content scripts)
  *   bx-x402                     → x402 interceptor handlers (T29)
  *
- * Spec: docs/extension-architecture.md §4 (popup) + §5 (content script).
  */
 
 import browser from "webextension-polyfill";

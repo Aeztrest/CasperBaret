@@ -1,6 +1,5 @@
 /**
  * Locked screen — passphrase unlock for an existing wallet.
- * Spec: docs/wallet-spec.md §11 (error-state copy "Wallet locked").
  */
 
 import { useState } from "react";

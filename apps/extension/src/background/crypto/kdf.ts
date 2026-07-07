@@ -1,6 +1,5 @@
 /**
  * PBKDF2 + AES-GCM key derivation and authenticated encryption.
- * Spec: docs/extension-architecture.md §8.1.
  *
  * We use Web Crypto exclusively — never a userland AES implementation —
  * because Web Crypto guarantees constant-time operations and protects key
