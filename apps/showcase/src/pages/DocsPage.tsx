@@ -113,76 +113,85 @@ function ProtocolDiagram() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="mt-12 card p-6 sm:p-8"
+      className="mt-12 rounded-[28px] border border-white/8 bg-ink-900/60 p-6 sm:p-10 overflow-hidden relative"
     >
-      <div className="text-center max-w-md mx-auto">
-        <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-ink-400">
-          Where the check actually happens
+      {/* ambient glow */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[560px] h-[280px] rounded-full bg-emerald-500/10 blur-[90px]" />
+
+      <div className="relative text-center max-w-lg mx-auto">
+        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-emerald-400">
+          <span className="w-6 h-[3px] bg-emerald-500 rounded-full" />
+          The one thing that's different
         </p>
-        <p className="mt-2 text-sm text-ink-300 leading-relaxed">
-          Same dApp, same signature request, same wallet key. One extra step
-          before signing is the entire difference.
+        <h2 className="mt-4 font-display text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">
+          Where the check actually happens
+        </h2>
+        <p className="mt-3 text-sm text-ink-300 leading-relaxed">
+          Same dApp, same signature request, same wallet key. Everything hinges
+          on one extra hop before the key ever gets used.
         </p>
       </div>
 
-      <div className="mt-8 grid md:grid-cols-2 gap-6 md:gap-0 md:divide-x md:divide-white/8">
+      <div className="relative mt-10 grid md:grid-cols-2 gap-5">
         {/* Normal wallet flow */}
-        <div className="md:pr-8">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="w-7 h-7 rounded-lg grid place-items-center bg-ink-900 border border-white/10">
-              <WalletIcon size={13} className="text-ink-300" />
+        <div className="rounded-2xl border border-brand-900/40 bg-gradient-to-b from-brand-500/[0.06] to-transparent p-5 sm:p-6 flex flex-col h-full">
+          <div className="flex items-center gap-2.5 mb-7">
+            <span className="w-9 h-9 rounded-xl grid place-items-center bg-ink-950 border border-white/10">
+              <WalletIcon size={15} className="text-ink-300" />
             </span>
-            <p className="text-xs font-display font-bold text-ink-200 tracking-wide">A NORMAL WALLET</p>
+            <p className="text-[13px] font-display font-bold text-ink-300 tracking-wide">A NORMAL WALLET</p>
           </div>
 
+          <div className="flex-1 flex flex-col justify-center">
           <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="A page you're using sends a transaction to your wallet." tone="neutral" />
-          <TimelineStep icon={WalletIcon} title="Your wallet receives it" caption="The raw transaction bytes, unread." tone="neutral" />
-          <TimelineStep
+          <TimelineStep icon={WalletIcon} title="Your wallet receives it" caption="The raw transaction bytes — nothing reads them first." tone="neutral" isLast />
+
+          <StepDivider label="no check exists in between" tone="danger" />
+
+          <OutcomeCard
             icon={AlertTriangle}
-            title="Signed & broadcast — as-is"
-            caption="Nothing decoded it first. Whatever it does, it does."
+            title="Signed & broadcast, as-is"
+            caption="Whatever the transaction actually does, it does — the wallet had no way to warn you."
             tone="danger"
-            isLast
+            full
           />
+          </div>
         </div>
 
         {/* Baret flow */}
-        <div className="md:pl-8">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="w-7 h-7 rounded-lg grid place-items-center bg-emerald-500/10 border border-emerald-500/30">
-              <Shield size={13} className="text-emerald-400" />
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.07] to-transparent p-5 sm:p-6">
+          <div className="flex items-center gap-2.5 mb-7">
+            <span className="w-9 h-9 rounded-xl grid place-items-center bg-emerald-500/10 border border-emerald-500/30">
+              <Shield size={15} className="text-emerald-400" />
             </span>
-            <p className="text-xs font-display font-bold text-emerald-400 tracking-wide">WITH BARET</p>
+            <p className="text-[13px] font-display font-bold text-emerald-400 tracking-wide">WITH BARET</p>
           </div>
 
           <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="The identical request — nothing about the dApp changes." tone="neutral" />
           <TimelineStep icon={Puzzle} title="window.baret receives it" caption="The inpage provider every Casper dApp already knows how to call." tone="neutral" />
-          <TimelineStep icon={Cpu} title="Background worker holds the key" caption="It doesn't sign yet — it routes the request onward first." tone="neutral" />
+          <TimelineStep icon={Cpu} title="Background worker holds the key" caption="It doesn't sign yet — it routes the request onward first." tone="neutral" isLast />
+
+          <StepDivider label="then Baret steps in —" tone="ok" />
+
           <TimelineStep
             icon={ScanSearch}
             title="The analyze engine checks it"
             caption={<>Decodes the transaction and runs it against your policy — <code className="font-mono text-[11px] text-emerald-300/90">POST /v1/analyze</code>.</>}
             tone="check"
+            glow
+            isLast
           />
 
-          <div className="flex gap-3">
-            <div className="w-8 flex justify-center shrink-0">
-              <div className="w-px h-3 bg-white/10" />
-            </div>
-            <p className="text-[11px] text-ink-500 -mt-0.5 mb-2">then, depending on the verdict —</p>
-          </div>
+          <StepDivider label="depending on the verdict —" tone="ok" />
 
-          <div className="flex gap-3">
-            <div className="w-8 shrink-0" />
-            <div className="flex-1 grid grid-cols-2 gap-2.5">
-              <OutcomeCard icon={ShieldCheck} title="Safe" caption="Signed & broadcast to Casper Network" tone="ok" />
-              <OutcomeCard icon={ShieldX} title="Blocked" caption="Refused — nothing ever broadcasts" tone="danger" />
-            </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <OutcomeCard icon={ShieldCheck} title="Safe" caption="Signed & broadcast to Casper Network" tone="ok" />
+            <OutcomeCard icon={ShieldX} title="Blocked" caption="Refused — nothing ever broadcasts" tone="danger" />
           </div>
         </div>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-white/8 text-center">
+      <div className="relative mt-8 text-center">
         <a
           href="https://github.com/Aeztrest/CasperBaret/blob/main/docs/protocol.md"
           target="_blank"
@@ -197,53 +206,67 @@ function ProtocolDiagram() {
 }
 
 const STEP_TONE = {
-  neutral: { ring: "bg-ink-900 border-white/10", icon: "text-ink-400", line: "bg-white/10", title: "text-ink-100" },
-  check:   { ring: "bg-emerald-500/10 border-emerald-500/40", icon: "text-emerald-400", line: "bg-emerald-600/30", title: "text-emerald-300" },
-  danger:  { ring: "bg-brand-500/10 border-brand-500/40", icon: "text-brand-400", line: "bg-brand-500/20", title: "text-brand-300" },
+  neutral: { ring: "bg-ink-950 border-white/12", icon: "text-ink-300", line: "bg-white/12", title: "text-ink-50" },
+  check:   { ring: "bg-emerald-500/15 border-emerald-400/60", icon: "text-emerald-300", line: "bg-emerald-500/40", title: "text-emerald-300" },
+  danger:  { ring: "bg-brand-500/15 border-brand-500/50", icon: "text-brand-300", line: "bg-brand-500/30", title: "text-brand-300" },
 } as const;
 
 function TimelineStep({
-  icon: Icon, title, caption, tone, isLast,
+  icon: Icon, title, caption, tone, isLast, glow,
 }: {
   icon: typeof Globe;
   title: string;
   caption: ReactNode;
   tone: keyof typeof STEP_TONE;
   isLast?: boolean;
+  glow?: boolean;
 }) {
   const t = STEP_TONE[tone];
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3.5">
       <div className="flex flex-col items-center shrink-0">
-        <div className={`w-8 h-8 rounded-full grid place-items-center border ${t.ring}`}>
-          <Icon size={14} className={t.icon} />
+        <div className={`relative w-10 h-10 rounded-full grid place-items-center border ${t.ring}`}>
+          {glow && <div className="absolute inset-0 rounded-full bg-emerald-400/40 blur-md -z-10" />}
+          <Icon size={16} className={t.icon} strokeWidth={2} />
         </div>
-        {!isLast && <div className={`w-px flex-1 min-h-[1.25rem] my-1 ${t.line}`} />}
+        {!isLast && <div className={`w-0.5 flex-1 min-h-[1.5rem] my-1.5 rounded-full ${t.line}`} />}
       </div>
-      <div className={isLast ? "pb-1" : "pb-5"}>
-        <p className={`text-sm font-bold leading-snug ${t.title}`}>{title}</p>
-        <p className="mt-0.5 text-xs text-ink-400 leading-relaxed">{caption}</p>
+      <div className={isLast ? "pb-0.5 pt-1" : "pb-6 pt-1"}>
+        <p className={`text-[15px] font-bold leading-snug ${t.title}`}>{title}</p>
+        <p className="mt-1 text-[13px] text-ink-400 leading-relaxed max-w-[26ch]">{caption}</p>
       </div>
     </div>
   );
 }
 
+function StepDivider({ label, tone }: { label: string; tone: "ok" | "danger" }) {
+  return (
+    <div className="flex items-center gap-3 my-1 pl-1">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tone === "ok" ? "bg-emerald-500" : "bg-brand-500"}`} />
+      <p className={`text-[11px] font-semibold tracking-wide ${tone === "ok" ? "text-emerald-400/90" : "text-brand-400/90"}`}>
+        {label}
+      </p>
+      <span className={`h-px flex-1 ${tone === "ok" ? "bg-emerald-500/20" : "bg-brand-500/20"}`} />
+    </div>
+  );
+}
+
 const OUTCOME_TONE = {
-  ok:     { bg: "bg-emerald-500/10", border: "border-emerald-500/30", icon: "text-emerald-400", title: "text-emerald-300" },
-  danger: { bg: "bg-brand-500/10", border: "border-brand-500/30", icon: "text-brand-400", title: "text-brand-300" },
+  ok:     { bg: "bg-emerald-500/10", border: "border-emerald-500/40", icon: "text-emerald-300", title: "text-emerald-300" },
+  danger: { bg: "bg-brand-500/10", border: "border-brand-500/40", icon: "text-brand-300", title: "text-brand-300" },
 } as const;
 
 function OutcomeCard({
-  icon: Icon, title, caption, tone,
-}: { icon: typeof ShieldCheck; title: string; caption: string; tone: keyof typeof OUTCOME_TONE }) {
+  icon: Icon, title, caption, tone, full,
+}: { icon: typeof ShieldCheck; title: string; caption: string; tone: keyof typeof OUTCOME_TONE; full?: boolean }) {
   const t = OUTCOME_TONE[tone];
   return (
-    <div className={`rounded-xl border ${t.border} ${t.bg} px-3 py-3`}>
-      <div className="flex items-center gap-1.5">
-        <Icon size={13} className={t.icon} />
-        <p className={`text-xs font-bold ${t.title}`}>{title}</p>
+    <div className={`rounded-xl border ${t.border} ${t.bg} ${full ? "px-4 py-4" : "px-3.5 py-3.5"}`}>
+      <div className="flex items-center gap-2">
+        <Icon size={15} className={t.icon} />
+        <p className={`text-[13px] font-bold ${t.title}`}>{title}</p>
       </div>
-      <p className="mt-1 text-[11px] text-ink-400 leading-snug">{caption}</p>
+      <p className="mt-1.5 text-[12px] text-ink-400 leading-relaxed">{caption}</p>
     </div>
   );
 }
