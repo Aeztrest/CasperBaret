@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowUpRight, BookOpen, Shield, FileText, Zap, Layers, Globe,
+  Send, HelpCircle, AlertTriangle, ScanSearch, ShieldCheck, ShieldX, ChevronDown,
 } from "lucide-react";
 import { BaretMark, Wordmark, LandingFooter } from "../components/LandingChrome";
 
@@ -53,6 +54,8 @@ export default function DocsPage() {
           </p>
         </motion.div>
 
+        <ProtocolDiagram />
+
         <div className="mt-12 grid sm:grid-cols-2 gap-3">
           {DOCS.map((d, i) => (
             <motion.a
@@ -96,4 +99,124 @@ export default function DocsPage() {
       <LandingFooter />
     </div>
   );
+}
+
+/**
+ * The one thing every other doc explains in detail, shown in three steps:
+ * a normal wallet signs whatever it's handed, Baret looks first.
+ */
+function ProtocolDiagram() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="mt-12 card p-6 sm:p-8"
+    >
+      <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-ink-400 text-center">
+        The difference, in three steps
+      </p>
+
+      <div className="mt-6 grid sm:grid-cols-2 gap-8 sm:gap-6">
+        {/* Without Baret */}
+        <div>
+          <p className="text-sm font-display font-bold text-ink-300 text-center mb-5">
+            A normal wallet
+          </p>
+          <div className="flex flex-col items-center gap-1">
+            <DiagramStep
+              icon={Send}
+              label="A dApp asks you to sign"
+              tone="neutral"
+            />
+            <DiagramArrow />
+            <DiagramStep
+              icon={HelpCircle}
+              label="You see raw numbers and a Confirm button"
+              tone="neutral"
+            />
+            <DiagramArrow />
+            <DiagramStep
+              icon={AlertTriangle}
+              label="You sign, and hope that's what it actually does"
+              tone="bad"
+            />
+          </div>
+        </div>
+
+        {/* With Baret */}
+        <div>
+          <p className="text-sm font-display font-bold text-brand-400 text-center mb-5">
+            With Baret
+          </p>
+          <div className="flex flex-col items-center gap-1">
+            <DiagramStep
+              icon={Send}
+              label="A dApp asks you to sign"
+              tone="neutral"
+            />
+            <DiagramArrow />
+            <DiagramStep
+              icon={ScanSearch}
+              label="Baret decodes it and checks it against your rules"
+              tone="accent"
+            />
+            <DiagramArrow />
+            <div className="w-full grid grid-cols-2 gap-2">
+              <DiagramOutcome icon={ShieldCheck} label="Safe — sign normally" tone="ok" />
+              <DiagramOutcome icon={ShieldX} label="Risky — refused" tone="bad" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-7 text-xs text-ink-400 text-center max-w-lg mx-auto leading-relaxed">
+        Same dApp, same signature request — the only difference is whether
+        something looked at it first.{" "}
+        <a
+          href="https://github.com/Aeztrest/CasperBaret/blob/main/docs/protocol.md"
+          target="_blank"
+          rel="noreferrer"
+          className="text-brand-400 hover:text-brand-300 font-semibold"
+        >
+          Read how the check works →
+        </a>
+      </p>
+    </motion.div>
+  );
+}
+
+const TONE_STYLES = {
+  neutral: { bg: "bg-ink-900", text: "text-ink-300", border: "border-white/10" },
+  accent:  { bg: "bg-ink-900", text: "text-brand-400", border: "border-brand-500/30" },
+  ok:      { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-600/30" },
+  bad:     { bg: "bg-brand-500/10", text: "text-brand-400", border: "border-brand-500/30" },
+} as const;
+
+function DiagramStep({
+  icon: Icon, label, tone,
+}: { icon: typeof Send; label: string; tone: keyof typeof TONE_STYLES }) {
+  const t = TONE_STYLES[tone];
+  return (
+    <div className={`w-full flex items-center gap-3 rounded-xl border ${t.border} ${t.bg} px-4 py-3`}>
+      <Icon size={16} className={`shrink-0 ${t.text}`} />
+      <p className="text-xs text-ink-200 leading-snug">{label}</p>
+    </div>
+  );
+}
+
+function DiagramOutcome({
+  icon: Icon, label, tone,
+}: { icon: typeof ShieldCheck; label: string; tone: keyof typeof TONE_STYLES }) {
+  const t = TONE_STYLES[tone];
+  return (
+    <div className={`flex flex-col items-center text-center gap-1.5 rounded-xl border ${t.border} ${t.bg} px-2 py-3`}>
+      <Icon size={16} className={t.text} />
+      <p className={`text-[11px] font-semibold leading-snug ${t.text}`}>{label}</p>
+    </div>
+  );
+}
+
+function DiagramArrow() {
+  return <ChevronDown size={14} className="text-ink-400/50 my-0.5" />;
 }
