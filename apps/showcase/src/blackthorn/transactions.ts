@@ -89,14 +89,6 @@ const UNKNOWN_LAUNCH =
 // account — every "safe" scenario needs a distinct counterparty, never "self".
 const FRIENDLY_SPENDER =
   "6666666666666666666666666666666666666666666666666666666666666666";
-// NovaSwap's danger scenario drains to this specific, real account (not a
-// placeholder hash) so the "stranger account" in the demo is an actual
-// signable Casper address rather than a synthetic 64-hex stand-in.
-const NOVASWAP_DRAIN_TARGET = PublicKey.fromHex(
-  "0203ee0a578916924f4184c3c2cd0b5d47073a486c10741666a8bce1636fc8a09e40",
-)
-  .accountHash()
-  .toHex();
 
 export interface BuiltScenario {
   /** JSON-stringified real Casper Transaction V1, ready to sign + send. */
@@ -118,8 +110,8 @@ const SCENARIOS: Record<ScenarioId, ScenarioSpec> = {
     label: "NovaSwap: zero-value USDC(test) transfer (safe demo)",
   },
   "novaswap-danger": {
-    entryPoint: "transfer", target: NOVASWAP_DRAIN_TARGET, amount: 100_000_000_000n,
-    label: "NovaSwap: 100,000 USDC(test) transfer to a stranger account (drain)",
+    entryPoint: "transfer", target: ATTACKER_ACCOUNT, amount: 50_000_000_000n,
+    label: "NovaSwap: 50,000 USDC(test) transfer to a stranger account (drain)",
   },
   "pixeldrop-safe": {
     entryPoint: "transfer", target: FRIENDLY_SPENDER, amount: 0n,
