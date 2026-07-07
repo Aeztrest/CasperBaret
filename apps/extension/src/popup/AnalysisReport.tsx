@@ -94,7 +94,7 @@ export function AnalysisReport({
               <DeltaRow
                 key={`token-${i}`}
                 label={t.symbol || shortAddr(t.tokenPackage)}
-                value={t.delta}
+                value={formatTokenDelta(t.delta, t.decimals)}
                 negative={t.delta.startsWith("-")}
               />
             ))}
@@ -332,6 +332,23 @@ function formatMotesAsCspr(motesStr: string): string {
     return `${negative ? "-" : "+"}${whole.toString()}.${frac.slice(0, 4)} CSPR`;
   } catch {
     return `${negative ? "-" : "+"}${abs} motes`;
+  }
+}
+
+/** Scale a raw CEP-18 atomic delta by its own decimals, e.g. "-50000000000"
+ * at 6 decimals -> "-50,000.00" instead of an unreadable raw integer. */
+function formatTokenDelta(deltaStr: string, decimals: number): string {
+  const negative = deltaStr.startsWith("-");
+  const abs = negative ? deltaStr.slice(1) : deltaStr;
+  try {
+    const v = BigInt(abs);
+    const divisor = 10n ** BigInt(decimals);
+    const whole = v / divisor;
+    const frac = (v % divisor).toString().padStart(decimals, "0");
+    const wholeDisplay = Number(whole).toLocaleString("en-US");
+    return `${negative ? "-" : "+"}${wholeDisplay}.${frac.slice(0, 2)}`;
+  } catch {
+    return `${negative ? "-" : "+"}${abs}`;
   }
 }
 

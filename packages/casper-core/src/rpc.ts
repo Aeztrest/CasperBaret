@@ -104,12 +104,33 @@ export interface ConfirmedTransfer {
  * treasury that pays gas for many other transactions at the same time):
  * a before/after delta can be thrown off by anything else touching the
  * same balance in that window, silently under- or over-crediting.
+ *
+ * `Casper.Transaction` is a unified wrapper here: `Transaction.fromJSON`
+ * happily parses a legacy Deploy JSON too (some wallets sign whatever
+ * they're handed as a Deploy internally), exposing `.originDeployV1` in
+ * that case — `.chainName`/`.approvals`/`.initiatorAddr`/`putTransaction`
+ * all already work transparently either way. The one thing that doesn't:
+ * `rpc.waitForTransaction`/`getTransactionByTransactionHash` always queries
+ * by a Version1-tagged hash, so a Deploy-origin transaction's *own* hash
+ * (tagged Deploy) is never found — confirmed live, this returns
+ * "NoSuchTransaction" (-32014) even once the deploy has genuinely executed,
+ * while a raw `info_get_deploy` JSON-RPC call for the same hash resolves
+ * fine with full execution + transfer detail. `rpcUrl` is needed to poll
+ * that endpoint directly for the Deploy-origin case.
  */
 export async function waitForConfirmedTransfers(
   rpc: RpcClientT,
+  rpcUrl: string,
   txn: Transaction,
   timeoutMs = 60_000,
 ): Promise<{ errorMessage: string | null; transfers: ConfirmedTransfer[] }> {
+  // `originDeployV1` is declared `private` in the SDK's own types (it's
+  // real at runtime — TS's `private` isn't enforced there), so there's no
+  // public-API way to check this other than reaching past the type.
+  const isDeployOrigin = !!(txn as unknown as { originDeployV1?: unknown }).originDeployV1;
+  if (isDeployOrigin) {
+    return waitForConfirmedDeployTransfers(rpcUrl, txn.hash.toHex(), timeoutMs);
+  }
   try {
     const confirmed = await rpc.waitForTransaction(txn, timeoutMs);
     const errorMessage = confirmed.executionInfo?.executionResult?.errorMessage ?? null;
@@ -125,6 +146,49 @@ export async function waitForConfirmedTransfers(
       transfers: [],
     };
   }
+}
+
+async function waitForConfirmedDeployTransfers(
+  rpcUrl: string,
+  deployHashHex: string,
+  timeoutMs: number,
+): Promise<{ errorMessage: string | null; transfers: ConfirmedTransfer[] }> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const body = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "info_get_deploy",
+          params: { deploy_hash: deployHashHex },
+        }),
+      }).then((r) => r.json());
+      const execResult = body?.result?.execution_info?.execution_result;
+      if (execResult) {
+        const v2 = execResult.Version2 ?? execResult;
+        const errorMessage: string | null = v2.error_message ?? null;
+        const rawTransfers: unknown[] = Array.isArray(v2.transfers) ? v2.transfers : [];
+        const transfers: ConfirmedTransfer[] = rawTransfers.map((raw) => {
+          const t = (raw as { Version2?: Record<string, unknown>; Version1?: Record<string, unknown> }).Version2
+            ?? (raw as { Version1?: Record<string, unknown> }).Version1
+            ?? (raw as Record<string, unknown>);
+          const to = typeof t.to === "string" ? t.to.replace(/^account-hash-/, "") : null;
+          return { toAccountHash: to, amountMotes: typeof t.amount === "string" ? t.amount : "0" };
+        });
+        return { errorMessage, transfers };
+      }
+    } catch {
+      // Transient RPC hiccup — keep polling until the deadline.
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return {
+    errorMessage: "could not confirm execution: timed out waiting for deploy",
+    transfers: [],
+  };
 }
 
 // packageHash -> live "hash-<contractHash>" key, so repeated balance reads

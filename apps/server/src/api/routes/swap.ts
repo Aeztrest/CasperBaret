@@ -4,11 +4,17 @@
  *
  * The client (NovaSwap) builds a plain native-transfer transaction sending
  * CSPR from the connected wallet to the treasury account, gets it signed by
- * the wallet, and posts the signed transaction JSON here. This route submits
- * it, confirms the treasury's CSPR balance actually increased (rather than
- * trusting the client's claimed amount/target — the transaction could
+ * the wallet, and posts the signed transaction/deploy JSON here. This route
+ * submits it, confirms the treasury's CSPR balance actually increased (rather
+ * than trusting the client's claimed amount/target — the transaction could
  * legitimately be signed but sent elsewhere), and pays out USDC(test) from
  * the treasury at a fixed rate.
+ *
+ * Accepts either a Transaction V1 or a legacy Deploy JSON: some wallets sign
+ * whatever they're handed as a Deploy internally regardless of the input
+ * shape. `Casper.Transaction` is a unified wrapper that parses both — see
+ * waitForConfirmedTransfers in casper-core for how confirmation tracking
+ * handles the two cases (they need different RPC queries under the hood).
  *
  * No custom "payable" contract is involved: Casper's Transaction V1 model has
  * no "attach value to a contract call" primitive without writing bespoke
@@ -111,7 +117,7 @@ export function registerSwapRoute(app: FastifyInstance, config: AppConfig): void
       }
       const csprTransactionHash = res.transactionHash?.toHex?.() ?? txn.hash.toHex();
 
-      const { errorMessage: execError, transfers } = await waitForConfirmedTransfers(rpc, txn);
+      const { errorMessage: execError, transfers } = await waitForConfirmedTransfers(rpc, casper.rpcUrl, txn);
       if (execError) {
         req.log.error({ csprTransactionHash, execError }, "swap CSPR transfer failed on-chain");
         return reply.status(502).send({

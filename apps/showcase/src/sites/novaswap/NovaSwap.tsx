@@ -64,7 +64,7 @@ function TokenIcon({ symbol }: { symbol: string }) {
 }
 
 export default function NovaSwap() {
-  const { connected, openWalletModal, walletAddress, publicKey, walletName, adapter } = useWallet();
+  const { connected, openWalletModal, walletAddress, publicKey, adapter } = useWallet();
   const [fromToken, setFromToken] = useState(TOKENS[0]);
   const [toToken, setToToken] = useState(TOKENS[1]);
   // Default above Casper's own 2.5 CSPR native-transfer minimum, so the real
@@ -162,25 +162,13 @@ export default function NovaSwap() {
    * contract call" primitive without bespoke session Wasm, so this avoids
    * that entirely — one real transfer in, one real transfer back.
    *
-   * Limited to the Baret wallet: other wallets sign this as a legacy
-   * Deploy (via a different code path), and casper-js-sdk's
-   * waitForTransaction can't confirm a legacy deploy hash's execution
-   * result — confirmed against a live testnet deploy that executed fine
-   * but couldn't be polled. The reverse direction below isn't affected,
-   * since it settles via a signed message (like x402), not a submitted
-   * transaction.
+   * Works with any wallet: some sign this as a legacy Deploy internally
+   * instead of the Transaction V1 JSON handed to them, but the server
+   * accepts either shape and can track both to confirmed execution equally
+   * (see waitForConfirmedTransfers in casper-core).
    */
   async function handleCsprToUsdc() {
     if (!swapConfig || !publicKey) return;
-    if (walletName !== "Baret") {
-      setResultState("error");
-      setResultMessage(
-        "CSPR→USDC is currently verified with the Baret wallet only — other wallets sign a " +
-        "legacy Deploy format whose on-chain confirmation this demo can't yet reliably track. " +
-        "Connect Baret, or try USDC→CSPR instead (works with any wallet).",
-      );
-      return;
-    }
     const csprAmount = parseFloat(amount || "0");
     if (!(csprAmount >= swapConfig.minCspr)) {
       setResultState("error");

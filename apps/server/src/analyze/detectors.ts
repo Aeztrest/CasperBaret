@@ -219,13 +219,21 @@ function pushLossIfHuge(
   // maxLossPercent=50 → ~1000 units; =25 → ~500; =90 → ~1800.
   const bar = (1000n * 10n ** BigInt(decimals) * BigInt(Math.max(1, Math.round(maxPct)))) / 50n;
   if (value > bar) {
+    const whole = Number(value) / 10 ** decimals;
     findings.push({
       code: "ESTIMATED_LOSS_EXCEEDS_MAX",
       severity: "high",
-      message: `Outgoing ${label} transfer to ${to || "an external account"} looks large relative to policy.maxLossPercent (${maxPct}%).`,
+      message: `Large ${label} transfer (${whole.toLocaleString("en-US")}) to ${shortAddr(to)} — over your ${maxPct}% risk limit.`,
       details: { amount, recipient: to, maxLossPercent: maxPct },
     });
   }
+}
+
+/** Short display form for a 64-hex account hash: aabb…ccdd. Falls through unchanged for anything shorter/non-hex. */
+function shortAddr(s: string): string {
+  if (!s) return "an external account";
+  if (s.length < 12) return s;
+  return `${s.slice(0, 4)}…${s.slice(-4)}`;
 }
 
 /** Validate x402 PaymentRequirements shape. */
