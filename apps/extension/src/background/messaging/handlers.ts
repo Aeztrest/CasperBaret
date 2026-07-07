@@ -686,15 +686,20 @@ const txAnalyzeRequestHandler: Handler<"tx.analyzeRequest"> = async ({
   const snap = getSnapshot();
   if (!snap.authorityAddress) throw new Error("Wallet not initialized.");
   if (req.kind === "message" || req.kind === "connect" || req.kind === "x402Payment") {
+    // x402Review sets `label` to the specific, accurate situation (a normal
+    // in-cap payment vs. one that needed an explicit over-cap override) —
+    // reuse it rather than a hardcoded "within your policy caps" note that
+    // would be actively wrong for the override case.
+    const overCap = req.kind === "x402Payment" && !!req.label?.includes("over your per-tx cap");
     const note =
       req.kind === "connect"
         ? "Site is requesting connection. No funds move until you approve a signature."
         : req.kind === "x402Payment"
-          ? "x402 micropayment — within your policy caps."
+          ? (req.label ?? "x402 micropayment — within your policy caps.")
           : "Plain message — no funds move on-chain.";
     return {
       decision: "advisory" as const,
-      safe: true,
+      safe: !overCap,
       blockingReasons: [],
       advisoryReasons: [note],
       reasons: [note],

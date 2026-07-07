@@ -375,6 +375,11 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       // Official wallet has both .sign() and .signTransaction() depending on version
       const signFn = get().sign ?? get().signTransaction;
       const res = await signFn(deployJson, pk);
+      // Log the raw shape every time for now — this wallet's actual
+      // response shape for signing a transaction hasn't been confirmed
+      // against a live payload yet (unlike signMessage's { signatureHex },
+      // which was). Open DevTools → Console to see this if signing fails.
+      console.info("[casper-wallet-sign] raw response", res);
       // The extension resolves (doesn't reject) on user cancellation, using
       // a `cancelled` flag on the result — same shape already handled below
       // in payX402's signMessage call. Silently falling back to the

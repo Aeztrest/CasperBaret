@@ -159,12 +159,15 @@ export async function x402Review(rawReq: unknown): Promise<Decision> {
   // under a 1.0 per-tx cap meant to catch exactly this).
   const decimals = typeof requirements.extra.decimals === "number" ? requirements.extra.decimals : 9;
   const amountUi = atomicToUi(requirements.amount, decimals);
-  if (policy.maxX402PerTx !== undefined && amountUi > policy.maxX402PerTx) {
-    return {
-      action: "decline",
-      reason: `Payment ${amountUi.toFixed(6)} exceeds your per-tx cap of ${policy.maxX402PerTx}.`,
-    };
-  }
+  // Unlike the hourly/daily caps below (rate limits against a wallet being
+  // drained through many payments — an override would defeat the point), a
+  // single payment over the per-tx cap is a normal thing to want once (a
+  // swap, a one-off purchase). Hard-declining it with no recourse just
+  // means the user has to go find and raise a policy setting they didn't
+  // know existed before they can do anything at all. Route it to the same
+  // popup Strict mode uses instead, clearly labelled as over-cap, so the
+  // user gets an explicit, informed choice rather than a silent wall.
+  const overPerTxCap = policy.maxX402PerTx !== undefined && amountUi > policy.maxX402PerTx;
 
   const HOUR = 60 * 60_000;
   const DAY = 24 * HOUR;
@@ -190,10 +193,11 @@ export async function x402Review(rawReq: unknown): Promise<Decision> {
   // 6. Sign. Everything above already enforced the user's policy + caps + the
   // per-merchant allowance, so by default we AUTO-APPROVE in the background —
   // micropayments settle without a popup, the caps are the firewall. Set
-  // `x402AutoApprove: false` (Strict) to confirm each payment.
+  // `x402AutoApprove: false` (Strict) to confirm each payment, and anything
+  // over the per-tx cap always gets a popup regardless of that setting.
   const payTo = shortAddress(requirements.payTo);
   let headerValue: string;
-  if (policy.x402AutoApprove !== false) {
+  if (policy.x402AutoApprove !== false && !overPerTxCap) {
     try {
       const kp = await useAuthority();
       headerValue = await buildX402Header(kp, requirements);
@@ -214,9 +218,11 @@ export async function x402Review(rawReq: unknown): Promise<Decision> {
       createdAt: Date.now(),
     });
   } else {
-    // Strict / opt-out: surface the payment in the popup; the wallet signs the
-    // EIP-712 digest on approval.
-    const label = `x402 payment · ${amountUi.toFixed(6)} → ${payTo}`;
+    // Strict mode, or a payment over the per-tx cap: surface it in the
+    // popup: the wallet signs the EIP-712 digest only on explicit approval.
+    const label = overPerTxCap
+      ? `This payment (${amountUi.toFixed(2)}) is over your per-tx cap of ${policy.maxX402PerTx}. Approve once to allow it anyway.`
+      : `x402 payment · ${amountUi.toFixed(6)} → ${payTo}`;
     const result = await enqueueAndWait(origin, requirements, label);
     if (result.kind !== "x402Payment" || !result.headerValue) {
       return {
