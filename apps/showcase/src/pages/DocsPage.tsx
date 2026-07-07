@@ -41,24 +41,20 @@ export default function DocsPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-24">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-brand-400">
-            <span className="w-6 h-[3px] hazard rounded-full" />
-            Documentation
-          </p>
-          <h1 className="mt-4 font-display text-5xl md:text-6xl font-bold tracking-tight leading-[1.04]">
-            How Baret<br />works, in detail.
-          </h1>
-          <p className="mt-6 text-ink-300 leading-relaxed max-w-2xl">
-            Specs, protocols, and design notes that back every claim on the home page.
-            Each entry below opens the real file in the project's <code className="font-mono text-ink-200 bg-ink-900/5 px-1.5 py-0.5 rounded">GitHub repo</code>.
-          </p>
-        </motion.div>
+      <HeroDiagram />
 
-        <ProtocolDiagram />
+      <main className="max-w-5xl mx-auto px-6 pb-24">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-ink-300 leading-relaxed max-w-2xl"
+        >
+          Every entry below is a real file in the project's{" "}
+          <code className="font-mono text-ink-200 bg-ink-900/5 px-1.5 py-0.5 rounded">GitHub repo</code> —
+          specs and design notes that back every claim on the home page.
+        </motion.p>
 
-        <div className="mt-12 grid sm:grid-cols-2 gap-3">
+        <div className="mt-8 grid sm:grid-cols-2 gap-3">
           {DOCS.map((d, i) => (
             <motion.a
               key={d.path}
@@ -104,104 +100,111 @@ export default function DocsPage() {
 }
 
 /**
- * Where Baret's check actually sits in the signing pipeline, versus a
- * normal wallet — two vertical step-by-step columns, real components.
+ * The docs page's hero: the headline IS the diagram. Where Baret's check
+ * actually sits in the signing pipeline, versus a normal wallet.
  */
-function ProtocolDiagram() {
+function HeroDiagram() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className="mt-12 rounded-[28px] border border-white/8 bg-ink-900/60 p-6 sm:p-10 overflow-hidden relative"
-    >
-      {/* ambient glow */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[560px] h-[280px] rounded-full bg-emerald-500/10 blur-[90px]" />
+    <section className="relative overflow-hidden pt-28 sm:pt-32 pb-16 sm:pb-20">
+      {/* ambient glow, full-bleed */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[420px] rounded-full bg-emerald-500/[0.08] blur-[110px]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-paper" />
 
-      <div className="relative text-center max-w-lg mx-auto">
-        <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-emerald-400">
-          <span className="w-6 h-[3px] bg-emerald-500 rounded-full" />
-          The one thing that's different
-        </p>
-        <h2 className="mt-4 font-display text-2xl sm:text-[28px] font-bold tracking-tight leading-tight">
-          Where the check actually happens
-        </h2>
-        <p className="mt-3 text-sm text-ink-300 leading-relaxed">
-          Same dApp, same signature request, same wallet key. Everything hinges
-          on one extra hop before the key ever gets used.
-        </p>
-      </div>
-
-      <div className="relative mt-10 grid md:grid-cols-2 gap-5">
-        {/* Normal wallet flow */}
-        <div className="rounded-2xl border border-brand-900/40 bg-gradient-to-b from-brand-500/[0.06] to-transparent p-5 sm:p-6 flex flex-col h-full">
-          <div className="flex items-center gap-2.5 mb-7">
-            <span className="w-9 h-9 rounded-xl grid place-items-center bg-ink-950 border border-white/10">
-              <WalletIcon size={15} className="text-ink-300" />
-            </span>
-            <p className="text-[13px] font-display font-bold text-ink-300 tracking-wide">A NORMAL WALLET</p>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center">
-          <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="A page you're using sends a transaction to your wallet." tone="neutral" />
-          <TimelineStep icon={WalletIcon} title="Your wallet receives it" caption="The raw transaction bytes — nothing reads them first." tone="neutral" isLast />
-
-          <StepDivider label="no check exists in between" tone="danger" />
-
-          <OutcomeCard
-            icon={AlertTriangle}
-            title="Signed & broadcast, as-is"
-            caption="Whatever the transaction actually does, it does — the wallet had no way to warn you."
-            tone="danger"
-            full
-          />
-          </div>
-        </div>
-
-        {/* Baret flow */}
-        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.07] to-transparent p-5 sm:p-6">
-          <div className="flex items-center gap-2.5 mb-7">
-            <span className="w-9 h-9 rounded-xl grid place-items-center bg-emerald-500/10 border border-emerald-500/30">
-              <Shield size={15} className="text-emerald-400" />
-            </span>
-            <p className="text-[13px] font-display font-bold text-emerald-400 tracking-wide">WITH BARET</p>
-          </div>
-
-          <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="The identical request — nothing about the dApp changes." tone="neutral" />
-          <TimelineStep icon={Puzzle} title="window.baret receives it" caption="The inpage provider every Casper dApp already knows how to call." tone="neutral" />
-          <TimelineStep icon={Cpu} title="Background worker holds the key" caption="It doesn't sign yet — it routes the request onward first." tone="neutral" isLast />
-
-          <StepDivider label="then Baret steps in —" tone="ok" />
-
-          <TimelineStep
-            icon={ScanSearch}
-            title="The analyze engine checks it"
-            caption={<>Decodes the transaction and runs it against your policy — <code className="font-mono text-[11px] text-emerald-300/90">POST /v1/analyze</code>.</>}
-            tone="check"
-            glow
-            isLast
-          />
-
-          <StepDivider label="depending on the verdict —" tone="ok" />
-
-          <div className="grid grid-cols-2 gap-2.5">
-            <OutcomeCard icon={ShieldCheck} title="Safe" caption="Signed & broadcast to Casper Network" tone="ok" />
-            <OutcomeCard icon={ShieldX} title="Blocked" caption="Refused — nothing ever broadcasts" tone="danger" />
-          </div>
-        </div>
-      </div>
-
-      <div className="relative mt-8 text-center">
-        <a
-          href="https://github.com/Aeztrest/CasperBaret/blob/main/docs/protocol.md"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+      <div className="relative max-w-5xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-2xl mx-auto"
         >
-          Read how the analyze engine works <ArrowUpRight size={13} />
-        </a>
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-emerald-400">
+            <span className="w-6 h-[3px] bg-emerald-500 rounded-full" />
+            Documentation · the one thing that's different
+          </p>
+          <h1 className="mt-5 font-display text-4xl sm:text-5xl md:text-[56px] font-bold tracking-tight leading-[1.05]">
+            Where the check<br />actually happens.
+          </h1>
+          <p className="mt-5 text-ink-300 leading-relaxed max-w-lg mx-auto">
+            Same dApp, same signature request, same wallet key. Everything
+            hinges on one extra hop before the key ever gets used.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="relative mt-14 grid md:grid-cols-2 gap-5"
+        >
+          {/* Normal wallet flow */}
+          <div className="rounded-2xl border border-brand-900/40 bg-gradient-to-b from-brand-500/[0.06] to-transparent p-5 sm:p-6 flex flex-col h-full">
+            <div className="flex items-center gap-2.5 mb-7">
+              <span className="w-9 h-9 rounded-xl grid place-items-center bg-ink-950 border border-white/10">
+                <WalletIcon size={15} className="text-ink-300" />
+              </span>
+              <p className="text-[13px] font-display font-bold text-ink-300 tracking-wide">A NORMAL WALLET</p>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center">
+              <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="A page you're using sends a transaction to your wallet." tone="neutral" />
+              <TimelineStep icon={WalletIcon} title="Your wallet receives it" caption="The raw transaction bytes — nothing reads them first." tone="neutral" isLast />
+
+              <StepDivider label="no check exists in between" tone="danger" />
+
+              <OutcomeCard
+                icon={AlertTriangle}
+                title="Signed & broadcast, as-is"
+                caption="Whatever the transaction actually does, it does — the wallet had no way to warn you."
+                tone="danger"
+                full
+              />
+            </div>
+          </div>
+
+          {/* Baret flow */}
+          <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.07] to-transparent p-5 sm:p-6">
+            <div className="flex items-center gap-2.5 mb-7">
+              <span className="w-9 h-9 rounded-xl grid place-items-center bg-emerald-500/10 border border-emerald-500/30">
+                <Shield size={15} className="text-emerald-400" />
+              </span>
+              <p className="text-[13px] font-display font-bold text-emerald-400 tracking-wide">WITH BARET</p>
+            </div>
+
+            <TimelineStep icon={Globe} title="A dApp asks you to sign" caption="The identical request — nothing about the dApp changes." tone="neutral" />
+            <TimelineStep icon={Puzzle} title="window.baret receives it" caption="The inpage provider every Casper dApp already knows how to call." tone="neutral" />
+            <TimelineStep icon={Cpu} title="Background worker holds the key" caption="It doesn't sign yet — it routes the request onward first." tone="neutral" isLast />
+
+            <StepDivider label="then Baret steps in —" tone="ok" />
+
+            <TimelineStep
+              icon={ScanSearch}
+              title="The analyze engine checks it"
+              caption={<>Decodes the transaction and runs it against your policy — <code className="font-mono text-[11px] text-emerald-300/90">POST /v1/analyze</code>.</>}
+              tone="check"
+              glow
+              isLast
+            />
+
+            <StepDivider label="depending on the verdict —" tone="ok" />
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <OutcomeCard icon={ShieldCheck} title="Safe" caption="Signed & broadcast to Casper Network" tone="ok" />
+              <OutcomeCard icon={ShieldX} title="Blocked" caption="Refused — nothing ever broadcasts" tone="danger" />
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="relative mt-8 text-center">
+          <a
+            href="https://github.com/Aeztrest/CasperBaret/blob/main/docs/protocol.md"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+          >
+            Read how the analyze engine works <ArrowUpRight size={13} />
+          </a>
+        </div>
       </div>
-    </motion.div>
+    </section>
   );
 }
 
