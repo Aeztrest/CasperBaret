@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowUpRight, BookOpen, Shield, FileText, Zap, Layers, Globe,
-  Send, HelpCircle, AlertTriangle, ScanSearch, ShieldCheck, ShieldX, ChevronDown,
+  Send, ScanSearch, ShieldCheck, ShieldX,
+  Wallet as WalletIcon, Puzzle, Cpu, ArrowRight as ArrowRightIcon,
 } from "lucide-react";
 import { BaretMark, Wordmark, LandingFooter } from "../components/LandingChrome";
 
@@ -102,8 +103,8 @@ export default function DocsPage() {
 }
 
 /**
- * The one thing every other doc explains in detail, shown in three steps:
- * a normal wallet signs whatever it's handed, Baret looks first.
+ * Where Baret's check actually sits in the signing pipeline, versus a
+ * normal wallet — real components, not an abstract before/after cartoon.
  */
 function ProtocolDiagram() {
   return (
@@ -114,109 +115,113 @@ function ProtocolDiagram() {
       className="mt-12 card p-6 sm:p-8"
     >
       <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-ink-400 text-center">
-        The difference, in three steps
+        Where the check actually happens
       </p>
 
-      <div className="mt-6 grid sm:grid-cols-2 gap-8 sm:gap-6">
-        {/* Without Baret */}
+      <div className="mt-7 space-y-10">
+        {/* Normal wallet flow */}
         <div>
-          <p className="text-sm font-display font-bold text-ink-300 text-center mb-5">
-            A normal wallet
+          <p className="text-xs font-display font-bold text-ink-400 mb-3">
+            A NORMAL WALLET
           </p>
-          <div className="flex flex-col items-center gap-1">
-            <DiagramStep
-              icon={Send}
-              label="A dApp asks you to sign"
-              tone="neutral"
-            />
-            <DiagramArrow />
-            <DiagramStep
-              icon={HelpCircle}
-              label="You see raw numbers and a Confirm button"
-              tone="neutral"
-            />
-            <DiagramArrow />
-            <DiagramStep
-              icon={AlertTriangle}
-              label="You sign, and hope that's what it actually does"
-              tone="bad"
-            />
+          <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+            <div className="flex items-center gap-1.5 min-w-max pb-1">
+              <FlowNode icon={Globe} title="dApp" caption="requests a signature" tone="neutral" />
+              <FlowArrow />
+              <FlowNode icon={WalletIcon} title="Wallet" caption="receives the raw transaction" tone="neutral" />
+              <FlowArrow label="nothing inspects it" muted />
+              <FlowNode
+                icon={Send}
+                title="Signed & broadcast"
+                caption="whatever it actually does, sight unseen"
+                tone="bad"
+                wide
+              />
+            </div>
           </div>
         </div>
 
-        {/* With Baret */}
+        {/* Baret flow */}
         <div>
-          <p className="text-sm font-display font-bold text-brand-400 text-center mb-5">
-            With Baret
+          <p className="text-xs font-display font-bold text-brand-400 mb-3">
+            WITH BARET
           </p>
-          <div className="flex flex-col items-center gap-1">
-            <DiagramStep
-              icon={Send}
-              label="A dApp asks you to sign"
-              tone="neutral"
-            />
-            <DiagramArrow />
-            <DiagramStep
-              icon={ScanSearch}
-              label="Baret decodes it and checks it against your rules"
-              tone="accent"
-            />
-            <DiagramArrow />
-            <div className="w-full grid grid-cols-2 gap-2">
-              <DiagramOutcome icon={ShieldCheck} label="Safe — sign normally" tone="ok" />
-              <DiagramOutcome icon={ShieldX} label="Risky — refused" tone="bad" />
+          <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+            <div className="flex items-center gap-1.5 min-w-max pb-1">
+              <FlowNode icon={Globe} title="dApp" caption="requests a signature" tone="neutral" />
+              <FlowArrow />
+              <FlowNode icon={Puzzle} title="window.baret" caption="inpage provider every Casper dApp already speaks to" tone="neutral" />
+              <FlowArrow />
+              <FlowNode icon={Cpu} title="Background worker" caption="holds the key, never signs yet" tone="neutral" />
+              <FlowArrow />
+              <FlowNode icon={ScanSearch} title="Analyze engine" caption="POST /v1/analyze — decodes the tx, runs your policy" tone="accent" />
+              <FlowArrow />
+              <div className="flex flex-col gap-1.5">
+                <FlowNode icon={ShieldCheck} title="Safe" caption="signed & broadcast to Casper Network" tone="ok" compact />
+                <FlowNode icon={ShieldX} title="Blocked" caption="refused — nothing broadcasts" tone="bad" compact />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <p className="mt-7 text-xs text-ink-400 text-center max-w-lg mx-auto leading-relaxed">
-        Same dApp, same signature request — the only difference is whether
-        something looked at it first.{" "}
+      <p className="mt-8 text-xs text-ink-400 text-center max-w-xl mx-auto leading-relaxed">
+        Same dApp, same signature request, same wallet key — the only
+        difference is one extra hop before signing: the analyze engine,
+        which either lets the transaction through or refuses to sign it.{" "}
         <a
           href="https://github.com/Aeztrest/CasperBaret/blob/main/docs/protocol.md"
           target="_blank"
           rel="noreferrer"
-          className="text-brand-400 hover:text-brand-300 font-semibold"
+          className="text-brand-400 hover:text-brand-300 font-semibold whitespace-nowrap"
         >
-          Read how the check works →
+          Read how it works →
         </a>
       </p>
     </motion.div>
   );
 }
 
-const TONE_STYLES = {
-  neutral: { bg: "bg-ink-900", text: "text-ink-300", border: "border-white/10" },
-  accent:  { bg: "bg-ink-900", text: "text-brand-400", border: "border-brand-500/30" },
-  ok:      { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-600/30" },
-  bad:     { bg: "bg-brand-500/10", text: "text-brand-400", border: "border-brand-500/30" },
+const FLOW_TONE = {
+  neutral: { bg: "bg-ink-900", text: "text-ink-300", iconText: "text-ink-400", border: "border-white/10" },
+  accent:  { bg: "bg-ink-900", text: "text-brand-300", iconText: "text-brand-400", border: "border-brand-500/40" },
+  ok:      { bg: "bg-emerald-500/10", text: "text-emerald-300", iconText: "text-emerald-400", border: "border-emerald-600/30" },
+  bad:     { bg: "bg-brand-500/10", text: "text-brand-300", iconText: "text-brand-400", border: "border-brand-500/30" },
 } as const;
 
-function DiagramStep({
-  icon: Icon, label, tone,
-}: { icon: typeof Send; label: string; tone: keyof typeof TONE_STYLES }) {
-  const t = TONE_STYLES[tone];
+function FlowNode({
+  icon: Icon, title, caption, tone, wide, compact,
+}: {
+  icon: typeof Globe;
+  title: string;
+  caption: string;
+  tone: keyof typeof FLOW_TONE;
+  wide?: boolean;
+  compact?: boolean;
+}) {
+  const t = FLOW_TONE[tone];
   return (
-    <div className={`w-full flex items-center gap-3 rounded-xl border ${t.border} ${t.bg} px-4 py-3`}>
-      <Icon size={16} className={`shrink-0 ${t.text}`} />
-      <p className="text-xs text-ink-200 leading-snug">{label}</p>
+    <div
+      className={`shrink-0 rounded-xl border ${t.border} ${t.bg} px-3.5 ${compact ? "py-2" : "py-3"} ${wide ? "w-52" : "w-40"}`}
+    >
+      <div className="flex items-center gap-1.5">
+        <Icon size={13} className={`shrink-0 ${t.iconText}`} />
+        <p className={`text-xs font-bold ${t.text}`}>{title}</p>
+      </div>
+      <p className="mt-1 text-[10.5px] text-ink-400 leading-snug">{caption}</p>
     </div>
   );
 }
 
-function DiagramOutcome({
-  icon: Icon, label, tone,
-}: { icon: typeof ShieldCheck; label: string; tone: keyof typeof TONE_STYLES }) {
-  const t = TONE_STYLES[tone];
+function FlowArrow({ label, muted }: { label?: string; muted?: boolean }) {
   return (
-    <div className={`flex flex-col items-center text-center gap-1.5 rounded-xl border ${t.border} ${t.bg} px-2 py-3`}>
-      <Icon size={16} className={t.text} />
-      <p className={`text-[11px] font-semibold leading-snug ${t.text}`}>{label}</p>
+    <div className="flex flex-col items-center shrink-0 px-0.5 min-w-[2.5rem]">
+      {label && (
+        <span className={`text-[9px] whitespace-nowrap mb-0.5 ${muted ? "text-brand-400/70 italic" : "text-ink-500"}`}>
+          {label}
+        </span>
+      )}
+      <ArrowRightIcon size={14} className={muted ? "text-brand-500/40" : "text-ink-400/40"} />
     </div>
   );
-}
-
-function DiagramArrow() {
-  return <ChevronDown size={14} className="text-ink-400/50 my-0.5" />;
 }
