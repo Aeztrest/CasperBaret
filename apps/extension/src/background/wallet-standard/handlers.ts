@@ -35,6 +35,8 @@ export interface WsSignTxReq {
   transaction: string;
   /** Free-form description of the expected outcome, shown on the Sign Request screen. */
   label?: string;
+  /** Structured version of the same claim, rendered as a delta row in "What changes". */
+  claimedChange?: { symbol: string; amount: string };
   opts?: { address?: string };
 }
 export interface WsSignMsgReq {
@@ -195,6 +197,7 @@ function queueAndWait(
   origin: string,
   payloadBase64: string,
   label?: string,
+  claimedChange?: { symbol: string; amount: string },
 ): Promise<SignSuccess> {
   if (!isUnlocked()) {
     // Same rationale as wsConnect: surface the wallet so the user can unlock
@@ -210,6 +213,7 @@ function queueAndWait(
       origin,
       payloadBase64,
       label,
+      claimedChange,
       resolve,
       reject,
     });
@@ -229,8 +233,8 @@ export const wsSignMessage: WsHandler = async (raw) => {
 };
 
 export const wsSignTransaction: WsHandler = async (raw) => {
-  const { origin, transaction, label } = raw as WsSignTxReq;
-  const result = await queueAndWait("transaction", origin, transaction, label);
+  const { origin, transaction, label, claimedChange } = raw as WsSignTxReq;
+  const result = await queueAndWait("transaction", origin, transaction, label, claimedChange);
   if (result.kind !== "transaction")
     throw new Error("Unexpected sign result kind");
   return {

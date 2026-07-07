@@ -59,6 +59,7 @@ export interface WalletState {
     signTransaction: (
       transactionJson: string,
       label?: string,
+      claimedChange?: { symbol: string; amount: string },
     ) => Promise<{ signedTransaction: string }>;
     signMessage: (message: string) => Promise<{ signedMessage: string }>;
     payX402: (requirements: unknown) => Promise<PayX402Result>;
@@ -148,13 +149,17 @@ export function WalletProvider({
           );
         return bridge.signAndSendTransaction(transactionJson);
       },
-      signTransaction: async (transactionJson: string, label?: string) => {
+      signTransaction: async (
+        transactionJson: string,
+        label?: string,
+        claimedChange?: { symbol: string; amount: string },
+      ) => {
         if (!bridge)
           throw new WalletStandardBridgeError(
             "No wallet connected",
             "NOT_CONNECTED",
           );
-        return bridge.signTransaction(transactionJson, label);
+        return bridge.signTransaction(transactionJson, label, claimedChange);
       },
       signMessage: async (message: string) => {
         if (!bridge)

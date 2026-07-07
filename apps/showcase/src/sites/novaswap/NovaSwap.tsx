@@ -211,8 +211,13 @@ export default function NovaSwap() {
       // Request screen explicitly so the user isn't just seeing "-3 CSPR"
       // with no indication anything comes back.
       const expectedUsdc = ((csprAmount * Number(swapConfig.rateAtomicUsdcPerCspr)) / 10 ** swapConfig.tokenDecimals).toFixed(2);
-      const label = `NovaSwap: after this ${csprAmount} CSPR transfer confirms, the server sends back ~${expectedUsdc} USDC(test) at the current fixed rate.`;
-      const { signedTransaction } = await adapter.signTransaction(JSON.stringify(txn.toJSON()), label);
+      const label = `NovaSwap sends back ~${expectedUsdc} USDC(test) at the current fixed rate once this transfer confirms.`;
+      const claimedChange = { symbol: "USDC(test)", amount: `+${expectedUsdc}` };
+      const { signedTransaction } = await adapter.signTransaction(
+        JSON.stringify(txn.toJSON()),
+        label,
+        claimedChange,
+      );
 
       const res = await fetch(`${SWAP_API_BASE}/demo/swap/cspr-to-usdc`, {
         method: "POST",

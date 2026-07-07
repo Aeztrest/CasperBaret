@@ -20,6 +20,7 @@ interface PendingRequest {
   origin: string;
   payloadBase64: string;
   label?: string;
+  claimedChange?: { symbol: string; amount: string };
 }
 
 const KIND_VERB: Record<PendingRequest["kind"], string> = {
@@ -115,7 +116,9 @@ export function SignRequest() {
           </div>
         )}
 
-        {analysis && <AnalysisReport result={analysis} />}
+        {analysis && (
+          <AnalysisReport result={analysis} claimedChange={request.claimedChange} />
+        )}
 
         {/* Site-claimed expected outcome — e.g. "You'll receive ~525.00
             USDC(test)". This is what the CALLING SITE says will happen, not
@@ -191,12 +194,12 @@ function Footer({
   advisory: boolean;
   confirmingDanger: boolean;
 }) {
-  const signLabel = kind === "transactionAndSend" ? "Sign & send" : "Sign";
+  const sendingLabel = kind === "transactionAndSend" ? "Sending…" : "Signing…";
   const signLabelOverride =
-    blocked && confirmingDanger ? "Yes, I understand — sign anyway"
-    : blocked ? "Sign anyway"
-    : advisory ? `${signLabel} anyway`
-    : signLabel;
+    blocked && confirmingDanger ? "Yes, sign anyway"
+    : blocked || advisory ? "Sign anyway"
+    : kind === "transactionAndSend" ? "Sign & send"
+    : "Sign";
 
   return (
     <footer className="p-3 border-t border-line flex flex-col gap-2 shrink-0 bg-bg-elevated">
@@ -209,27 +212,44 @@ function Footer({
       {/* A "block" verdict requires this second explicit tap — the first
           click on "Sign anyway" only arms it, so a single accidental/
           impatient click can't push through a transaction Baret's own
-          policy flagged as a drain. */}
+          policy flagged as a drain. Short, since this has to fit a narrow
+          popup without wrapping. */}
       {blocked && confirmingDanger && (
         <p className="text-[11px] text-bad text-center px-1 leading-snug">
-          This looks like a wallet drain. Tap again only if you're certain.
+          Looks like a drain. Sure?
         </p>
       )}
 
-      <div className="flex gap-2">
-        <button onClick={onDecline} disabled={working} className="btn-ghost flex-1">
-          <X size={13} /> Decline
-        </button>
-        <button
-          onClick={onSign}
-          disabled={working || !analysis}
-          className={blocked ? "btn-danger flex-1" : "btn-primary flex-1"}
-        >
-          {working
-            ? <><Loader2 size={13} className="animate-spin" /> {kind === "transactionAndSend" ? "Sending…" : "Signing…"}</>
-            : <><ShieldCheck size={13} /> {signLabelOverride}</>}
-        </button>
-      </div>
+      {/* Full-width, stacked buttons while confirming a block — the confirm
+          label needs the room, and this is a deliberately heavier step than
+          the normal side-by-side layout. */}
+      {blocked && confirmingDanger ? (
+        <div className="flex flex-col gap-2">
+          <button onClick={onSign} disabled={working} className="btn-danger w-full">
+            {working
+              ? <><Loader2 size={13} className="animate-spin" /> {sendingLabel}</>
+              : <><ShieldCheck size={13} /> {signLabelOverride}</>}
+          </button>
+          <button onClick={onDecline} disabled={working} className="btn-ghost w-full">
+            <X size={13} /> Decline
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <button onClick={onDecline} disabled={working} className="btn-ghost flex-1">
+            <X size={13} /> Decline
+          </button>
+          <button
+            onClick={onSign}
+            disabled={working || !analysis}
+            className={blocked ? "btn-danger flex-1" : "btn-primary flex-1"}
+          >
+            {working
+              ? <><Loader2 size={13} className="animate-spin" /> {sendingLabel}</>
+              : <><ShieldCheck size={13} /> {signLabelOverride}</>}
+          </button>
+        </div>
+      )}
     </footer>
   );
 }

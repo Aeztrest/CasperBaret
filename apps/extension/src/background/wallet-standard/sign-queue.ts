@@ -30,6 +30,9 @@ export interface SignRequest {
   signerPubkey?: string;
   /** Free-form display label rendered in the popup. */
   label?: string;
+  /** Structured version of the same site-claimed outcome, rendered as a
+   * delta row in "What changes" (e.g. { symbol: "USDC(test)", amount: "+525.00" }). */
+  claimedChange?: { symbol: string; amount: string };
   resolve: (out: SignSuccess) => void;
   reject: (err: Error) => void;
 }
@@ -78,6 +81,7 @@ export function snapshot(): {
   origin: string;
   payloadBase64: string;
   label?: string;
+  claimedChange?: { symbol: string; amount: string };
   signerPubkey?: string;
 } | null {
   const first = queue.values().next();
@@ -89,6 +93,7 @@ export function snapshot(): {
     origin: r.origin,
     payloadBase64: r.payloadBase64,
     label: r.label,
+    claimedChange: r.claimedChange,
     signerPubkey: r.signerPubkey,
   };
 }

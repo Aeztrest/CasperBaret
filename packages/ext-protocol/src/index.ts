@@ -214,7 +214,7 @@ export interface ExtRpc {
   /* Sign + tx ────────────────────────────── */
   "tx.sign":           { req: { requestId: string; accept: boolean; remember?: boolean };     rsp: { signed?: string; signature?: string; rejection?: string; ok?: true } };
   "tx.send":           { req: { txBase64: string };                       rsp: { signature: string } };
-  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect"; origin: string; payloadBase64: string; label?: string } | null };
+  "tx.peekRequest":    { req: void;                                       rsp: { requestId: string; kind: "message" | "transaction" | "transactionAndSend" | "x402Payment" | "connect"; origin: string; payloadBase64: string; label?: string; claimedChange?: { symbol: string; amount: string } } | null };
   "tx.analyzeRequest": { req: { requestId: string };                      rsp: AnalyzeResponse };
 
   /* Allowance ledger ─────────────────────── */
@@ -273,12 +273,15 @@ export interface ExtWalletStandardMethods {
   /**
    * Sign a Casper transaction (JSON string). Returns the signed tx JSON + deploy hash.
    * `label`, when set, is a free-form description of what the caller expects
-   * to happen (e.g. "You'll receive ~525.00 USDC(test) for this transfer")
-   * rendered on the Sign Request screen — a claim from the calling site, not
-   * something Baret's own analyzer independently verified (it can only
-   * simulate the on-chain effect of the transaction actually being signed).
+   * to happen, rendered as an attributed note ("<site> says: ..."). `claimedChange`,
+   * when set, is a structured version of the same claim (e.g. `{ symbol:
+   * "USDC(test)", amount: "+525.00" }`) rendered as a delta row in "What
+   * changes" alongside the transaction's own verified on-chain effects —
+   * neither is something Baret's analyzer independently verified, since it
+   * can only simulate the effect of the transaction actually being signed,
+   * never a separate off-chain follow-up.
    */
-  "ws.signTransaction": { req: { origin: string; transaction: string; label?: string; opts?: { address?: string } }; rsp: { signedTransaction: string; signerAddress: string } };
+  "ws.signTransaction": { req: { origin: string; transaction: string; label?: string; claimedChange?: { symbol: string; amount: string }; opts?: { address?: string } }; rsp: { signedTransaction: string; signerAddress: string } };
   /** Sign + submit a Casper transaction. */
   "ws.signAndSendTransaction": { req: { origin: string; transaction: string };  rsp: { signedTransaction: string; signature: string } };
   /** Sign an arbitrary message; returns the 130-hex Casper signature. */

@@ -90,14 +90,21 @@ async function signMessage(message: string): Promise<string> {
 
 /**
  * `label`, when given, is a free-form description of what the caller
- * expects this transaction to accomplish (e.g. "You'll receive ~525.00
- * USDC(test) for this transfer") — shown on the Sign Request screen as a
- * claim from this site, not something Baret independently verified.
+ * expects this transaction to accomplish, shown as an attributed note on
+ * the Sign Request screen. `claimedChange` is a structured version of the
+ * same claim (e.g. `{ symbol: "USDC(test)", amount: "+525.00" }`) rendered
+ * as a delta row in "What changes" — neither is something Baret
+ * independently verified, since it can only simulate the on-chain effect
+ * of the transaction actually being signed.
  */
-async function signTransaction(transaction: string, label?: string): Promise<string> {
+async function signTransaction(
+  transaction: string,
+  label?: string,
+  claimedChange?: { symbol: string; amount: string },
+): Promise<string> {
   const r = await callPageBridge<{ signedTransaction: string }>(
     "ws.signTransaction",
-    { origin: ORIGIN(), transaction, label },
+    { origin: ORIGIN(), transaction, label, claimedChange },
   );
   return r.signedTransaction;
 }

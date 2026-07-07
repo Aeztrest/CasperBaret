@@ -50,7 +50,17 @@ const SEVERITY_TONE: Record<
 
 const MOTES_PER_CSPR = 1_000_000_000n;
 
-export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
+export function AnalysisReport({
+  result,
+  claimedChange,
+}: {
+  result: AnalyzeResponse;
+  /** Site-claimed off-chain follow-up (e.g. "you'll receive ~525.00
+   * USDC(test)") — not verified by Baret's simulation, which can only see
+   * the on-chain effect of the transaction actually being signed. Rendered
+   * alongside the verified changes below, marked as a claim. */
+  claimedChange?: { symbol: string; amount: string };
+}) {
   const findings = result.riskFindings ?? [];
   const reasons = result.reasons ?? [];
   const changes = result.estimatedChanges;
@@ -62,7 +72,8 @@ export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
     significantNative.length > 0 ||
     changes.tokens.length > 0 ||
     changes.allowances.length > 0 ||
-    changes.accountControl.length > 0;
+    changes.accountControl.length > 0 ||
+    !!claimedChange;
 
   return (
     <div className="space-y-3">
@@ -87,6 +98,13 @@ export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
                 negative={t.delta.startsWith("-")}
               />
             ))}
+            {claimedChange && (
+              <DeltaRow
+                label={claimedChange.symbol}
+                value={claimedChange.amount}
+                negative={claimedChange.amount.startsWith("-")}
+              />
+            )}
             {changes.allowances.map((al, i) => (
               <DeltaRow
                 key={`allow-${i}`}
@@ -104,6 +122,11 @@ export function AnalysisReport({ result }: { result: AnalyzeResponse }) {
               />
             ))}
           </div>
+          {claimedChange && (
+            <p className="text-[9px] text-text-faint leading-snug">
+              {claimedChange.symbol} is claimed by the site, not verified on-chain.
+            </p>
+          )}
         </Section>
       )}
 

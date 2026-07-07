@@ -117,10 +117,14 @@ export interface CasperWalletProvider {
   getActivePublicKey: () => Promise<string>;
   getNetwork: () => Promise<{ network: string; caip2: string }>;
   signMessage: (message: string) => Promise<string>;
-  /** `label`, when given, is shown on Baret's Sign Request screen as a
-   * claim from this site about the expected outcome (e.g. an off-chain
-   * follow-up payout) — other wallets simply ignore it. */
-  signTransaction: (transactionJson: string, label?: string) => Promise<string>;
+  /** `label`/`claimedChange`, when given, are shown on Baret's Sign Request
+   * screen as a claim from this site about the expected outcome (e.g. an
+   * off-chain follow-up payout) — other wallets simply ignore them. */
+  signTransaction: (
+    transactionJson: string,
+    label?: string,
+    claimedChange?: { symbol: string; amount: string },
+  ) => Promise<string>;
   payX402: (requirements: unknown) => Promise<PayX402Result>;
 }
 
@@ -182,10 +186,14 @@ export class WalletStandardBridge {
     await this.provider.disconnect().catch(() => {});
   }
 
-  private async signOnly(transactionJson: string, label?: string): Promise<string> {
+  private async signOnly(
+    transactionJson: string,
+    label?: string,
+    claimedChange?: { symbol: string; amount: string },
+  ): Promise<string> {
     let signed: string;
     try {
-      signed = await this.provider.signTransaction(transactionJson, label);
+      signed = await this.provider.signTransaction(transactionJson, label, claimedChange);
     } catch (err) {
       throw new WalletStandardBridgeError(
         err instanceof Error ? err.message : String(err),
@@ -246,8 +254,9 @@ export class WalletStandardBridge {
   async signTransaction(
     transactionJson: string,
     label?: string,
+    claimedChange?: { symbol: string; amount: string },
   ): Promise<{ signedTransaction: string }> {
-    const signedTransaction = await this.signOnly(transactionJson, label);
+    const signedTransaction = await this.signOnly(transactionJson, label, claimedChange);
     return { signedTransaction };
   }
 
