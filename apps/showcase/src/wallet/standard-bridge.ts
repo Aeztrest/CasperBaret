@@ -316,8 +316,11 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
     getActivePublicKey: () => Promise<string>;
     isConnected: () => Promise<boolean>;
     signMessage: (msg: string, pk: string) => Promise<{ signatureHex: string }>;
-    sign: (deployJson: string, pk: string) => Promise<{ deployJson: string }>;
-    signTransaction: (deployJson: string, pk: string) => Promise<{ deployJson: string }>;
+    // Confirmed live: resolves { cancelled, signatureHex, signature } — a
+    // raw signature over the transaction's own hash, not a re-serialized
+    // signed deploy/transaction. There is no `deployJson` field to read.
+    sign: (deployJson: string, pk: string) => Promise<{ cancelled?: boolean; signatureHex?: string }>;
+    signTransaction: (deployJson: string, pk: string) => Promise<{ cancelled?: boolean; signatureHex?: string }>;
   };
   const factory = ctor as () => OfficialProvider;
   let inst: OfficialProvider | null = null;
@@ -375,27 +378,26 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       // Official wallet has both .sign() and .signTransaction() depending on version
       const signFn = get().sign ?? get().signTransaction;
       const res = await signFn(deployJson, pk);
-      // Log the raw shape every time for now — this wallet's actual
-      // response shape for signing a transaction hasn't been confirmed
-      // against a live payload yet (unlike signMessage's { signatureHex },
-      // which was). Open DevTools → Console to see this if signing fails.
-      console.info("[casper-wallet-sign] raw response", res);
-      // The extension resolves (doesn't reject) on user cancellation, using
-      // a `cancelled` flag on the result — same shape already handled below
-      // in payX402's signMessage call. Silently falling back to the
-      // ORIGINAL unsigned input here (as this used to) meant a genuine
-      // cancellation, or any other response shape this wallet build
-      // actually returns, looked exactly like "successfully signed", and
-      // only surfaced as a confusing failure later at the broadcast step.
-      if ((res as { cancelled?: boolean } | undefined)?.cancelled) {
+      if (res?.cancelled) {
         throw new Error("User declined the signature in Casper Wallet.");
       }
-      if (!res?.deployJson) {
+      if (!res?.signatureHex) {
         throw new Error(
           "Casper Wallet did not return a signed transaction for this request.",
         );
       }
-      return res.deployJson;
+      // Confirmed live: this wallet's sign() only ever returns a raw
+      // signature over the transaction's own hash (no algo-byte prefix),
+      // never a re-serialized signed deploy/transaction — attach it as an
+      // approval on the ORIGINAL payload ourselves. The public key's own
+      // first byte ("01" ed25519 / "02" secp256k1) IS the algo prefix
+      // approvals expect, so no separate lookup is needed.
+      const algoByte = pk.slice(0, 2);
+      const parsed = JSON.parse(deployJson) as { approvals?: unknown[] };
+      const approvals = Array.isArray(parsed.approvals) ? parsed.approvals : [];
+      approvals.push({ signer: pk, signature: algoByte + res.signatureHex });
+      const signed = JSON.stringify({ ...parsed, approvals });
+      return signed;
     },
 
     payX402: async (requirements: unknown) => {
