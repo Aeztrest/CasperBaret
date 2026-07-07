@@ -89,6 +89,44 @@ export async function waitForExecutionError(
   }
 }
 
+export interface ConfirmedTransfer {
+  /** Bare 64-hex account hash the transfer moved funds to, if known. */
+  toAccountHash: string | null;
+  amountMotes: string;
+}
+
+/**
+ * Like `waitForExecutionError`, but also returns the transaction's own
+ * recorded native-transfer effects. A native transfer's execution result
+ * lists exactly which purses moved how much — reading that directly is far
+ * more reliable than snapshotting an account's balance before/after when
+ * that account is also used for unrelated concurrent activity (e.g. a
+ * treasury that pays gas for many other transactions at the same time):
+ * a before/after delta can be thrown off by anything else touching the
+ * same balance in that window, silently under- or over-crediting.
+ */
+export async function waitForConfirmedTransfers(
+  rpc: RpcClientT,
+  txn: Transaction,
+  timeoutMs = 60_000,
+): Promise<{ errorMessage: string | null; transfers: ConfirmedTransfer[] }> {
+  try {
+    const confirmed = await rpc.waitForTransaction(txn, timeoutMs);
+    const errorMessage = confirmed.executionInfo?.executionResult?.errorMessage ?? null;
+    const rawTransfers = confirmed.executionInfo?.executionResult?.transfers ?? [];
+    const transfers: ConfirmedTransfer[] = rawTransfers.map((t) => ({
+      toAccountHash: t.to?.toHex?.() ?? null,
+      amountMotes: t.amount?.toString?.() ?? "0",
+    }));
+    return { errorMessage, transfers };
+  } catch (err) {
+    return {
+      errorMessage: `could not confirm execution: ${err instanceof Error ? err.message : String(err)}`,
+      transfers: [],
+    };
+  }
+}
+
 // packageHash -> live "hash-<contractHash>" key, so repeated balance reads
 // don't re-resolve the package's active contract version every time.
 const contractKeyCache = new Map<string, string>();

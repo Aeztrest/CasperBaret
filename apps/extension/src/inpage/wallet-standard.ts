@@ -88,10 +88,16 @@ async function signMessage(message: string): Promise<string> {
   return r.signedMessage;
 }
 
-async function signTransaction(transaction: string): Promise<string> {
+/**
+ * `label`, when given, is a free-form description of what the caller
+ * expects this transaction to accomplish (e.g. "You'll receive ~525.00
+ * USDC(test) for this transfer") — shown on the Sign Request screen as a
+ * claim from this site, not something Baret independently verified.
+ */
+async function signTransaction(transaction: string, label?: string): Promise<string> {
   const r = await callPageBridge<{ signedTransaction: string }>(
     "ws.signTransaction",
-    { origin: ORIGIN(), transaction },
+    { origin: ORIGIN(), transaction, label },
   );
   return r.signedTransaction;
 }

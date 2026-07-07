@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Globe, Loader2, X, Check, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Globe, Loader2, X, Check, ShieldCheck, AlertTriangle, Info } from "lucide-react";
 import type { AnalyzeResponse } from "@casper-baret/ext-protocol";
 import { useRpc } from "../shared/state-context";
 import { AnalysisReport } from "./AnalysisReport";
@@ -103,6 +103,23 @@ export function SignRequest() {
         )}
 
         {analysis && <AnalysisReport result={analysis} />}
+
+        {/* Site-claimed expected outcome — e.g. "You'll receive ~525.00
+            USDC(test)". This is what the CALLING SITE says will happen, not
+            something Baret's own simulation verified: the analyzer can only
+            see the on-chain effect of the transaction actually being signed
+            (here, CSPR leaving), never a separate off-chain follow-up like a
+            server relaying tokens back. Labelled as a claim, not a fact. */}
+        {request.label && (
+          <div className="card !p-3 flex items-start gap-2"
+               style={{ background: "rgba(61,109,255,0.06)", border: "1px solid rgba(61,109,255,0.25)" }}>
+            <Info size={13} className="text-accent-soft mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="label !mb-0.5">{request.origin} says</p>
+              <p className="text-xs text-text-muted leading-relaxed">{request.label}</p>
+            </div>
+          </div>
+        )}
 
         {/* Message preview (when kind=message) */}
         {request.kind === "message" && (

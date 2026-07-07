@@ -117,7 +117,10 @@ export interface CasperWalletProvider {
   getActivePublicKey: () => Promise<string>;
   getNetwork: () => Promise<{ network: string; caip2: string }>;
   signMessage: (message: string) => Promise<string>;
-  signTransaction: (transactionJson: string) => Promise<string>;
+  /** `label`, when given, is shown on Baret's Sign Request screen as a
+   * claim from this site about the expected outcome (e.g. an off-chain
+   * follow-up payout) — other wallets simply ignore it. */
+  signTransaction: (transactionJson: string, label?: string) => Promise<string>;
   payX402: (requirements: unknown) => Promise<PayX402Result>;
 }
 
@@ -179,10 +182,10 @@ export class WalletStandardBridge {
     await this.provider.disconnect().catch(() => {});
   }
 
-  private async signOnly(transactionJson: string): Promise<string> {
+  private async signOnly(transactionJson: string, label?: string): Promise<string> {
     let signed: string;
     try {
-      signed = await this.provider.signTransaction(transactionJson);
+      signed = await this.provider.signTransaction(transactionJson, label);
     } catch (err) {
       throw new WalletStandardBridgeError(
         err instanceof Error ? err.message : String(err),
@@ -235,12 +238,16 @@ export class WalletStandardBridge {
   /**
    * Sign a transaction without broadcasting — used when a server relay will
    * submit it instead (e.g. NovaSwap's real swap, which needs the server to
-   * observe the treasury's balance change before paying out).
+   * observe the treasury's balance change before paying out). `label` is
+   * shown on Baret's Sign Request screen as the site's own claim about the
+   * expected outcome (Baret's analyzer can only simulate this transaction's
+   * own on-chain effect, not a separate off-chain follow-up like a payout).
    */
   async signTransaction(
     transactionJson: string,
+    label?: string,
   ): Promise<{ signedTransaction: string }> {
-    const signedTransaction = await this.signOnly(transactionJson);
+    const signedTransaction = await this.signOnly(transactionJson, label);
     return { signedTransaction };
   }
 

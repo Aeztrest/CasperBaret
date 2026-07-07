@@ -270,8 +270,15 @@ export interface ExtWalletStandardMethods {
   "ws.isConnected":     { req: { origin: string };                              rsp: { connected: boolean } };
   "ws.getAddress":      { req: { origin: string };                              rsp: { authorityAddress: string; publicKey: string } };
   "ws.getNetwork":      { req: { origin: string };                              rsp: { network: string; caip2: string } };
-  /** Sign a Casper transaction (JSON string). Returns the signed tx JSON + deploy hash. */
-  "ws.signTransaction": { req: { origin: string; transaction: string; opts?: { address?: string } }; rsp: { signedTransaction: string; signerAddress: string } };
+  /**
+   * Sign a Casper transaction (JSON string). Returns the signed tx JSON + deploy hash.
+   * `label`, when set, is a free-form description of what the caller expects
+   * to happen (e.g. "You'll receive ~525.00 USDC(test) for this transfer")
+   * rendered on the Sign Request screen — a claim from the calling site, not
+   * something Baret's own analyzer independently verified (it can only
+   * simulate the on-chain effect of the transaction actually being signed).
+   */
+  "ws.signTransaction": { req: { origin: string; transaction: string; label?: string; opts?: { address?: string } }; rsp: { signedTransaction: string; signerAddress: string } };
   /** Sign + submit a Casper transaction. */
   "ws.signAndSendTransaction": { req: { origin: string; transaction: string };  rsp: { signedTransaction: string; signature: string } };
   /** Sign an arbitrary message; returns the 130-hex Casper signature. */

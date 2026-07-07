@@ -24,6 +24,7 @@ import {
   makeRpcClient,
   explorerTxUrl,
   waitForExecutionError,
+  waitForConfirmedTransfers,
   readCep18Balance,
   decodePaymentHeader,
   verifyX402Signature,
@@ -91,10 +92,7 @@ export function registerSwapRoute(app: FastifyInstance, config: AppConfig): void
     try {
       const kp = await keypairFromHex(faucet.privateKeyHex, faucet.algo);
       const rpc = makeRpcClient(casper.rpcUrl);
-      const treasuryPurse = Casper.PurseIdentifier.fromPublicKey(kp.privateKey.publicKey);
-
-      const beforeRes = await rpc.queryLatestBalance(treasuryPurse);
-      const before = BigInt(beforeRes.balance?.toString() ?? "0");
+      const treasuryAccountHash = kp.privateKey.publicKey.accountHash().toHex().toLowerCase();
 
       let res;
       try {
@@ -113,7 +111,7 @@ export function registerSwapRoute(app: FastifyInstance, config: AppConfig): void
       }
       const csprTransactionHash = res.transactionHash?.toHex?.() ?? txn.hash.toHex();
 
-      const execError = await waitForExecutionError(rpc, txn);
+      const { errorMessage: execError, transfers } = await waitForConfirmedTransfers(rpc, txn);
       if (execError) {
         req.log.error({ csprTransactionHash, execError }, "swap CSPR transfer failed on-chain");
         return reply.status(502).send({
@@ -123,19 +121,23 @@ export function registerSwapRoute(app: FastifyInstance, config: AppConfig): void
         });
       }
 
-      // Trust the OBSERVED balance change, not the claimed transaction target
-      // — a validly-signed transfer could legitimately go anywhere.
-      const afterRes = await rpc.queryLatestBalance(treasuryPurse);
-      const after = BigInt(afterRes.balance?.toString() ?? "0");
-      const receivedMotes = after - before;
-
-      if (receivedMotes <= 0n) {
+      // Trust the transaction's OWN recorded transfer effect, not a
+      // before/after balance snapshot — the treasury account also pays gas
+      // for facilitator settlements, faucet claims, and other swaps
+      // concurrently, so a coarse delta over the (multi-second) confirmation
+      // window could be thrown off by any of that unrelated activity,
+      // sometimes under-crediting or missing a genuine transfer entirely.
+      const toTreasury = transfers.find(
+        (t) => t.toAccountHash?.toLowerCase() === treasuryAccountHash,
+      );
+      if (!toTreasury) {
         return reply.status(400).send({
           error: "Transaction executed, but no CSPR reached the swap treasury — check the transfer target.",
           csprTransactionHash,
           explorerUrl: explorerTxUrl(casper, csprTransactionHash),
         });
       }
+      const receivedMotes = BigInt(toTreasury.amountMotes);
 
       const maxMotes = BigInt(Math.round(swap.maxCspr * 1e9));
       const capped = receivedMotes > maxMotes;
