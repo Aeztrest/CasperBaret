@@ -58,6 +58,9 @@ export function registerAnalyzeRoute(app: FastifyInstance, config: AppConfig) {
           >[0]["paymentRequirements"],
         riskyPackages: config.riskyContractPackages,
         knownSafePackages: config.knownSafeContractPackages,
+        knownTokenDecimals: config.x402.enabled && config.x402.asset
+          ? { [config.x402.asset.toLowerCase()]: config.x402.tokenDecimals }
+          : undefined,
       });
       return reply.send(result);
     } catch (err) {

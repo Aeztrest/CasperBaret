@@ -39,6 +39,8 @@ export interface AnalyzeInput {
   /** Config-driven reputation sets (lowercased package hashes). */
   riskyPackages?: Set<string>;
   knownSafePackages?: Set<string>;
+  /** Package hash (lowercased) -> CEP-18 decimals, for tokens we recognize. */
+  knownTokenDecimals?: Record<string, number>;
 }
 
 function mergeChanges(into: EstimatedChanges, from: EstimatedChanges): void {
@@ -76,6 +78,7 @@ export function analyzeTransaction(input: AnalyzeInput): AnalysisResult {
     policy,
     riskyPackages: input.riskyPackages ?? new Set(),
     knownSafePackages: input.knownSafePackages ?? new Set(),
+    knownTokenDecimals: input.knownTokenDecimals,
   };
 
   if (intent) {

@@ -704,7 +704,14 @@ const txAnalyzeRequestHandler: Handler<"tx.analyzeRequest"> = async ({
       offline: false,
     };
   }
-  const policy = (await loadPolicy()) ?? {};
+  // Falls back to BALANCED_POLICY, matching policyReadHandler's own default —
+  // a wallet that never explicitly called policy.write (e.g. one restored
+  // from a backup phrase, which doesn't run onboarding's "apply policy"
+  // step) must still get sensible default protection, not an empty {}
+  // policy that silently disables percent-based checks like the large-
+  // transfer-to-a-stranger detector (pushLossIfHuge in detectors.ts, which
+  // no-ops entirely when policy.maxLossPercent is undefined).
+  const policy = (await loadPolicy()) ?? BALANCED_POLICY;
   return analyzeTransaction(
     {
       network: snap.network,

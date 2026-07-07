@@ -36,6 +36,11 @@ export function SignRequest() {
   const [analyzing, setAnalyzing] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A "block" verdict needs a second explicit tap before it actually signs —
+  // reset whenever a new request comes in so a prior confirmation never
+  // silently carries over to a different (unrelated) transaction.
+  const [confirmingDanger, setConfirmingDanger] = useState(false);
+  useEffect(() => { setConfirmingDanger(false); }, [request?.requestId]);
 
   // Poll for the pending request once on mount; once we have it, hold it.
   useEffect(() => {
@@ -88,6 +93,14 @@ export function SignRequest() {
 
   const blocked = analysis?.decision === "block";
   const advisory = analysis?.decision === "advisory";
+
+  const handleSignClick = () => {
+    if (blocked && !confirmingDanger) {
+      setConfirmingDanger(true);
+      return;
+    }
+    void onDecide(true);
+  };
 
   return (
     <div className="h-full flex flex-col bg-bg">
@@ -145,9 +158,10 @@ export function SignRequest() {
         working={working}
         kind={request.kind}
         onDecline={() => onDecide(false)}
-        onSign={() => onDecide(true)}
+        onSign={handleSignClick}
         blocked={blocked}
         advisory={advisory}
+        confirmingDanger={confirmingDanger}
       />
     </div>
   );
@@ -166,7 +180,7 @@ function Header({ origin, verb }: { origin: string; verb: string }) {
 }
 
 function Footer({
-  analysis, working, kind, onDecline, onSign, blocked, advisory,
+  analysis, working, kind, onDecline, onSign, blocked, advisory, confirmingDanger,
 }: {
   analysis: AnalyzeResponse | null;
   working: boolean;
@@ -175,9 +189,14 @@ function Footer({
   onSign: () => void;
   blocked: boolean;
   advisory: boolean;
+  confirmingDanger: boolean;
 }) {
   const signLabel = kind === "transactionAndSend" ? "Sign & send" : "Sign";
-  const signLabelOverride = blocked ? "Sign anyway" : advisory ? `${signLabel} anyway` : signLabel;
+  const signLabelOverride =
+    blocked && confirmingDanger ? "Yes, I understand — sign anyway"
+    : blocked ? "Sign anyway"
+    : advisory ? `${signLabel} anyway`
+    : signLabel;
 
   return (
     <footer className="p-3 border-t border-line flex flex-col gap-2 shrink-0 bg-bg-elevated">
@@ -185,6 +204,16 @@ function Footer({
         <div className="text-[10px] text-warn px-2 leading-relaxed">
           Baret couldn't reach the analyzer. You're signing without protection.
         </div>
+      )}
+
+      {/* A "block" verdict requires this second explicit tap — the first
+          click on "Sign anyway" only arms it, so a single accidental/
+          impatient click can't push through a transaction Baret's own
+          policy flagged as a drain. */}
+      {blocked && confirmingDanger && (
+        <p className="text-[11px] text-bad text-center px-1 leading-snug">
+          This looks like a wallet drain. Tap again only if you're certain.
+        </p>
       )}
 
       <div className="flex gap-2">

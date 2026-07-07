@@ -22,6 +22,14 @@ export interface DetectorContext {
   policy: GuardPolicy;
   riskyPackages: Set<string>;
   knownSafePackages: Set<string>;
+  /**
+   * Package hash (lowercased, no "0x") -> CEP-18 decimals, for tokens whose
+   * decimals we actually know (e.g. our own deployed test-USDC, 6 decimals).
+   * CEP-18 tokens can use any decimals count, and it isn't encoded in the
+   * transaction itself — an unrecognized package falls back to 9 (CSPR's
+   * own decimals), which is only a guess.
+   */
+  knownTokenDecimals?: Record<string, number>;
 }
 
 export interface DetectorOutput {
@@ -136,11 +144,15 @@ export function detectTransfer(
       postMotes: null,
       deltaMotes: "-" + safeAbs(amount),
     });
-    pushLossIfHuge(findings, ctx, amount, to, "native CSPR");
+    pushLossIfHuge(findings, ctx, amount, to, "native CSPR", 9);
   } else if (intent.kind === "cep18_transfer") {
     const amount = intent.args?.amount ?? "0";
     const to = intent.args?.recipient ?? intent.args?.to ?? "";
     const pkg = normPkg(intent.contractPackage ?? intent.targetPackage) ?? "";
+    // CEP-18 tokens can use any decimals count, and it isn't encoded in the
+    // transaction — only correct for packages we actually recognize (falls
+    // back to 9, which is only a guess for anything else).
+    const decimals = ctx.knownTokenDecimals?.[pkg] ?? 9;
     changes.tokens.push({
       accountHash: ctx.userWallet,
       tokenPackage: pkg,
@@ -148,9 +160,9 @@ export function detectTransfer(
       pre: "0",
       post: "0",
       delta: "-" + safeAbs(amount),
-      decimals: 9,
+      decimals,
     });
-    pushLossIfHuge(findings, ctx, amount, to, "CEP-18 token");
+    pushLossIfHuge(findings, ctx, amount, to, "CEP-18 token", decimals);
   }
 
   return { findings, changes };
@@ -178,7 +190,11 @@ function sameAccount(a: string, b: string): boolean {
  * The pragmatic "huge" heuristic: without live balances we cannot compute a
  * real loss percent, so we treat very large absolute values + an external
  * recipient as exceeding the configured maxLossPercent. The threshold scales
- * inversely with maxLossPercent (a tighter policy trips at a lower value).
+ * inversely with maxLossPercent (a tighter policy trips at a lower value),
+ * and with the asset's own decimals (`decimals`) so a 6-decimal token isn't
+ * held to a bar calibrated in 9-decimal CSPR motes — 50,000 units of a
+ * 6-decimal token is a thousand times more of the token than the same raw
+ * number would represent at 9 decimals.
  */
 function pushLossIfHuge(
   findings: RiskFinding[],
@@ -186,6 +202,7 @@ function pushLossIfHuge(
   amount: string,
   to: string,
   label: string,
+  decimals: number,
 ): void {
   if (to && sameAccount(to, ctx.userWallet)) return; // self-transfer, ignore.
   const maxPct = ctx.policy.maxLossPercent;
@@ -198,9 +215,9 @@ function pushLossIfHuge(
     return;
   }
 
-  // Reference "large" bar: 1000 CSPR worth of motes, scaled by policy.
-  // maxLossPercent=50 → ~1000 CSPR; =25 → ~500 CSPR; =90 → ~1800 CSPR.
-  const bar = (1_000_000_000_000n * BigInt(Math.max(1, Math.round(maxPct)))) / 50n;
+  // Reference "large" bar: 1000 whole units of the asset, scaled by policy.
+  // maxLossPercent=50 → ~1000 units; =25 → ~500; =90 → ~1800.
+  const bar = (1000n * 10n ** BigInt(decimals) * BigInt(Math.max(1, Math.round(maxPct)))) / 50n;
   if (value > bar) {
     findings.push({
       code: "ESTIMATED_LOSS_EXCEEDS_MAX",
