@@ -49,6 +49,16 @@ export interface CasperPaymentRequirements {
     name?: string;
     /** Token version for the EIP-712 domain (defaults "1"). */
     version?: string;
+    /**
+     * The asset's own decimals — CEP-18 tokens can use any count, and it
+     * isn't encoded anywhere else in this payload. Wallets computing a UI
+     * amount from `amount` (atomic units) for cap checks or display MUST
+     * use this when present, not assume 9: a 6-decimal token's real amount
+     * would otherwise be silently under-reported by 1000x, letting a
+     * payment far over the user's cap slip through as if it were a tiny
+     * micropayment.
+     */
+    decimals?: number;
     /** Facilitator/sponsor account that submits the settlement deploy. */
     feePayer?: string;
     sponsorBy?: string;

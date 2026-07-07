@@ -85,6 +85,7 @@ export function registerScrybeRoute(
       extra: {
         name: config.x402.tokenName,
         version: config.x402.tokenVersion,
+        decimals: config.x402.tokenDecimals,
         description: `Scrybe answer for: ${q.slice(0, 80)}`,
         mimeType: "application/json",
       },

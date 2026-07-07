@@ -152,8 +152,13 @@ export async function x402Review(rawReq: unknown): Promise<Decision> {
     };
   }
 
-  // 5. Apply caps. CEP-18 default 9-decimal precision.
-  const amountUi = atomicToUi(requirements.amount);
+  // 5. Apply caps. Use the asset's own decimals when the requirements say
+  // so — assuming 9 for everything (the old behavior) silently
+  // under-reports any token with fewer decimals (e.g. our 6-decimal
+  // USDC(test): a real 500-unit payment would compute as "0.5", sliding
+  // under a 1.0 per-tx cap meant to catch exactly this).
+  const decimals = typeof requirements.extra.decimals === "number" ? requirements.extra.decimals : 9;
+  const amountUi = atomicToUi(requirements.amount, decimals);
   if (policy.maxX402PerTx !== undefined && amountUi > policy.maxX402PerTx) {
     return {
       action: "decline",

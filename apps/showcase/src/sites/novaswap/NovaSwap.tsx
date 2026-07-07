@@ -120,6 +120,15 @@ export default function NovaSwap() {
 
   useEffect(refreshBalances, [walletAddress, swapConfig?.tokenDecimals]);
 
+  // The RPC node's "latest" balance can lag a couple seconds behind a
+  // transaction we already confirmed executed (its own execution result
+  // is authoritative and arrives first) — one extra refresh shortly after
+  // catches that up instead of leaving stale figures on screen.
+  const refreshBalancesSettled = () => {
+    refreshBalances();
+    setTimeout(refreshBalances, 3000);
+  };
+
   const outputAmount = fromToken.price * parseFloat(amount || "0") / toToken.price;
   const success = signature !== null;
   // Both directions of the CSPR<->USDC pair have a real settlement path;
@@ -145,11 +154,12 @@ export default function NovaSwap() {
       const { signature: sig } = await adapter.signAndSendTransaction(built.transactionXdr);
       setSignature(sig); setResultState("confirmed"); setResultMessage(built.label);
     } catch (e) {
+      console.error("[NovaSwap] scenario demo failed:", e);
       const msg = e instanceof Error ? e.message : String(e);
       if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
         setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(msg);
+        setResultState("error"); setResultMessage(msg || "Unknown error — check the browser console for details.");
       }
     }
   }
@@ -223,13 +233,14 @@ export default function NovaSwap() {
         `Received ${usdcOut.toFixed(2)} USDC(test). CSPR transfer: ${res.csprTransactionHash.slice(0, 10)}…${res.note ? ` ${res.note}` : ""}`,
       );
       setResultState("confirmed");
-      refreshBalances();
+      refreshBalancesSettled();
     } catch (e) {
+      console.error("[NovaSwap] CSPR->USDC failed:", e);
       const msg = e instanceof Error ? e.message : String(e);
       if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined/.test(msg)) {
         setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(msg);
+        setResultState("error"); setResultMessage(msg || "Unknown error — check the browser console for details.");
       }
     } finally {
       setSwapping(false);
@@ -280,7 +291,11 @@ export default function NovaSwap() {
         // rejected as an invalid PaymentRequirements before the sign
         // screen even opened.
         maxTimeoutSeconds: 300,
-        extra: { name: swapConfig.tokenName, version: swapConfig.tokenVersion },
+        // Wallets computing a UI amount from `amount` (atomic units) for cap
+        // checks need the real decimals — omitting this made Baret assume 9
+        // and silently under-report a 500-unit (6-decimal) payment as "0.5",
+        // sliding it under the default 1.0 per-tx cap without ever asking to sign.
+        extra: { name: swapConfig.tokenName, version: swapConfig.tokenVersion, decimals: swapConfig.tokenDecimals },
       };
 
       const { headerValue } = await adapter.payX402(requirements);
@@ -299,13 +314,14 @@ export default function NovaSwap() {
       setSignature(res.csprTransactionHash);
       setResultMessage(`Received ${csprOut.toFixed(4)} CSPR. USDC payment: ${res.usdcTransactionHash.slice(0, 10)}…`);
       setResultState("confirmed");
-      refreshBalances();
+      refreshBalancesSettled();
     } catch (e) {
+      console.error("[NovaSwap] USDC->CSPR failed:", e);
       const msg = e instanceof Error ? e.message : String(e);
       if (/SIGN_REJECTED|POPUP_CLOSED|User cancel|declined|X402_FAILED/.test(msg)) {
         setResultState("blocked"); setResultMessage(msg);
       } else {
-        setResultState("error"); setResultMessage(msg);
+        setResultState("error"); setResultMessage(msg || "Unknown error — check the browser console for details.");
       }
     } finally {
       setSwapping(false);
