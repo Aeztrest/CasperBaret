@@ -262,10 +262,12 @@ export default function NovaSwap() {
     if (!swapConfig || !publicKey) return;
     const usdcAmount = parseFloat(amount || "0");
     const usdcAtomic = BigInt(Math.round(usdcAmount * 10 ** swapConfig.tokenDecimals));
-    const minUsdc = (swapConfig.minCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 1e9;
-    const maxUsdc = (swapConfig.maxCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 1e9;
-    const minUsdcDisplay = minUsdc / 10 ** swapConfig.tokenDecimals;
-    const maxUsdcDisplay = maxUsdc / 10 ** swapConfig.tokenDecimals;
+    // rateAtomicUsdcPerCspr is already "atomic USDC units per 1 WHOLE CSPR"
+    // (matching the server's motes*rate/MOTES_PER_CSPR, where the two
+    // 1e9's cancel) — dividing by 1e9 again here rounded both bounds down
+    // to ~0, which is why this used to show "Max 0.00 USDC(test)".
+    const minUsdcDisplay = (swapConfig.minCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 10 ** swapConfig.tokenDecimals;
+    const maxUsdcDisplay = (swapConfig.maxCspr * Number(swapConfig.rateAtomicUsdcPerCspr)) / 10 ** swapConfig.tokenDecimals;
     if (usdcAmount < minUsdcDisplay) {
       setResultState("error");
       setResultMessage(`Minimum swap is ${minUsdcDisplay.toFixed(2)} USDC(test) (so the CSPR paid back clears Casper's own 2.5 CSPR transfer floor).`);

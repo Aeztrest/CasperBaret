@@ -375,7 +375,22 @@ function wrapOfficialCasperWallet(ctor: unknown): CasperWalletProvider {
       // Official wallet has both .sign() and .signTransaction() depending on version
       const signFn = get().sign ?? get().signTransaction;
       const res = await signFn(deployJson, pk);
-      return res?.deployJson ?? deployJson;
+      // The extension resolves (doesn't reject) on user cancellation, using
+      // a `cancelled` flag on the result — same shape already handled below
+      // in payX402's signMessage call. Silently falling back to the
+      // ORIGINAL unsigned input here (as this used to) meant a genuine
+      // cancellation, or any other response shape this wallet build
+      // actually returns, looked exactly like "successfully signed", and
+      // only surfaced as a confusing failure later at the broadcast step.
+      if ((res as { cancelled?: boolean } | undefined)?.cancelled) {
+        throw new Error("User declined the signature in Casper Wallet.");
+      }
+      if (!res?.deployJson) {
+        throw new Error(
+          "Casper Wallet did not return a signed transaction for this request.",
+        );
+      }
+      return res.deployJson;
     },
 
     payX402: async (requirements: unknown) => {
