@@ -6,6 +6,8 @@ Baret sits between a dApp (or an AI agent) and your signature. Before your keys 
 
 This repository is the wallet itself, its backend, and its on-chain contracts. It also tells the story of everything else we had to build along the way — because when we started, most of it didn't exist yet for Casper.
 
+🎥 **[Watch the demo video](https://youtu.be/RGtZcmocuqk?si=XnI8UkmQkxjVQ-VD)**
+
 ---
 
 ## How this project actually happened
@@ -109,6 +111,15 @@ cargo odra build          # → contracts/wasm/{PaymentGuard,Cep18x402}.wasm
 ```
 
 Deploy the built `.wasm` with `casper-client` using a testnet-funded key, then point `apps/server/.env` at the resulting package hashes.
+
+### Deployed on Casper Testnet
+
+| Contract | Package hash | Explorer |
+|---|---|---|
+| `Cep18x402` (test USDC) | `d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d` | [cspr.live](https://testnet.cspr.live/contract-package/d12df5a1cb028c56a7e1169c84fbdd3f98a23860c1029650e72f2873bfd8240d) |
+| `PaymentGuard` (spending-cap vault) | `b269e0d634562ce624f18deced67d9b680075f7d6f1ae7e32250501fddc79e1c` | [cspr.live](https://testnet.cspr.live/contract-package/b269e0d634562ce624f18deced67d9b680075f7d6f1ae7e32250501fddc79e1c) |
+
+Both are live and have real, on-chain-confirmed transactions against them — not just deployed and idle. See `LIMITATIONS.md` for what `PaymentGuard` does and doesn't do today.
 
 ## Built for the Casper Agentic Buildathon
 
