@@ -57,9 +57,10 @@ address, some raw bytes, a Confirm button.
 
 > "We built the wallet first. Then realized Casper didn't have a wallet SDK
 > to build it on, so we built one from scratch. Then needed real sites to
-> test the wallet against, so we built six working dApps. Then realized
-> our approach to x402 — machine-to-machine payments — didn't exist for
-> Casper either, so we built that too. And to actually test payments, we
+> test the wallet against, so we built six working dApps. Then built x402
+> for Casper ourselves — machine-to-machine payments — and wired it through
+> the same policy engine, since capping what an agent can autonomously spend
+> was the part nobody else had built. And to actually test payments, we
 > deployed a USDC stablecoin for Casper Network, because there wasn't one.
 > Four repos, one wallet holding them together."
 

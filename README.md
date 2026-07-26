@@ -34,9 +34,9 @@ A wallet only proves itself against real dApps: connect, sign, see what happens.
 
 → **[casper-network-dapps](https://github.com/Aeztrest/casper-network-dapps)** — six independent Casper dApps, each in its own folder.
 
-### 4. Then we realized our x402 approach was something nobody else had built for Casper
+### 4. Then we realized the missing piece wasn't x402 itself — it was what guards it
 
-[x402](https://github.com/coinbase/x402) is Coinbase's protocol for machine-to-machine payments: an HTTP 402 response, a signed authorization, no login, no subscription. Casper had no x402 implementation at all. We built one — and along the way realized the interesting part isn't the payment protocol itself, it's what happens *after* the wallet signs: without a spending cap sitting between the agent and the signature, x402 lets an agent re-sign as many times as it wants with nothing stopping it. Wiring x402 through Baret's policy engine (chapter 1) is what actually makes autonomous payments safe.
+[x402](https://github.com/coinbase/x402) is Coinbase's protocol for machine-to-machine payments: an HTTP 402 response, a signed authorization, no login, no subscription. [make-software/casper-x402](https://github.com/make-software/casper-x402) had already brought the protocol itself to Casper — we built our own wire-compatible implementation rather than depending on theirs, but the payment mechanics weren't the gap. The gap is what happens *after* the wallet signs: without a spending cap sitting between the agent and the signature, x402 lets an agent re-sign as many times as it wants with nothing stopping it. As far as we know, wiring x402 through a real, user-controlled policy engine — the same one from chapter 1 — to actually cap what an agent can autonomously spend is the part nobody else had built for Casper.
 
 → **[x402-casper](https://github.com/Aeztrest/x402-casper)** — x402 for Casper Network, as a standalone TypeScript library.
 
