@@ -57,6 +57,7 @@ Everything above except the wallet itself now lives in its own repository, so ea
 | `apps/extension` | The Baret wallet — a Chrome extension. Injects `window.baret` into every page, so any Casper dApp picks it up automatically. |
 | `apps/server` | The backend: the pre-sign analysis API (`/v1/analyze`), a built-in x402 facilitator, and the demo endpoints the showcase dApps use (faucet, swap settlement, paywall). |
 | `apps/showcase` | The same six demo dApps described above, kept here too as Baret's own integration test bed (with an extra "simulate an attack" toggle on each one, for demoing what Baret catches). |
+| `apps/agent-mcp` | An MCP server exposing a Casper wallet (balance, policy, x402 payment) as tools — plus a demo agent that lets Claude autonomously pay for things through it, capped by the same policy engine. |
 | `contracts` | The Odra (Rust) smart contracts: `PaymentGuard` (the spending-cap vault) and `Cep18x402` (the USDC-style token). |
 | `packages/casper-core` | Shared Casper primitives: keypairs, RPC, units, x402 signing — used by both the server and the extension. |
 | `packages/casper-guard` | The policy engine's types and evaluator — chain-agnostic, shared by the server and the wallet. |
@@ -112,5 +113,7 @@ Deploy the built `.wasm` with `casper-client` using a testnet-funded key, then p
 ## Built for the Casper Agentic Buildathon
 
 Track: Agentic AI + DeFi/Payments. The short version: Baret is a Casper wallet that puts a real cap, a real allowlist, and a real kill switch on an AI agent's spending — enforced both when it signs and on-chain, so "the agent has permission" never means "the agent has unlimited permission."
+
+`apps/agent-mcp` is the concrete version of that claim: an MCP server that lets an actual LLM (Claude, in the included demo) autonomously pay for things through Baret's x402 flow — see [`apps/agent-mcp/README.md`](apps/agent-mcp/README.md).
 
 MIT licensed.

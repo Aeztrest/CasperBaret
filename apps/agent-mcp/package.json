@@ -1,0 +1,31 @@
+{
+  "name": "@casper-baret/agent-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx --env-file=.env src/server.ts",
+    "smoke-test": "tsx --env-file=.env src/smoke-test.ts",
+    "demo-agent": "tsx --env-file=.env src/demo-agent.ts",
+    "generate-key": "tsx --env-file=.env scripts/generate-agent-key.ts",
+    "fund": "tsx --env-file=.env scripts/fund-agent.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@casper-baret/casper-core": "workspace:*",
+    "@casper-baret/casper-guard": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "casper-js-sdk": "^5.0.12",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

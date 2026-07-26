@@ -30,6 +30,7 @@ owner set.
 | `apps/server` | Fastify server: `/v1/analyze` (pre-sign risk analysis), the x402 paywalled demo (`/demo/scrybe`), a built-in x402 facilitator (`/facilitate/{supported,verify,settle}`), a CSPR + test-token faucet, and NovaSwap's real CSPR↔USDC(test) swap settlement. |
 | `apps/extension` | Chrome MV3 wallet. Injects `window.baret`; the x402 **buyer** side. |
 | `apps/showcase` | Six demo dApps (`apps/showcase/src/sites/*`) each exercising a specific attack scenario, plus the `scrybe` x402 paywall demo. The same six dApps, without the attack-scenario toggles, are also published standalone at [casper-network-dapps](https://github.com/Aeztrest/casper-network-dapps). |
+| `apps/agent-mcp` | MCP server exposing a dedicated demo wallet (balance, spending policy, x402 payment) as tools, plus a Claude-driven demo agent that calls it over the real MCP protocol — see `apps/agent-mcp/README.md`. |
 | `contracts` | Odra (Rust) smart contracts: `PaymentGuard` (on-chain spending-cap vault) and `Cep18x402` (CEP-18 token with an EIP-3009-style `transfer_with_authorization`). |
 
 Two packages exist in the repo but aren't currently wired into anything —
