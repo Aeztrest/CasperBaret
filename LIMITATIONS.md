@@ -91,6 +91,22 @@ during this project.
 
 ## PaymentGuard (on-chain spending-cap vault)
 
+- Deployed on Casper testnet at contract package
+  `b269e0d634562ce624f18deced67d9b680075f7d6f1ae7e32250501fddc79e1c`. A full
+  `approve` → `deposit` → `pay` cycle has been run against this exact
+  instance and confirmed on-chain, proving `init`, `set_allowance`,
+  `deposit`, and `pay` all work as written against a real Casper node — not
+  just against Odra's MockVM in `cargo odra test`.
+- **Not yet wired into onboarding.** The wallet extension does not deploy a
+  fresh `PaymentGuard` instance per user today — `wallet.provisionSmartWallet`
+  is a no-op that returns the user's own account. Day-to-day spending caps
+  are enforced client-side by the wallet's policy engine (the Policies page),
+  not by this contract. Provisioning a real per-user vault during onboarding
+  is the natural next step, but it's a meaningfully heavier flow than key
+  generation: installing this contract costs real gas (~800 CSPR on testnet
+  for this build's WASM size) and several confirmations, versus an instant
+  client-side setup — a UX tradeoff that needs a deliberate design, not a
+  quick patch.
 - `pay(merchant, amount)` may be called by the owner or the single
   owner-designated agent (`set_agent`) — not by arbitrary third parties.
   There is exactly one agent slot; delegating to a second agent overwrites

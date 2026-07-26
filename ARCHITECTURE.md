@@ -142,6 +142,14 @@ payment, while still not letting an arbitrary third party force a payout.
 Also published standalone at
 [casper-wallet-sdk](https://github.com/Aeztrest/casper-wallet-sdk).
 
+**Deployed and proven live on Casper testnet** at contract package
+`b269e0d634562ce624f18deced67d9b680075f7d6f1ae7e32250501fddc79e1c` — an
+`approve` → `deposit` → `pay` cycle has been run against it end to end, all
+three confirmed on-chain. Each user's wallet doesn't yet auto-provision its
+own `PaymentGuard` instance during onboarding (see `LIMITATIONS.md`); today
+the wallet enforces caps client-side via the Policies page, and this
+deployed instance is the on-chain proof the vault contract itself works.
+
 Build with `cargo odra build` (from `contracts/`); output goes to
 `contracts/wasm/{PaymentGuard,Cep18x402}.wasm`, which are checked into the
 repo as binary build artifacts — rebuild and re-commit them after any
