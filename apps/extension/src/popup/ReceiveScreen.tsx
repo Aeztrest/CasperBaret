@@ -1,6 +1,6 @@
 /**
  * Receive overlay — shows the authority address as a copyable string + QR.
- * Phantom/Solflare-style. Address is what other wallets send SOL/SPL to.
+ * Address is what other wallets send CSPR/CEP-18 tokens to.
  *
  * Sent in popup overlay mode by Home.tsx.
  */

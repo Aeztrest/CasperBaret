@@ -47,7 +47,7 @@ import {
   type KeystoreRow,
 } from "../db/keystore";
 import { getRpcClient, getChainName } from "../rpc/connection";
-import { provisionSmartWallet } from "../swig/provision";
+import { provisionSmartWallet } from "../provisioning/provision";
 import { performSign } from "../wallet-standard/handlers";
 import { closePopupWindow } from "../popup-window";
 import {

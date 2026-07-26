@@ -1,6 +1,6 @@
 /**
  * Connect-approval surface — surfaces a per-origin "Allow this site to
- * connect?" decision to the user, Phantom-style.
+ * connect?" decision to the user.
  *
  * Mounted by PopupApp when the current pending request kind === "connect".
  * The user clicks Allow / Deny + (optionally) ticks Remember; the verdict

@@ -7,7 +7,8 @@
  */
 
 const DB_NAME = "blackthorn";
-// v2 adds the `sub_keys` object store (T28 merchant Swig sub-keys).
+// v2 adds the `sub_keys` object store — reserved for a future per-merchant
+// sub-authority scheme; not populated or read by anything today.
 // v3 adds the `site_permissions` object store (per-origin connect trust grants).
 // All upgrades MUST live in `runMigrations` below — no other module may call
 // indexedDB.open() with a higher version, or it deadlocks the connection
@@ -64,7 +65,7 @@ function runMigrations(db: IDBDatabase, oldVersion: number) {
     db.createObjectStore("prefs", { keyPath: "key" });
   }
   if (oldVersion < 2) {
-    // sub_keys: per-merchant Swig sub-authorities (T28).
+    // sub_keys: reserved for a future per-merchant sub-authority scheme.
     if (!db.objectStoreNames.contains("sub_keys")) {
       const sk = db.createObjectStore("sub_keys", { keyPath: "pubkey" });
       sk.createIndex("merchantOrigin", "merchantOrigin", { unique: false });

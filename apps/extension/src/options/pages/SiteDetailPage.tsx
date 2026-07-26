@@ -114,7 +114,7 @@ export function SiteDetailPage() {
   const onPause   = async () => { setBusy("pause");   try { await rpc.call("ledger.pause",   { merchantOrigin: origin }); await refresh(); } catch (e) { setErr(String(e)); } finally { setBusy(null); } };
   const onUnpause = async () => { setBusy("unpause"); try { await rpc.call("ledger.unpause", { merchantOrigin: origin }); await refresh(); } catch (e) { setErr(String(e)); } finally { setBusy(null); } };
   const onRevoke  = async () => {
-    if (!confirm(`Revoke all allowances for ${origin}? If a Swig sub-key exists, you'll be asked to approve a RemoveAuthority transaction.`)) return;
+    if (!confirm(`Revoke all allowances for ${origin}? This stops all future x402 payments to this merchant immediately.`)) return;
     setBusy("revoke");
     try { await rpc.call("ledger.revoke", { merchantOrigin: origin }); await refresh(); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }

@@ -84,7 +84,7 @@ startMonitorLifecycle();
 
 // Auto-open the popup window whenever a dApp queues a sign or connect
 // request — MV3 won't open the action popup programmatically, but a small
-// popup-type window works the same way Phantom and Freighter do it.
+// popup-type window achieves the same result.
 subscribe((next, prev) => {
   if (next.phase === "signing" && prev.phase !== "signing") {
     void openPopupWindow();
